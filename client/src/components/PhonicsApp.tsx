@@ -302,7 +302,7 @@ export default function PhonicsApp() {
     <div className="min-h-screen bg-background">
       <div className="h-full flex flex-col">
         {/* Header with Logo, Story Link, and Module Dropdown */}
-        <div className="relative flex items-center p-4">
+        <div className="relative flex items-center justify-between p-4">
           <button
             data-testid="button-view-story"
             className="touch-target bg-muted text-muted-foreground rounded-xl py-2 px-4 text-sm hover:bg-muted/80 transition-colors"
@@ -311,8 +311,17 @@ export default function PhonicsApp() {
             My Story
           </button>
           
-          {/* Force-centered logo using absolute positioning */}
-          <div className="absolute left-1/2 transform -translate-x-1/2">
+          {/* In-flow logo for small screens, hidden on larger */}
+          <div className="sm:hidden">
+            <img
+              src={logoUrl}
+              alt="ToddlerReads"
+              className="h-12 object-contain"
+            />
+          </div>
+
+          {/* Force-centered logo for larger screens, hidden on small */}
+          <div className="hidden sm:block absolute left-1/2 transform -translate-x-1/2">
             <img 
               src={logoUrl} 
               alt="ToddlerReads" 
@@ -321,7 +330,7 @@ export default function PhonicsApp() {
           </div>
 
           {/* Learning Module Dropdown */}
-          <div className="relative ml-auto">
+          <div className="relative">
             <button
               data-testid="button-module-selector"
               className="touch-target bg-secondary text-secondary-foreground rounded-xl py-2 px-4 text-sm hover:bg-secondary/80 transition-colors flex items-center gap-2"
