@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import heroImage from "@/assets/landing.png";
+// import heroImage from "@/assets/landing.png"; // Original image, consider replacing with a local asset that meets transparency and cropping requirements
 
 export function Hero() {
   return (
@@ -8,7 +8,7 @@ export function Hero() {
         <div className="max-w-4xl mx-auto text-center">
           {/* Attention Grabber */}
           <div className="mb-6">
-            <span className="inline-block bg-destructive text-destructive-foreground px-4 py-2 rounded-full font-bold text-sm uppercase tracking-wide">
+            <span className="inline-block bg-destructive/10 text-destructive px-4 py-2 rounded-full font-bold text-sm uppercase tracking-wide">
               ATTENTION: Parents of Toddlers (18-36 months)
             </span>
           </div>
@@ -30,7 +30,7 @@ export function Hero() {
           {/* Hero Image */}
           <div className="mb-12">
             <img 
-              src={heroImage} 
+              src="https://i.imgur.com/KiYZVoC.png" // Using external URL from example, replace with local asset if available
               alt="ToddlerReads App in Action" 
               className="mx-auto rounded-2xl shadow-gentle max-w-full h-auto"
             />

@@ -70,8 +70,7 @@ export default {
         'jive-red': '#FF0000',
       },
       fontFamily: {
-        sans: ["'Jost'", "sans-serif"],
-        serif: ["'Krona One'", "serif"],
+        sans: ["'Nunito'", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

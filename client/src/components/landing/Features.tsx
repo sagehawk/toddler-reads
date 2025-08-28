@@ -1,7 +1,6 @@
-import { Card, CardContent } from "@/components/ui/card";
-import icon1 from "@/assets/1.png";
-import icon2 from "@/assets/2.png";
-import icon3 from "@/assets/3.png";
+import icon1 from "@/assets/feature-1.svg";
+import icon2 from "@/assets/feature-2.svg";
+import icon3 from "@/assets/feature-3.svg";
 
 const steps = [
   {
@@ -26,40 +25,36 @@ const steps = [
 
 export function Features() {
   return (
-    <section className="py-20">
+    <section className="py-20 sm:py-28">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
             More Learning, Less Fuss.
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Our simple 3-step process makes phonics mastery effortless
           </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {steps.map((step, index) => (
-            <Card key={index} className="relative bg-card border-border shadow-gentle hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
-              <CardContent className="p-8 text-center">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm overflow-hidden">
-                    <img src={step.icon} alt={step.title} className="w-full h-full object-cover" />
-                  </div>
-                </div>
-                
-                <div classNameName="text-4xl mb-6 mt-4">
-                  {/* Removed the separate div for the icon, as it's now in the circle */}
-                </div>
-                
-                <h3 className="text-xl font-bold text-foreground mb-4">
-                  {step.title}
-                </h3>
-                
-                <p className="text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </CardContent>
-            </Card>
+        {/* Updated grid layout */}
+        <div className="grid md:grid-cols-3 gap-x-8 gap-y-16 max-w-5xl mx-auto">
+          {steps.map((step) => (
+            <div key={step.title} className="text-center">
+              {/* Icon */}
+              <div className="flex justify-center mb-4 p-2">
+                <img src={step.icon} alt={step.title} className="h-12 w-12" />
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-2xl font-black text-foreground mb-3">
+                {step.title}
+              </h3>
+              
+              {/* Description */}
+              <p className="text-muted-foreground leading-relaxed">
+                {step.description}
+              </p>
+            </div>
           ))}
         </div>
       </div>
