@@ -19,9 +19,13 @@ export default defineConfig({
   },
 
   server: {
+    publicDir: 'public',
     fs: {
       strict: true,
       deny: ["**/.*"],
+    },
+    hmr: {
+      port: 5000,
     },
   },
 });

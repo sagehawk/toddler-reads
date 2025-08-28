@@ -1,0 +1,24 @@
+client:536 WebSocket connection to 'ws://localhost:5000/?token=0Ws-p_uacWzt' failed: 
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'ws://localhost:undefined/?token=0Ws-p_uacWzt' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+:5000/src/App.tsx?v=…PTOIjO4mTjg14p3OS:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+:5000/src/index.css?…PTOIjO4mTjg14p3OS:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+content.js:40 Feature is disabled
+inject.js:22 pageshow:  
+PageTransitionEvent
+:5000/favicon-32x32.png:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+:5000/site.webmanifest:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+:5000/favicon-16x16.png:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+(index):39 ServiceWorker registration failed:  TypeError: Failed to register a ServiceWorker for scope ('http://localhost:5000/') with script ('http://localhost:5000/sw.js'): An unknown error occurred when fetching the script.
+(index):1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+(index):1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+﻿
+

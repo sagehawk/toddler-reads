@@ -61,33 +61,56 @@ export default {
           border: "var(--sidebar-border)",
           ring: "var(--sidebar-ring)",
         },
+        'jive-yellow': '#FFD200',
+        'jive-teal': '#00A896',
+        'jive-blue': '#0085FF',
+        'jive-green': '#00A854',
+        'jive-pink': '#FF00A8',
+        'jive-purple': '#A800FF',
+        'jive-red': '#FF0000',
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
+        sans: ["'Jost'", "sans-serif"],
+        serif: ["'Krona One'", "serif"],
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        'fade-in': {
+            '0%': { opacity: '0' },
+            '100%': { opacity: '1' },
+        },
+        'fade-out': {
+            '0%': { opacity: '1' },
+            '100%': { opacity: '0' },
+        },
+        'slide-in-from-bottom': {
+            '0%': { transform: 'translateY(100%)', opacity: '0' },
+            '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'slide-out-to-bottom': {
+            '0%': { transform: 'translateY(0)', opacity: '1' },
+            '100%': { transform: 'translateY(100%)', opacity: '0' },
+        },
+        'animate-float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        'fade-in': 'fade-in 0.5s ease-out',
+        'fade-out': 'fade-out 0.5s ease-out',
+        'slide-in-from-bottom': 'slide-in-from-bottom 0.5s ease-out',
+        'slide-out-to-bottom': 'slide-out-to-bottom 0.5s ease-out',
+        'float': 'animate-float 15s ease-in-out infinite',
       },
     },
   },
