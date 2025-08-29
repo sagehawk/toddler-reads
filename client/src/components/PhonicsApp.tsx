@@ -49,7 +49,6 @@ export default function PhonicsApp() {
   };
 
   const playSound = (soundFile: string) => {
-    console.log("Playing sound from:", soundFile);
     const audio = new Audio(soundFile);
     audio.play();
   };
@@ -119,7 +118,7 @@ export default function PhonicsApp() {
         playSound(selectedModule.stemSound);
       } else if (selectedModule.words && index >= 0) {
         const word = selectedModule.words[index];
-        if (word) playSound(word.sound);
+        if (word) playSound(word.audioFile);
       }
     }
   }, [selectedModule]);
@@ -133,7 +132,7 @@ export default function PhonicsApp() {
         playSound(selectedModule.stemSound);
       } else if (selectedModule.words && currentIndex >= 0) {
         const word = selectedModule.words[currentIndex];
-        if (word) playSound(word.sound);
+        if (word) playSound(word.audioFile);
       }
     }
   }, [selectedModule, currentIndex, isShowingStem]);
