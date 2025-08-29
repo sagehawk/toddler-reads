@@ -2,32 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { Route, Switch } from "wouter";
 import { LandingPage } from "./pages/LandingPage";
 import PhonicsApp from "./components/PhonicsApp";
+import MyStory from "./pages/my-story"; // Import MyStory
 import NotFound from "./pages/not-found";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useAuth, AuthProvider } from "./hooks/AuthContext";
 
 const queryClient = new QueryClient();
-
-function AppContent() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem("toddlerReads-loggedIn") === "true";
-    if (isLoggedIn && window.location.pathname === "/") {
-      navigate("/app");
-    }
-  }, [navigate]);
-
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/app" element={<PhonicsApp />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-}
 
 function App() {
   return (
@@ -35,11 +20,30 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <AuthProvider>
           <AppContent />
-        </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
+  );
+}
+
+function AppContent() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Switch>
+      <Route path="/" component={LandingPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      <ProtectedRoute path="/app" component={PhonicsApp} />
+      <Route path="/my-story" component={MyStory} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

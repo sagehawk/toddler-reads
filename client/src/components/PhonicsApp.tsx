@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { learningModules, LearningModule, PhonicsLetter, CVCWord } from '../data/phonicsDecks';
-import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+
 import logoUrl from '../assets/toddler-reads-logo.png';
 
 type AppMode = 'learning' | 'story';
 
 export default function PhonicsApp() {
-  const { speak } = useSpeechSynthesis();
+  
   const [appMode, setAppMode] = useState<AppMode>('learning');
   const [selectedModuleId, setSelectedModuleId] = useState('letters-full');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -46,6 +46,12 @@ export default function PhonicsApp() {
       'Y': 'bg-teal-300 hover:bg-teal-400 text-teal-800', 'Z': 'bg-cyan-300 hover:bg-cyan-400 text-cyan-800'
     };
     return colors[letter as keyof typeof colors] || 'bg-gray-200 hover:bg-gray-300 text-gray-800';
+  };
+
+  const playSound = (soundFile: string) => {
+    console.log("Playing sound from:", soundFile);
+    const audio = new Audio(soundFile);
+    audio.play();
   };
 
   // Navigation with arrow keys
@@ -107,30 +113,30 @@ export default function PhonicsApp() {
     
     if (selectedModule.type === 'letters' && selectedModule.letters) {
       const letter = selectedModule.letters[index];
-      if (letter) speak(letter.sound);
+      if (letter) playSound(letter.sound);
     } else if (selectedModule.type === 'cvc') {
       if (isStem && selectedModule.stemSound) {
-        speak(selectedModule.stemSound);
+        playSound(selectedModule.stemSound);
       } else if (selectedModule.words && index >= 0) {
         const word = selectedModule.words[index];
-        if (word) speak(word.sound);
+        if (word) playSound(word.sound);
       }
     }
-  }, [selectedModule, speak]);
+  }, [selectedModule]);
 
   const playCurrentSound = useCallback(() => {
     if (selectedModule.type === 'letters' && selectedModule.letters) {
       const letter = selectedModule.letters[currentIndex];
-      if (letter) speak(letter.sound);
+      if (letter) playSound(letter.sound);
     } else if (selectedModule.type === 'cvc') {
       if (isShowingStem && selectedModule.stemSound) {
-        speak(selectedModule.stemSound);
+        playSound(selectedModule.stemSound);
       } else if (selectedModule.words && currentIndex >= 0) {
         const word = selectedModule.words[currentIndex];
-        if (word) speak(word.sound);
+        if (word) playSound(word.sound);
       }
     }
-  }, [selectedModule, currentIndex, isShowingStem, speak]);
+  }, [selectedModule, currentIndex, isShowingStem]);
 
   const selectModule = useCallback((moduleId: string) => {
     setSelectedModuleId(moduleId);
@@ -143,7 +149,7 @@ export default function PhonicsApp() {
       // Auto-play stem sound on load
       setTimeout(() => {
         if (newModule.stemSound) {
-          speak(newModule.stemSound);
+          playSound(newModule.stemSound);
         }
       }, 100);
     } else {
@@ -152,7 +158,7 @@ export default function PhonicsApp() {
     }
     
     setShowModuleDropdown(false);
-  }, [speak]);
+  }, []);
 
   // Reset index when switching modules
   useEffect(() => {

@@ -1,13 +1,12 @@
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { Outlet } from "react-router-dom";
 
-export function MainLayout() {
+export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <Header />
       <main>
-        <Outlet />
+        {children}
       </main>
       <Footer />
     </div>

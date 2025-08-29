@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function FounderStory() {
   return (
-    <section className="py-20 bg-muted/20">
+    <section id="founder-story" className="py-20 bg-muted/20">
       <div className="container mx-auto px-6">
         <div className="max-w-4xl mx-auto">
           <Card className="bg-card border-border shadow-gentle">
@@ -27,10 +27,13 @@ export function FounderStory() {
                   </p>
                   
                   <Button 
+                    asChild
                     variant="outline" 
                     className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   >
-                    Read Our Full Story →
+                    <a href="/my-story">
+                      Read Our Full Story →
+                    </a>
                   </Button>
                 </div>
               </div>
