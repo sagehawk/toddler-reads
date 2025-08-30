@@ -7,10 +7,11 @@ import { LandingPage } from "./pages/LandingPage";
 import PhonicsApp from "./components/PhonicsApp";
 import MyStory from "./pages/my-story"; // Import MyStory
 import NotFound from "./pages/not-found";
-import { Login as LoginPage } from "./pages/NewLoginPage";
+import LoginPage from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth, AuthProvider } from "./hooks/AuthContext";
+import { SubscriptionProvider } from "@/components/payment";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +22,9 @@ function App() {
         <Toaster />
         <Sonner />
         <AuthProvider>
-          <AppContent />
+          <SubscriptionProvider>
+            <AppContent />
+          </SubscriptionProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
@@ -48,3 +51,4 @@ function AppContent() {
 }
 
 export default App;
+

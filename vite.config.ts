@@ -28,8 +28,5 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
-    hmr: {
-      port: 5000,
-    },
   },
 });

@@ -1,11 +1,48 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { learningModules, LearningModule, PhonicsLetter, CVCWord } from '../data/phonicsDecks';
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 
 import logoUrl from '../assets/toddler-reads-logo.png';
 
 type AppMode = 'learning' | 'story';
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed',
+    platform: string,
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function PhonicsApp() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!installPrompt) {
+      return;
+    }
+    installPrompt.prompt();
+    installPrompt.userChoice.then(({ outcome }) => {
+      if (outcome === 'accepted') {
+        setInstallPrompt(null);
+      }
+    });
+  };
   
   const [appMode, setAppMode] = useState<AppMode>('learning');
   const [selectedModuleId, setSelectedModuleId] = useState('letters-full');
@@ -17,6 +54,7 @@ export default function PhonicsApp() {
   const selectedModule = learningModules.find(m => m.id === selectedModuleId) || learningModules[0];
 
   const currentAudio = useRef<HTMLAudioElement | null>(null); // Declare a ref
+  const animationTimeouts = useRef<number[]>([]); // To store timeout IDs
 
   // Color palette for letters and consonants (Montessori-inspired)
   const getLetterColor = (letter: string): string => {
@@ -118,18 +156,6 @@ export default function PhonicsApp() {
   const jumpToItem = useCallback((index: number, isStem = false) => {
     setCurrentIndex(index);
     setIsShowingStem(isStem);
-    
-    if (selectedModule.type === 'letters' && selectedModule.letters) {
-      const letter = selectedModule.letters[index];
-      if (letter) playSound(letter.sound);
-    } else if (selectedModule.type === 'cvc') {
-      if (isStem && selectedModule.stemSound) {
-        playSound(selectedModule.stemSound);
-      } else if (selectedModule.words && index >= 0) {
-        const word = selectedModule.words[index];
-        if (word) playSound(word.audioFile);
-      }
-    }
   }, [selectedModule]);
 
   const playCurrentSound = useCallback(() => {
@@ -146,15 +172,18 @@ export default function PhonicsApp() {
 
           // Animation sequence for CVC words
           setAnimationPhase(1); // Phase 1: First letter visible, rest transparent
-          setTimeout(() => {
+          const timeout1 = setTimeout(() => {
             setAnimationPhase(2); // Phase 2: First letter transparent, rest visible
-            setTimeout(() => {
+            const timeout2 = setTimeout(() => {
               setAnimationPhase(3); // Phase 3: All fade
-              setTimeout(() => {
+              const timeout3 = setTimeout(() => {
                 setAnimationPhase(0); // Phase 0: All back to 100% (default)
               }, 500); // 0.5 seconds for phase 3
-            }, 1500); // 1.5 seconds for phase 2
-          }, 1000); // 1 seconds for phase 1
+              animationTimeouts.current.push(timeout3);
+            }, 1500); // 15 seconds for phase 2
+            animationTimeouts.current.push(timeout2);
+          }, 900); // 0.9 seconds for phase 1
+          animationTimeouts.current.push(timeout1);
         }
       }
     }
@@ -193,6 +222,19 @@ export default function PhonicsApp() {
       setIsShowingStem(false);
     }
   }, [selectedModuleId]);
+
+  // Effect to reset animation and clear timeouts when item changes
+  useEffect(() => {
+    animationTimeouts.current.forEach(clearTimeout);
+    animationTimeouts.current = [];
+    setAnimationPhase(0);
+
+    // Stop current audio playback
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.currentTime = 0;
+    }
+  }, [currentIndex, selectedModuleId, setAnimationPhase]);
 
   // Get current display content
   const getCurrentDisplay = () => {
@@ -343,13 +385,25 @@ export default function PhonicsApp() {
       <div className="h-full flex flex-col">
         {/* Header with Logo, Story Link, and Module Dropdown */}
         <div className="relative flex items-center justify-between p-4">
-          <button
-            data-testid="button-view-story"
-            className="touch-target bg-muted text-muted-foreground rounded-xl py-2 px-4 text-sm hover:bg-muted/80 transition-colors"
-            onClick={() => setAppMode('story')}
-          >
-            My Story
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              data-testid="button-view-story"
+              className="touch-target bg-muted text-muted-foreground rounded-xl py-2 px-4 text-sm hover:bg-muted/80 transition-colors"
+              onClick={() => setAppMode('story')}
+            >
+              My Story
+            </button>
+            {installPrompt && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleInstallClick}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Install App
+              </Button>
+            )}
+          </div>
           
           {/* In-flow logo for small screens, hidden on larger */}
           <div className="sm:hidden">

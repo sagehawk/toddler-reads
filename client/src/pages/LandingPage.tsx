@@ -12,18 +12,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "../hooks/AuthContext";
 
 export function LandingPage() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const fromApp = params.get("fromApp");
-
-    if (user && !fromApp) {
-      setLocation("/app");
-    }
-  }, [user, setLocation]);
-
   return (
     <div className="min-h-screen bg-background relative">
       <FloatingLetters />
