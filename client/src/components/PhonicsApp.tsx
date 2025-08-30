@@ -12,6 +12,7 @@ export default function PhonicsApp() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
   const [isShowingStem, setIsShowingStem] = useState(false);
+  const [animationPhase, setAnimationPhase] = useState(0); // 0: default, 1: first letter visible, 2: rest visible, 3: all fade
 
   const selectedModule = learningModules.find(m => m.id === selectedModuleId) || learningModules[0];
 
@@ -140,10 +141,24 @@ export default function PhonicsApp() {
         playSound(selectedModule.stemSound);
       } else if (selectedModule.words && currentIndex >= 0) {
         const word = selectedModule.words[currentIndex];
-        if (word) playSound(word.audioFile);
+        if (word) {
+          playSound(word.audioFile);
+
+          // Animation sequence for CVC words
+          setAnimationPhase(1); // Phase 1: First letter visible, rest transparent
+          setTimeout(() => {
+            setAnimationPhase(2); // Phase 2: First letter transparent, rest visible
+            setTimeout(() => {
+              setAnimationPhase(3); // Phase 3: All fade
+              setTimeout(() => {
+                setAnimationPhase(0); // Phase 0: All back to 100% (default)
+              }, 500); // 0.5 seconds for phase 3
+            }, 1500); // 1.5 seconds for phase 2
+          }, 1000); // 1 seconds for phase 1
+        }
       }
     }
-  }, [selectedModule, currentIndex, isShowingStem]);
+  }, [selectedModule, currentIndex, isShowingStem, setAnimationPhase]);
 
   const selectModule = useCallback((moduleId: string) => {
     setSelectedModuleId(moduleId);
@@ -214,9 +229,9 @@ export default function PhonicsApp() {
   const currentDisplay = getCurrentDisplay();
 
   // Render word with color-coded consonant and black stem
-  const renderWordDisplay = (word: string, consonant: string, family: string) => {
+  const renderWordDisplay = (word: string, consonant: string, family: string, phase: number) => {
     if (!consonant || word.startsWith('_')) {
-      // Word stem only - render normally
+      // Word stem only - render normally (no animation for stem)
       return (
         <span className="font-semibold text-9xl lg:text-[12rem] xl:text-[16rem] text-foreground">
           {word}
@@ -224,12 +239,24 @@ export default function PhonicsApp() {
       );
     }
     
-    // Full word - consonant in color, stem in black
     const stemPart = family;
+    const firstLetterOpacity = phase === 1 ? 1 : (phase === 2 ? 0.25 : (phase === 3 ? 0.25 : 1));
+    const restOfWordOpacity = phase === 1 ? 0.25 : (phase === 2 ? 1 : (phase === 3 ? 0.25 : 1));
+
     return (
       <span className="font-semibold text-9xl lg:text-[12rem] xl:text-[16rem]">
-        <span className={getLetterColor(consonant)}>{consonant}</span>
-        <span className="text-foreground">{stemPart}</span>
+        <span
+          className={getLetterColor(consonant)}
+          style={{ opacity: firstLetterOpacity, transition: 'opacity 0.5s ease-in-out' }}
+        >
+          {consonant}
+        </span>
+        <span
+          className="text-foreground"
+          style={{ opacity: restOfWordOpacity, transition: 'opacity 0.5s ease-in-out' }}
+        >
+          {stemPart}
+        </span>
       </span>
     );
   };
@@ -421,7 +448,7 @@ export default function PhonicsApp() {
             >
               <div data-testid="text-current-content">
                 {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
-                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family) :
+                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
                   <span className={`font-semibold text-9xl lg:text-[12rem] xl:text-[16rem] ${currentDisplay.color}`}>
                     {currentDisplay.content}
                   </span>
