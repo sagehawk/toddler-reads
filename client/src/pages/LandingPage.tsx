@@ -7,8 +7,23 @@ import { FounderStory } from "@/components/landing/FounderStory";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "../hooks/AuthContext";
 
 export function LandingPage() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromApp = params.get("fromApp");
+
+    if (user && !fromApp) {
+      setLocation("/app");
+    }
+  }, [user, setLocation]);
+
   return (
     <div className="min-h-screen bg-background relative">
       <FloatingLetters />

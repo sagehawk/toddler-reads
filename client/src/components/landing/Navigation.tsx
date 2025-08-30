@@ -1,30 +1,53 @@
 import { Button } from "@/components/ui/button";
 import toddlerReadsLogo from "@/assets/toddler-reads-logo.png";
-import { Link } from "wouter"; // Import Link
+import { Link, useLocation } from "wouter"; // Import Link and useLocation
+import { useAuth } from "@/hooks/AuthContext"; // Import useAuth
 
 export function Navigation() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  console.log(user);
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/"> {/* Wrap with Link */}
+            <div
+              className="cursor-pointer"
+              onClick={() => {
+                if (user) {
+                  setLocation("/?fromApp=true");
+                } else {
+                  setLocation("/");
+                }
+              }}
+            >
               <img 
                 src={toddlerReadsLogo} 
                 alt="ToddlerReads Logo" 
                 className="h-10 w-auto"
               />
-            </Link> {/* Close Link */}
+            </div>
           </div>
           
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/login">
-              <Button variant="ghost" className="text-foreground hover:text-primary">
-                Login
+            {user ? (
+              <Button
+                variant="ghost"
+                className="text-foreground hover:text-primary"
+                onClick={() => setLocation("/app")}
+              >
+                Go to App
               </Button>
-            </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" className="text-foreground hover:text-primary">
+                  Login
+                </Button>
+              </Link>
+            )}
             <Link href="/register">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-button">
                 Start Free Trial

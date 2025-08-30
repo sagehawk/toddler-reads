@@ -2,12 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation, useRoute } from "wouter";
 import { LandingPage } from "./pages/LandingPage";
 import PhonicsApp from "./components/PhonicsApp";
 import MyStory from "./pages/my-story"; // Import MyStory
 import NotFound from "./pages/not-found";
-import { LoginPage } from "./pages/LoginPage";
+import { Login as LoginPage } from "./pages/NewLoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { useAuth, AuthProvider } from "./hooks/AuthContext";

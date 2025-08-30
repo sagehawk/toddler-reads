@@ -70,17 +70,16 @@ export const learningModules: LearningModule[] = [
     type: 'cvc',
     family: 'at',
     wordStem: '_at',
-    stemSound: '/sounds/Phonics/Sound 01.mp3', // Placeholder for 'at' sound (A)
-    consonants: ['B', 'C', 'F', 'H', 'M', 'P', 'R', 'S'],
+    stemSound: '/sounds/Phonics/At.mp3',
+    consonants: ['B', 'C', 'H', 'M', 'P', 'R', 'S'],
     words: [
-      { consonant: 'B', word: 'Bat', sound: 'B... at... Bat', audioFile: '/sounds/Phonics/Sound 02.mp3' },
-      { consonant: 'C', word: 'Cat', sound: 'C... at... Cat', audioFile: '/sounds/Phonics/Sound 03.mp3' },
-      { consonant: 'F', word: 'Fat', sound: 'F... at... Fat', audioFile: '/sounds/Phonics/Sound 06.mp3' },
-      { consonant: 'H', word: 'Hat', sound: 'H... at... Hat', audioFile: '/sounds/Phonics/Sound 08.mp3' },
-      { consonant: 'M', word: 'Mat', sound: 'M... at... Mat', audioFile: '/sounds/Phonics/Sound 13.mp3' },
-      { consonant: 'P', word: 'Pat', sound: 'P... at... Pat', audioFile: '/sounds/Phonics/Sound 16.mp3' },
-      { consonant: 'R', word: 'Rat', sound: 'R... at... Rat', audioFile: '/sounds/Phonics/Sound 18.mp3' },
-      { consonant: 'S', word: 'Sat', sound: 'S... at... Sat', audioFile: '/sounds/Phonics/Sound 19.mp3' },
+      { consonant: 'B', word: 'Bat', sound: 'B... at... Bat', audioFile: '/sounds/Phonics/Bat.mp3' },
+      { consonant: 'C', word: 'Cat', sound: 'C... at... Cat', audioFile: '/sounds/Phonics/Cat.mp3' },
+      { consonant: 'H', word: 'Hat', sound: 'H... at... Hat', audioFile: '/sounds/Phonics/Hat.mp3' },
+      { consonant: 'M', word: 'Mat', sound: 'M... at... Mat', audioFile: '/sounds/Phonics/Mat.mp3' },
+      { consonant: 'P', word: 'Pat', sound: 'P... at... Pat', audioFile: '/sounds/Phonics/Pat.mp3' },
+      { consonant: 'R', word: 'Rat', sound: 'R... at... Rat', audioFile: '/sounds/Phonics/Rat.mp3' },
+      { consonant: 'S', word: 'Sat', sound: 'S... at... Sat', audioFile: '/sounds/Phonics/Sat.mp3' },
     ]
   },
   

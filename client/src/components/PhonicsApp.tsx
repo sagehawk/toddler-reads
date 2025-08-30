@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { learningModules, LearningModule, PhonicsLetter, CVCWord } from '../data/phonicsDecks';
 
 import logoUrl from '../assets/toddler-reads-logo.png';
@@ -14,6 +14,8 @@ export default function PhonicsApp() {
   const [isShowingStem, setIsShowingStem] = useState(false);
 
   const selectedModule = learningModules.find(m => m.id === selectedModuleId) || learningModules[0];
+
+  const currentAudio = useRef<HTMLAudioElement | null>(null); // Declare a ref
 
   // Color palette for letters and consonants (Montessori-inspired)
   const getLetterColor = (letter: string): string => {
@@ -49,8 +51,14 @@ export default function PhonicsApp() {
   };
 
   const playSound = (soundFile: string) => {
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.currentTime = 0; // Reset to beginning
+    }
+
     const audio = new Audio(soundFile);
     audio.play();
+    currentAudio.current = audio; // Store the new audio object
   };
 
   // Navigation with arrow keys
@@ -304,7 +312,7 @@ export default function PhonicsApp() {
 
   // Main Learning Screen - V2.0 Layout
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background select-none">
       <div className="h-full flex flex-col">
         {/* Header with Logo, Story Link, and Module Dropdown */}
         <div className="relative flex items-center justify-between p-4">
