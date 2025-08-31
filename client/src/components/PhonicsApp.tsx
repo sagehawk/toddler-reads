@@ -201,11 +201,11 @@ export default function PhonicsApp() {
                 const timeout3 = setTimeout(() => {
                   setAnimationPhase(0); // Phase 0: All back to 100% (default)
                 }, 500); // 0.5 seconds for phase 3
-                animationTimeouts.current.push(timeout3);
+                animationTimeouts.current.push(timeout3 as unknown as number);
               }, 1500); // 1.5 seconds for phase 2
-              animationTimeouts.current.push(timeout2);
+              animationTimeouts.current.push(timeout2 as unknown as number);
             }, 900); // 0.9 seconds for phase 1
-            animationTimeouts.current.push(timeout1);
+            animationTimeouts.current.push(timeout1 as unknown as number);
           }, 50); // Small delay to allow React to process the state change
         }
       }
