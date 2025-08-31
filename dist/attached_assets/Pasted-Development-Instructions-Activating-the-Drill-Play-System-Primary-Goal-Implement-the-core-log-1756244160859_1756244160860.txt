@@ -1,0 +1,97 @@
+Development Instructions: Activating the "Drill & Play" System
+Primary Goal: Implement the core logic for the "Drill Mode" and "Play Mode" selectors and refine the UI to create a seamless, high-value user experience.
+1. Setup Screen ("Command Center") Functionality
+Implement Mode Selection Logic:
+The "Drill Mode" and "Play Mode" buttons must now be functional toggles that set the application's state. When a user clicks "Start Learning Session," the app should launch into the selected mode.
+Instruction: Wire the Learning Mode component to an application-level state (e.g., using useState or useContext) that determines which view to render.
+Remove Letter Decks (For Simplicity):
+As discussed, remove the "A-E" and "F-J" options. The only option for V1 should be "Full Alphabet." This reduces cognitive load for the parent and simplifies the UI. We can reintroduce "Decks" later as a feature.
+2. Drill Mode Enhancements
+Refine the "Magic Letter Tray":
+The current design is perfect. Ensure the functionality is smooth. Tapping a letter in the tray should instantly jump to that letter in the main display.
+The "Hide Magic Letter Tray" button should have a smooth animation to tuck it away and bring it back. The state (hidden/shown) should persist within the session.
+Remove Sequential Dots:
+The small dots above the letter tray are now redundant because the tray provides full navigation. Remove them to declutter the UI. The parent should feel in complete control via the tray, not constrained to a linear path.
+3. Play Mode Implementation
+This is a critical new feature that delivers on the promise of "automated practice."
+Implement Pre-Play Settings: When a user selects "Play Mode" and clicks "Start Learning Session," present them with a simple, clean modal for settings.
+Controls Needed:
+Pacing (Speed): Simple buttons for "Slow" (5s), "Medium" (3s), "Fast" (2s).
+Repetitions (Loops): Buttons for "1x," "3x," "5x," "Continuous Loop."
+Build the Autoplay Logic: After settings are confirmed, the app should enter the distraction-free "Play Mode" and begin automatically cycling through the "Full Alphabet" deck based on the parent's settings, playing the audio for each letter as it appears.
+4. The "Next Step" - CVC Word Blending (V1.2 Feature)
+Your idea for CVC words is the perfect first upsell. It solves the next problem a parent has after their child masters phonics. We will build this as a separate module to increase LTV.
+How to Frame It: Once a child shows high engagement (e.g., completes 10 sessions), we can present an offer: "Your child is mastering their sounds. Are they ready to start reading their first words? Unlock our 'First Words' Blending Pack."
+Functionality:
+It will be a new "Deck" the parent can select: "First Word Families (-at)."
+The UI will display _at. The "Magic Letter Tray" will only show consonants (B, C, H, M, P, R, S).
+When the child taps a letter (e.g., "B"), it flies into the blank space, forms the word "Bat," and the app says "B... at... Bat."
+Monetization: This can be a one-time in-app purchase of 
+9.99
+∗
+∗
+p
+e
+r
+w
+o
+r
+d
+f
+a
+m
+i
+l
+y
+p
+a
+c
+k
+o
+r
+i
+n
+c
+l
+u
+d
+e
+d
+i
+n
+a
+h
+i
+g
+h
+e
+r
+−
+t
+i
+e
+r
+s
+u
+b
+s
+c
+r
+i
+p
+t
+i
+o
+n
+∗
+∗
+(
+9.99∗∗perwordfamilypackorincludedinahigher−tiersubscription∗∗(
+29/mo "Reader Plus").
+Your Final Actionable To-Do List for the Developer:
+Update Logo: Replace the current placeholder with the new "ToddlerReads" logo.
+Implement Mode Selection: Make the "Drill Mode" and "Play Mode" buttons functional state-changers.
+Refine Drill Mode: Remove the sequential dots and ensure the "Magic Letter Tray" works perfectly.
+Build Play Mode: Create the pre-play settings modal and the autoplay logic.
+Plan the CVC Module: Scope out the "First Words" blending feature as the immediate next step after V1 is launched and monetized.
+You've successfully mapped out the journey from a simple tool to a scalable learning system with a clear monetization path. This is how you build a business that not only works but grows.
