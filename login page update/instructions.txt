@@ -1,0 +1,98 @@
+ToddlerReads V2.0: Authentication & User Management - Development Instructions
+Project Goal: To build a secure, lightweight, and user-friendly authentication system for the ToddlerReads web application. The system must handle user registration, login, and session management, and integrate seamlessly with the existing learning library.
+Core Philosophy: The authentication process should be as simple and frictionless as possible for a busy parent. It must feel secure and trustworthy, aligning with the premium, calm aesthetic of the brand.
+1. Critical Architecture Decisions
+Authentication System:
+Method: Use session-based authentication (not JWT) for simplicity and security.
+Routing: Implement separate login and registration pages at /login and /register.
+Backend Tech: Use Passport.js with the local strategy and express-session.
+Session Storage: Store sessions in your PostgreSQL database using connect-pg-simple. Do not use the default in-memory store.
+Password Security: Hash all passwords using crypto.scrypt with a randomly generated salt for each user.
+Database Schema (PostgreSQL + Drizzle ORM):
+Instruction: Use the following simplified schema. We are removing username and fullName to minimize friction during signup. The parent's email is their unique identifier.
+code
+TypeScript
+// shared/schema.ts
+export const users = pgTable("users", {
+  id: uuid().primaryKey().defaultRandom(),
+  email: varchar({ length: 255 }).notNull().unique(),
+  password: varchar({ length: 255 }).notNull(),
+  createdAt: timestamp().defaultNow(),
+});
+
+// NOTE: The `checklists` and `checklistItems` tables should be replaced
+// with your future progress-tracking tables. For now, we only need the `users` table.
+Frontend Architecture:
+Framework: React 18 with TypeScript (SPA mode).
+Routing: Wouter.
+Server State: TanStack React Query.
+Forms: React Hook Form with Zod for validation.
+Styling: Tailwind CSS, adhering to the existing ToddlerReads design system.
+2. Critical Implementation Details
+Protected Routing:
+Task: Implement a ProtectedRoute component to gate access to the main learning library.
+Instruction: The ProtectedRoute must wrap the rendered component within a <Route> component from Wouter. This is critical for hooks like useParams() to function correctly in child routes. Implement the provided ProtectedRoute example exactly.
+Backend API Endpoints:
+Task: Create the following RESTful API endpoints.
+Endpoints:
+POST /api/register - Creates a new user, hashes the password, and initiates a session (auto-login).
+POST /api/login - Authenticates a user with email and password, creates a session.
+POST /api/logout - Destroys the current session.
+GET /api/user - Retrieves the current authenticated user's data (email, id). Returns a 401 Unauthorized status if no user is logged in.
+3. UI/UX & Design System
+Task: Build the /login and /register pages.
+Design:
+The pages must adhere to the "Calm & Confident" design aesthetic of the main app. Use the established Nunito font, soft color palette, and generous white space.
+Forms should be simple, single-column, and centered.
+Use the soft teal brand color for primary buttons ("Login," "Create Account").
+Input fields should be clean with rounded corners and clear focus states.
+Registration Form Fields:
+Email Address
+Password
+Confirm Password
+(Note: We have intentionally removed "Full Name" and "Phone Number" to reduce signup friction, as per best practices for minimizing user effort.)
+4. Step-by-Step Implementation Order
+Database Setup: Initialize the PostgreSQL database and run the Drizzle schema migration for the users table.
+Backend Auth: Build the /register, /login, /logout, and /user API endpoints with Passport.js.
+Frontend Auth Pages: Create the React components for the /login and /register pages with form validation using React Hook Form and Zod.
+State Management: Set up a global authentication context (AuthContext) that uses React Query to fetch the current user from /api/user. This context will provide user, isLoading, login, logout, and register functions to the rest of the app.
+Protected Routing: Implement the ProtectedRoute component and wrap the main LearningLibrary component with it.
+UI Integration: Style all new pages and components to perfectly match the ToddlerReads brand aesthetic.
+Testing: Thoroughly test the end-to-end user flow: Registration -> Auto-Login -> Logout -> Manual Login -> Accessing Protected Content.
+This plan provides a clear, secure, and strategically sound path to implementing user authentication. By focusing on simplicity and adhering to the established brand aesthetic, you will create a login experience that feels as trustworthy and premium as the product itself..
+
+V2.0 Tech Stack Update - Migrating to Supabase
+Project Goal: To accelerate development and increase security by adopting Supabase as our backend provider. This will replace the need for a custom-built authentication server and API.
+Key Changes:
+Backend: We will use Supabase for our database, authentication, and API. The custom Express/Passport.js server is no longer required.
+Database: We will use the managed PostgreSQL instance provided by Supabase.
+Authentication: We will use Supabase Auth for user registration, login, and session management. This replaces the Passport.js local strategy. The frontend will interact with the Supabase client library for all auth operations.
+API: We will use the auto-generated PostgREST API from Supabase to interact with our data. Custom API endpoints are no longer needed for basic CRUD operations.
+Actionable Steps for the Developer:
+Set Up Supabase Project: Create a new project in Supabase. Use the SQL editor to create the users table based on our schema.
+code
+SQL
+-- Create the users table
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+-- Supabase Auth will handle the password and other user details in its own schema.
+Frontend Integration:
+Install the @supabase/supabase-js client library.
+Initialize the Supabase client with the project URL and anon key.
+Create a new global AuthContext that wraps the Supabase client and provides user state and auth functions (login, register, logout) to the application.
+Refactor Authentication Pages:
+Update the /login and /register pages to call the Supabase Auth functions (supabase.auth.signInWithPassword, supabase.auth.signUp).
+Remove any direct fetch calls to our old, non-existent API endpoints.
+Refactor Protected Routing:
+The ProtectedRoute component will now get its user and isLoading state directly from the Supabase AuthContext. The core logic remains the same.
+
+I'm sharing my api keys with you, please whichever to whereever it needs to go and if it's a secret move to env and gitignore: direction connection postgresql://postgres:[YOUR-PASSWORD]@db.lzzjufyivrxjewkeylhp.supabase.co:5432/postgres  project url https://lzzjufyivrxjewkeylhp.supabase.co and API Key  anon public eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6emp1ZnlpdnJ4amV3a2V5bGhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NjE1MDEsImV4cCI6MjA3MjAzNzUwMX0.JXgY7b4rfQavkHJQMFZ3fKpxWNluJa-RH1l_p3ZmqJM 
+
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://lzzjufyivrxjewkeylhp.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)

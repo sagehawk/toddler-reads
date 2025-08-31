@@ -1,0 +1,44 @@
+Landing Page Development Prompt for "ToddlerReads"
+Project Goal: To create a single, high-converting landing page for toddlerreads.com modeled after the provided "Jive" example, but fully customized for the ToddlerReads brand and offer. The page must build trust, communicate the unique value proposition, and drive visitors to start a 7-day free trial.
+1. Global Design & Aesthetic
+Vibe: The page should feel warm, premium, trustworthy, and Montessori-inspired. It must be clean, spacious, and calming. Avoid any loud or distracting elements.
+Typography: Use the Nunito font family for all text.
+Color Palette: Use the established brand colors:
+Primary Action Color (Buttons): Soft Teal (#4FD1C5)
+Text & Accents: Dark Charcoal Gray (#2D3748)
+Background: Soft Off-White (#FFFAF0)
+Unique Visual Element: Instead of the abstract squiggles in the example, the background should feature large, soft-colored letters from our brand palette (A, B, C, etc.). They should be subtly placed in the corners and margins, angled gently inwards to guide the eye towards the central content.
+2. Page Structure & Content (Section by Section)
+[Navbar]
+Left: ToddlerReads Logo
+Right: "My Story" link, "Login" button, and a primary CTA button "Start Free Trial".
+[Hero Section]
+Headline: Don't just entertain them. Empower them.
+Sub-headline: The simple, parent-led system to give your child a 5-year head start by mastering phonics in just 5 minutes a day.
+Primary CTA Button: "Start Your 7-Day Free Trial"
+[Product Mockup Section]
+[Image 1: App in Action]
+Description: A clean, professional mockup showing two phone screens side-by-side. The left phone shows the colorful "Magic Letter Tray" in Drill Mode. The right phone shows the distraction-free "Play Mode" in action. This visually communicates the core "Drill & Play" value proposition.
+[Founder Story Section]
+Headline: "From a Father Who Was Left Behind..."
+[Image 2: Founder Photo]
+Description: A warm, authentic photo of you, the founder, with your son.
+Text: A short, powerful 2-3 sentence summary of your story, ending with a link to the full "My Story" page. Example: "I struggled with reading my whole life. I built ToddlerReads to ensure my son had the confident start I never did. Read our full story here."
+["Here's How It Works" Section]
+Headline: More learning, less shucking. (Let's keep this clever line, it works).
+Three Steps (with simple icons):
+Start a Session: "Launch a guided lesson in seconds. No complex menus, no distractions."
+Guide Their Discovery: "Use our simple Drill Mode and Magic Letter Tray to practice the exact sounds your child needs."
+Reinforce with Play: "Switch to our calm, automated Play Mode for guilt-free practice while you get things done."
+[Final Call to Action Section]
+Secondary CTA Button: "Start Your 7-Day Free Trial"
+Sub-text: "Cancel anytime. 100% risk-free."
+[Footer]
+Left: ToddlerReads Logo
+Center: "Get started and see the progress."
+Right: Links to "About," "Privacy," "Terms," and "Contact."
+Important Notes for the Developer:
+Conditional Redirect: If a user visits toddlerreads.com and has an active login session (check localStorage), they should be redirected directly to the app's main learning screen, bypassing the landing page. All other traffic goes to the landing page.
+Responsive Design: All elements must be fully responsive and optimized for a seamless mobile experience.
+Performance: The page must load incredibly fast. Optimize all images and use clean code.
+This plan gives you a complete, strategically sound landing page. It takes the proven structure of a successful SaaS site and infuses it with your unique story, brand, and value proposition. This is how you convert traffic into trials.

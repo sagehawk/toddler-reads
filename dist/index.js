@@ -33,9 +33,13 @@ var vite_config_default = defineConfig({
     emptyOutDir: true
   },
   server: {
+    publicDir: "public",
     fs: {
       strict: true,
       deny: ["**/.*"]
+    },
+    hmr: {
+      port: 5e3
     }
   }
 });

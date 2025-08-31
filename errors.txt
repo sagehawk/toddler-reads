@@ -1,0 +1,7 @@
+file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/stripe/esm/stripe.core.js:153
+                throw new Error('Neither apiKey nor config.authenticator provided');
+                      ^
+
+Error: Neither apiKey nor config.authenticator provided
+    at Stripe._setAuthenticator (file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/stripe/esm/stripe.core.js:153:23)
+    at new Stripe (file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/stripe/esm/stripe.core.js:91:14)

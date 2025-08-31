@@ -1,19 +1,76 @@
-import { useState, useEffect, useCallback } from 'react';
-import { learningModules, LearningModule, PhonicsLetter, CVCWord } from '../data/phonicsDecks';
-import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { learningModules } from '../data/phonicsDecks';
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import { useLocation } from 'wouter';
+
 import logoUrl from '../assets/toddler-reads-logo.png';
 
 type AppMode = 'learning' | 'story';
 
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed',
+    platform: string,
+  }>;
+  prompt(): Promise<void>;
+}
+
 export default function PhonicsApp() {
-  const { speak } = useSpeechSynthesis();
+  const [, navigate] = useLocation();
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!installPrompt) {
+      return;
+    }
+    installPrompt.prompt();
+    installPrompt.userChoice.then(({ outcome }) => {
+      if (outcome === 'accepted') {
+        setInstallPrompt(null);
+      }
+    });
+  };
+  
   const [appMode, setAppMode] = useState<AppMode>('learning');
   const [selectedModuleId, setSelectedModuleId] = useState('letters-full');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
   const [isShowingStem, setIsShowingStem] = useState(false);
+  const [animationPhase, setAnimationPhase] = useState(0); // 0: default, 1: first letter visible, 2: rest visible, 3: all fade
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowModuleDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   const selectedModule = learningModules.find(m => m.id === selectedModuleId) || learningModules[0];
+
+  const currentAudio = useRef<HTMLAudioElement | null>(null); // Declare a ref
+  const animationTimeouts = useRef<number[]>([]); // To store timeout IDs
 
   // Color palette for letters and consonants (Montessori-inspired)
   const getLetterColor = (letter: string): string => {
@@ -46,6 +103,17 @@ export default function PhonicsApp() {
       'Y': 'bg-teal-300 hover:bg-teal-400 text-teal-800', 'Z': 'bg-cyan-300 hover:bg-cyan-400 text-cyan-800'
     };
     return colors[letter as keyof typeof colors] || 'bg-gray-200 hover:bg-gray-300 text-gray-800';
+  };
+
+  const playSound = (soundFile: string) => {
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.currentTime = 0; // Reset to beginning
+    }
+
+    const audio = new Audio(soundFile);
+    audio.play();
+    currentAudio.current = audio; // Store the new audio object
   };
 
   // Navigation with arrow keys
@@ -104,33 +172,45 @@ export default function PhonicsApp() {
   const jumpToItem = useCallback((index: number, isStem = false) => {
     setCurrentIndex(index);
     setIsShowingStem(isStem);
-    
-    if (selectedModule.type === 'letters' && selectedModule.letters) {
-      const letter = selectedModule.letters[index];
-      if (letter) speak(letter.sound);
-    } else if (selectedModule.type === 'cvc') {
-      if (isStem && selectedModule.stemSound) {
-        speak(selectedModule.stemSound);
-      } else if (selectedModule.words && index >= 0) {
-        const word = selectedModule.words[index];
-        if (word) speak(word.sound);
-      }
-    }
-  }, [selectedModule, speak]);
+  }, []);
 
   const playCurrentSound = useCallback(() => {
     if (selectedModule.type === 'letters' && selectedModule.letters) {
       const letter = selectedModule.letters[currentIndex];
-      if (letter) speak(letter.sound);
+      if (letter) playSound(letter.sound);
     } else if (selectedModule.type === 'cvc') {
       if (isShowingStem && selectedModule.stemSound) {
-        speak(selectedModule.stemSound);
+        playSound(selectedModule.stemSound);
       } else if (selectedModule.words && currentIndex >= 0) {
         const word = selectedModule.words[currentIndex];
-        if (word) speak(word.sound);
+        if (word) {
+          playSound(word.audioFile);
+
+          // Reset animation before starting
+          setAnimationPhase(0);
+          animationTimeouts.current.forEach(clearTimeout);
+          animationTimeouts.current = [];
+
+          // Animation sequence for CVC words
+          setTimeout(() => {
+            setAnimationPhase(1); // Phase 1: First letter visible, rest transparent
+            const timeout1 = setTimeout(() => {
+              setAnimationPhase(2); // Phase 2: First letter transparent, rest visible
+              const timeout2 = setTimeout(() => {
+                setAnimationPhase(3); // Phase 3: All fade
+                const timeout3 = setTimeout(() => {
+                  setAnimationPhase(0); // Phase 0: All back to 100% (default)
+                }, 500); // 0.5 seconds for phase 3
+                animationTimeouts.current.push(timeout3);
+              }, 1500); // 1.5 seconds for phase 2
+              animationTimeouts.current.push(timeout2);
+            }, 900); // 0.9 seconds for phase 1
+            animationTimeouts.current.push(timeout1);
+          }, 50); // Small delay to allow React to process the state change
+        }
       }
     }
-  }, [selectedModule, currentIndex, isShowingStem, speak]);
+  }, [selectedModule, currentIndex, isShowingStem]);
 
   const selectModule = useCallback((moduleId: string) => {
     setSelectedModuleId(moduleId);
@@ -143,7 +223,7 @@ export default function PhonicsApp() {
       // Auto-play stem sound on load
       setTimeout(() => {
         if (newModule.stemSound) {
-          speak(newModule.stemSound);
+          playSound(newModule.stemSound);
         }
       }, 100);
     } else {
@@ -152,7 +232,7 @@ export default function PhonicsApp() {
     }
     
     setShowModuleDropdown(false);
-  }, [speak]);
+  }, []);
 
   // Reset index when switching modules
   useEffect(() => {
@@ -165,6 +245,19 @@ export default function PhonicsApp() {
       setIsShowingStem(false);
     }
   }, [selectedModuleId]);
+
+  // Effect to reset animation and clear timeouts when item changes
+  useEffect(() => {
+    animationTimeouts.current.forEach(clearTimeout);
+    animationTimeouts.current = [];
+    setAnimationPhase(0);
+
+    // Stop current audio playback
+    if (currentAudio.current) {
+      currentAudio.current.pause();
+      currentAudio.current.currentTime = 0;
+    }
+  }, [currentIndex, selectedModuleId]);
 
   // Get current display content
   const getCurrentDisplay = () => {
@@ -201,22 +294,34 @@ export default function PhonicsApp() {
   const currentDisplay = getCurrentDisplay();
 
   // Render word with color-coded consonant and black stem
-  const renderWordDisplay = (word: string, consonant: string, family: string) => {
+  const renderWordDisplay = (word: string, consonant: string, family: string, phase: number) => {
     if (!consonant || word.startsWith('_')) {
-      // Word stem only - render normally
+      // Word stem only - render normally (no animation for stem)
       return (
-        <span className="font-semibold text-9xl lg:text-[12rem] xl:text-[16rem] text-foreground">
+        <span className="font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] text-foreground">
           {word}
         </span>
       );
     }
     
-    // Full word - consonant in color, stem in black
     const stemPart = family;
+    const firstLetterOpacity = phase === 1 ? 1 : (phase === 2 ? 0.25 : (phase === 3 ? 0.25 : 1));
+    const restOfWordOpacity = phase === 1 ? 0.25 : (phase === 2 ? 1 : (phase === 3 ? 0.25 : 1));
+
     return (
-      <span className="font-semibold text-9xl lg:text-[12rem] xl:text-[16rem]">
-        <span className={getLetterColor(consonant)}>{consonant}</span>
-        <span className="text-foreground">{stemPart}</span>
+      <span className="font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem]">
+        <span
+          className={getLetterColor(consonant)}
+          style={{ opacity: firstLetterOpacity, transition: 'opacity 0.5s ease-in-out' }}
+        >
+          {consonant}
+        </span>
+        <span
+          className="text-foreground"
+          style={{ opacity: restOfWordOpacity, transition: 'opacity 0.5s ease-in-out' }}
+        >
+          {stemPart}
+        </span>
       </span>
     );
   };
@@ -299,183 +404,188 @@ export default function PhonicsApp() {
 
   // Main Learning Screen - V2.0 Layout
   return (
-    <div className="min-h-screen bg-background">
-      <div className="h-full flex flex-col">
-        {/* Header with Logo, Story Link, and Module Dropdown */}
-        <div className="relative flex items-center justify-between p-4">
-          <button
-            data-testid="button-view-story"
-            className="touch-target bg-muted text-muted-foreground rounded-xl py-2 px-4 text-sm hover:bg-muted/80 transition-colors"
-            onClick={() => setAppMode('story')}
-          >
-            My Story
-          </button>
-          
-          {/* In-flow logo for small screens, hidden on larger */}
-          <div className="sm:hidden">
-            <img
-              src={logoUrl}
-              alt="ToddlerReads"
-              className="h-12 object-contain"
-            />
-          </div>
-
-          {/* Force-centered logo for larger screens, hidden on small */}
-          <div className="hidden sm:block absolute left-1/2 transform -translate-x-1/2">
+    <div className="h-screen bg-background select-none flex flex-col overflow-hidden">
+      {/* Header with Logo, Story Link, and Module Dropdown */}
+      <div className="relative flex items-center justify-between p-4 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {installPrompt && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleInstallClick}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Install App
+            </Button>
+          )}
+        </div>
+        
+        {/* Centered logo for larger screens, hidden on small */}
+        <div className="hidden sm:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <button onClick={() => navigate('/')} className="focus:outline-none">
             <img 
               src={logoUrl} 
               alt="ToddlerReads" 
               className="h-12 object-contain"
             />
-          </div>
+          </button>
+        </div>
 
-          {/* Learning Module Dropdown */}
-          <div className="relative">
-            <button
-              data-testid="button-module-selector"
-              className="touch-target bg-secondary text-secondary-foreground rounded-xl py-2 px-4 text-sm hover:bg-secondary/80 transition-colors flex items-center gap-2"
-              onClick={() => setShowModuleDropdown(!showModuleDropdown)}
-            >
-              {selectedModule.name}
-              <span className="text-lg">{showModuleDropdown ? '▲' : '▼'}</span>
-            </button>
+        {/* Learning Module Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            data-testid="button-module-selector"
+            className="touch-target bg-card border border-border shadow-sm rounded-xl py-2 px-4 text-sm hover:bg-secondary/80 transition-all duration-200 flex items-center gap-2 transform hover:scale-105"
+            onClick={() => setShowModuleDropdown(!showModuleDropdown)}
+          >
+            {selectedModule.name}
+            <span className="text-muted-foreground text-lg transition-transform duration-200" style={{ transform: showModuleDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+          </button>
 
-            {showModuleDropdown && (
-              <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg z-10 min-w-[200px]">
-                <div className="p-2">
-                  <div className="mb-2">
-                    <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">Letters</h3>
+          {showModuleDropdown && (
+            <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg z-50 min-w-[200px] bg-background/80 backdrop-blur-sm">
+              <div className="p-2">
+                <div className="mb-2">
+                  <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">Letters</h3>
+                  <button
+                    data-testid="button-select-letters"
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                      selectedModuleId === 'letters-full'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted text-card-foreground'
+                    }`}
+                    onClick={() => selectModule('letters-full')}
+                  >
+                    Full Alphabet
+                  </button>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">First Words (CVC)</h3>
+                  {learningModules.filter(m => m.type === 'cvc').map((module) => (
                     <button
-                      data-testid="button-select-letters"
+                      key={module.id}
+                      data-testid={`button-select-${module.id}`}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedModuleId === 'letters-full'
+                        selectedModuleId === module.id
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-muted text-card-foreground'
                       }`}
-                      onClick={() => selectModule('letters-full')}
+                      onClick={() => selectModule(module.id)}
                     >
-                      Full Alphabet
-                    </button>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">First Words (CVC)</h3>
-                    {learningModules.filter(m => m.type === 'cvc').map((module) => (
-                      <button
-                        key={module.id}
-                        data-testid={`button-select-${module.id}`}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                          selectedModuleId === module.id
-                            ? 'bg-primary text-primary-foreground'
-                            : 'hover:bg-muted text-card-foreground'
-                        }`}
-                        onClick={() => selectModule(module.id)}
-                      >
-                        {module.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Main Content Display - Larger and More Immersive */}
-        <div className="flex-1 flex items-center justify-center px-8">
-          <div className="relative">
-            {/* Navigation Areas */}
-            <button
-              data-testid="button-nav-previous"
-              className="absolute left-0 top-0 bottom-0 w-20 -ml-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
-              onClick={() => navigateItem('prev')}
-            >
-              <span className="text-4xl text-muted-foreground">‹</span>
-            </button>
-            <button
-              data-testid="button-nav-next"
-              className="absolute right-0 top-0 bottom-0 w-20 -mr-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
-              onClick={() => navigateItem('next')}
-            >
-              <span className="text-4xl text-muted-foreground">›</span>
-            </button>
-
-            {/* Content Card - Much Larger */}
-            <div
-              data-testid="card-content-display"
-              className="bg-card rounded-3xl shadow-2xl border border-border p-16 min-w-[400px] min-h-[400px] lg:min-w-[500px] lg:min-h-[500px] xl:min-w-[600px] xl:min-h-[600px] flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow"
-              onClick={playCurrentSound}
-            >
-              <div data-testid="text-current-content">
-                {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
-                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family) :
-                  <span className={`font-semibold text-9xl lg:text-[12rem] xl:text-[16rem] ${currentDisplay.color}`}>
-                    {currentDisplay.content}
-                  </span>
-                }
-              </div>
-            </div>
-
-            {/* Instruction */}
-            <p className="text-center mt-6 text-muted-foreground text-lg">
-              {selectedModule.type === 'letters' ? 'Tap the letter to hear its sound' : 'Tap the word to hear it spoken'}
-            </p>
-          </div>
-        </div>
-
-        {/* Item Selection Tray */}
-        <div className="p-4">
-          <div className="bg-card rounded-2xl p-4 border border-border" data-testid="container-item-tray">
-            <div className="flex flex-wrap justify-center gap-3">
-              {selectedModule.type === 'letters' && selectedModule.letters?.map((letter, index) => (
-                <button
-                  key={index}
-                  data-testid={`button-tray-letter-${letter.letter}`}
-                  className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
-                    index === currentIndex
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : getTrayButtonColor(letter.letter)
-                  }`}
-                  onClick={() => jumpToItem(index)}
-                >
-                  {letter.letter}
-                </button>
-              ))}
-              
-              {selectedModule.type === 'cvc' && (
-                <>
-                  {/* Stem Button - Always First */}
-                  <button
-                    data-testid="button-tray-stem"
-                    className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
-                      isShowingStem
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                    }`}
-                    onClick={() => jumpToItem(-1, true)}
-                  >
-                    _
-                  </button>
-                  
-                  {/* Consonant Buttons */}
-                  {selectedModule.consonants?.map((consonant, index) => (
-                    <button
-                      key={index}
-                      data-testid={`button-tray-consonant-${consonant}`}
-                      className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
-                        index === currentIndex && !isShowingStem
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : getTrayButtonColor(consonant)
-                      }`}
-                      onClick={() => jumpToItem(index, false)}
-                    >
-                      {consonant}
+                      {module.name}
                     </button>
                   ))}
-                </>
-              )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Logo */}
+      <div className="sm:hidden flex justify-center items-center py-2">
+        <button onClick={() => navigate('/')} className="focus:outline-none">
+          <img
+            src={logoUrl}
+            alt="ToddlerReads"
+            className="h-12 object-contain"
+          />
+        </button>
+      </div>
+
+      {/* Main Content Display */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 sm:px-16 md:px-24 py-4 min-h-0">
+        <div className="relative w-full h-full flex items-center justify-center">
+          {/* Navigation Areas */}
+          <button
+            data-testid="button-nav-previous"
+            className="absolute left-0 top-0 bottom-0 w-10 sm:w-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
+            onClick={() => navigateItem('prev')}
+          >
+            <span className="text-4xl text-muted-foreground">‹</span>
+          </button>
+          <button
+            data-testid="button-nav-next"
+            className="absolute right-0 top-0 bottom-0 w-10 sm:w-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
+            onClick={() => navigateItem('next')}
+          >
+            <span className="text-4xl text-muted-foreground">›</span>
+          </button>
+
+          {/* Content Card */}
+          <div
+            data-testid="card-content-display"
+            className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow aspect-square max-h-full w-full max-w-lg"
+            onClick={playCurrentSound}
+          >
+            <div data-testid="text-current-content" className="text-center">
+              {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
+                renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
+                <span className={`font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] ${currentDisplay.color}`}>
+                  {currentDisplay.content}
+                </span>
+              }
             </div>
           </div>
+        </div>
+
+        {/* Instruction */}
+        <p className="text-center mt-4 text-muted-foreground text-base sm:text-lg flex-shrink-0">
+          {selectedModule.type === 'letters' ? 'Tap the letter to hear its sound' : 'Tap the word to hear it spoken'}
+        </p>
+      </div>
+
+      {/* Item Selection Tray */}
+      <div className="w-full flex-shrink-0" data-testid="container-item-tray">
+        <div className="flex flex-wrap justify-center gap-3 p-4">
+          {selectedModule.type === 'letters' && selectedModule.letters?.map((letter, index) => (
+            <button
+              key={index}
+              data-testid={`button-tray-letter-${letter.letter}`}
+              className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+                index === currentIndex
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : getTrayButtonColor(letter.letter)
+              }`}
+              onClick={() => jumpToItem(index)}
+            >
+              {letter.letter}
+            </button>
+          ))}
+          
+          {selectedModule.type === 'cvc' && (
+            <>
+              {/* Stem Button */}
+              <button
+                data-testid="button-tray-stem"
+                className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+                  isShowingStem
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                }`}
+                onClick={() => jumpToItem(-1, true)}
+              >
+                _
+              </button>
+              
+              {/* Consonant Buttons */}
+              {selectedModule.consonants?.map((consonant, index) => (
+                <button
+                  key={index}
+                  data-testid={`button-tray-consonant-${consonant}`}
+                  className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+                    index === currentIndex && !isShowingStem
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : getTrayButtonColor(consonant)
+                  }`}
+                  onClick={() => jumpToItem(index, false)}
+                >
+                  {consonant}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </div>
