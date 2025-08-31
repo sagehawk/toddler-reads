@@ -59,7 +59,7 @@ export function LoginForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password" autoComplete="current-password" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="password" className="text-sm font-medium text-gray-700">
             Password
           </Label>
           <Input
