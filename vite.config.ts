@@ -20,10 +20,11 @@ export default defineConfig({
   envDir: '../',
   envPrefix: 'VITE_',
   server: {
-    publicDir: 'public',
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
+    host: "0.0.0.0",
+    port: 3001,
+    strictPort: true,
+    hmr: {
+      clientPort: 443,
     },
   },
 });
