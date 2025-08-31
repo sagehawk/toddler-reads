@@ -12,6 +12,11 @@ const destinationDir = path.resolve(projectRoot, 'dist');
 const destinationFile = path.resolve(destinationDir, 'package.json');
 
 try {
+  // Log current directory and contents
+  console.log('Current working directory:', process.cwd());
+  console.log('Project root:', projectRoot);
+  console.log('Files in project root:', fs.readdirSync(projectRoot));
+  
   // Ensure destination directory exists
   if (!fs.existsSync(destinationDir)) {
     fs.mkdirSync(destinationDir, { recursive: true });
