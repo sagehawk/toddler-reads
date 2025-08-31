@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const projectRoot = path.resolve(__dirname, '..');
-const source = path.resolve(projectRoot, 'server', 'package.json');
+const source = path.resolve(projectRoot, 'package.json');
 const destinationDir = path.resolve(projectRoot, 'dist');
 const destinationFile = path.resolve(destinationDir, 'package.json');
 
@@ -25,7 +25,7 @@ try {
   // Copy the file
   fs.copyFileSync(source, destinationFile);
 
-  console.log('Successfully copied server/package.json to dist/package.json');
+  console.log('Successfully copied package.json to dist/package.json');
 } catch (error) {
   console.error('Error copying file:', error);
   process.exit(1);
