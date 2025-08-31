@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Star, Shield, Clock, Users } from "lucide-react";
-import FloatingLetters from "@/components/landing/FloatingLetters";
+import { FloatingLetters } from "@/components/landing/FloatingLetters";
 
 const Onboarding = () => {
   const [selectedPlan, setSelectedPlan] = useState<'annual' | 'monthly'>('annual');

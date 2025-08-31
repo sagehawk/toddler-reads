@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Check, Star, Users, BookOpen, Clock, Trophy, Shield } from "lucide-react";
-import FloatingLetters from "@/components/landing/FloatingLetters";
+import { FloatingLetters } from "@/components/landing/FloatingLetters";
 
 const NewLanding = () => {
   return (
