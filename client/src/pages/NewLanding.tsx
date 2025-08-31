@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Check, Star, Users, BookOpen, Clock, Trophy, Shield } from "lucide-react";
 import { FloatingLetters } from "@/components/landing/FloatingLetters";
+import { useLocation } from "wouter";
 
 const NewLanding = () => {
+  const [, navigate] = useLocation();
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       <FloatingLetters />
@@ -11,7 +14,7 @@ const NewLanding = () => {
       <nav className="relative z-10 px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
           <div className="text-2xl font-bold text-primary">ToddlerReads</div>
-          <Button variant="outline" size="sm">Login</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate("/login")}>Login</Button>
         </div>
       </nav>
 
@@ -63,7 +66,7 @@ const NewLanding = () => {
           <Button 
             size="lg" 
             className="bg-primary hover:bg-primary/90 text-primary-foreground text-xl px-12 py-6 rounded-full shadow-button transform hover:scale-105 transition-all duration-300 mb-4"
-            onClick={() => window.location.href = '/onboarding'}
+            onClick={() => navigate('/onboarding')}
           >
             Start Your 7-Day FREE Trial →
           </Button>
@@ -267,7 +270,7 @@ const NewLanding = () => {
             <Button 
               size="lg" 
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-2xl px-16 py-8 rounded-full shadow-button transform hover:scale-105 transition-all duration-300 mb-6"
-              onClick={() => window.location.href = '/onboarding'}
+              onClick={() => navigate('/onboarding')}
             >
               Yes! Start My FREE Trial →
             </Button>

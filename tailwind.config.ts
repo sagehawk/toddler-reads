@@ -10,6 +10,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        gentle: 'var(--shadow-sm)',
+        button: 'var(--shadow-md)',
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
