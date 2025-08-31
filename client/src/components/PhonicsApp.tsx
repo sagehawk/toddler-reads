@@ -381,7 +381,7 @@ export default function PhonicsApp() {
 
   // Main Learning Screen - V2.0 Layout
   return (
-    <div className="min-h-screen bg-background select-none">
+    <div className="h-screen bg-background select-none">
       <div className="h-full flex flex-col">
         {/* Header with Logo, Story Link, and Module Dropdown */}
         <div className="relative flex items-center justify-between p-4">

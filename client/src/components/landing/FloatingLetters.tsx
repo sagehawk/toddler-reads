@@ -27,7 +27,7 @@ export function FloatingLetters() {
   useEffect(() => {
     const newLetters: FloatingLetter[] = [];
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 12; i++) {
       const side = i % 2 === 0 ? "left" : "right";
 
       newLetters.push({
@@ -35,12 +35,12 @@ export function FloatingLetters() {
         letter: letters[Math.floor(seededRandom(i) * letters.length)],
         color: colors[Math.floor(seededRandom(i + 100) * colors.length)],
         x: side === "left"
-          ? seededRandom(i + 200) * 12 // 0–10%
-          : 90 + seededRandom(i + 200) * 5, // 90–100%
+          ? seededRandom(i + 200) * 10 // 0–10%
+          : 90 + seededRandom(i + 200) * 10, // 90–100%
         y: seededRandom(i + 300) * 100, // anywhere vertically
         rotation: seededRandom(i + 400) * 360,
-        scale: 0.5 + seededRandom(i + 500) * 0.8,
-        animationDuration: 15 + seededRandom(i + 600) * 20,
+        scale: 0.4 + seededRandom(i + 500) * 0.5, // smaller scale
+        animationDuration: 25 + seededRandom(i + 600) * 20, // slower animation
         animationDelay: seededRandom(i + 700) * 10,
       });
     }
@@ -53,12 +53,12 @@ export function FloatingLetters() {
       {floatingLetters.map((letter) => (
         <div
           key={letter.id}
-          className="absolute font-extrabold opacity-80 select-none"
+          className="absolute font-extrabold opacity-50 select-none" // reduced opacity
           style={{
             left: `${letter.x}%`,
             top: `${letter.y}%`,
             transform: `rotate(${letter.rotation}deg) scale(${letter.scale})`,
-            fontSize: `${3 + seededRandom(letter.id + 800) * 4}rem`,
+            fontSize: `${2 + seededRandom(letter.id + 800) * 3}rem`, // smaller font size
             color: letter.color,
           }}
         >

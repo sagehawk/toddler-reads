@@ -18,13 +18,7 @@ export function Navigation() {
           <div className="flex items-center">
             <div
               className="cursor-pointer"
-              onClick={() => {
-                if (user) {
-                  setLocation("/?fromApp=true");
-                } else {
-                  setLocation("/");
-                }
-              }}
+              onClick={() => setLocation("/")}
             >
               <img 
                 src={toddlerReadsLogo} 

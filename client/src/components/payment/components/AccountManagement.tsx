@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,9 +38,20 @@ export function AccountManagement({
     }
   };
 
-  const handleManageSubscription = () => {
-    // This would typically open Stripe Customer Portal
-    window.open('https://billing.stripe.com/p/login/test_mock_url', '_blank');
+  const handleManageSubscription = async () => {
+    try {
+      const response = await fetch("/api/create-portal-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error("Error creating portal session:", error);
+    }
   };
 
   const handleCancelSubscription = () => {
@@ -60,6 +71,9 @@ export function AccountManagement({
       <DialogContent className="max-w-2xl p-0">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle className="text-2xl font-bold">Account Management</DialogTitle>
+          <DialogDescription>
+            Manage your account, subscription, and billing details.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-6">

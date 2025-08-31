@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,14 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      setLocation("/app");
+    }
+  }, [user, setLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +28,7 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await login(email, password);
-      setLocation("/app");
+      // The useEffect will handle the redirect
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
     } finally {

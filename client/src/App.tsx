@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Route, Switch, useLocation, useRoute } from "wouter";
-import { LandingPage } from "./pages/LandingPage";
+import NewLanding from "./pages/NewLanding";
+import Onboarding from "./pages/Onboarding";
 import PhonicsApp from "./components/PhonicsApp";
 import MyStory from "./pages/my-story"; // Import MyStory
 import NotFound from "./pages/not-found";
@@ -40,7 +41,8 @@ function AppContent() {
 
   return (
     <Switch>
-      <Route path="/" component={LandingPage} />
+      <Route path="/" component={NewLanding} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <ProtectedRoute path="/app" component={PhonicsApp} />
