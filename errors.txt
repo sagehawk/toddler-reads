@@ -1,2 +1,71 @@
-Uncaught Error: CRITICAL ERROR: Client-side Supabase environment variables are not loaded. Check your .env file and vite.config.ts.
-    at index-ChQ31mW_.js:182:34201
+x Build failed in 10ms
+error during build:
+Could not resolve entry module "index.html".
+    at getRollupError (file:///vercel/path0/node_modules/rollup/dist/es/shared/parseAst.js:396:41)
+    at error (file:///vercel/path0/node_modules/rollup/dist/es/shared/parseAst.js:392:42)
+    at ModuleLoader.loadEntryModule (file:///vercel/path0/node_modules/rollup/dist/es/shared/node-entry.js:20086:20)
+    at async Promise.all (index 0)
+Error: Command "npm run build" exited with 1
+
+
+That error usually happens because your build tool (likely Vite, Rollup, or something wrapped by Vercel) is trying to use index.html as the entry point but can’t find it.
+
+Here are some common causes and fixes:
+
+✅ Things to check
+
+Does index.html exist at the project root?
+
+Vite and Rollup expect an index.html in the root folder (not inside src/).
+
+If yours is inside src/, move it to the root, or adjust config.
+
+Check your vite.config.js or rollup.config.js
+
+You may have an incorrect root or input path.
+Example for Vite:
+
+export default defineConfig({
+  root: ".",
+  build: {
+    rollupOptions: {
+      input: "index.html",
+    },
+  },
+});
+
+
+If your index.html is in src/, change root: "src".
+
+Wrong build command in Vercel
+
+Vercel defaults to npm run build, but if you’re using Vite, make sure your package.json has:
+
+"scripts": {
+  "dev": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+}
+
+
+If you’re using React with CRA, it should be:
+
+"build": "react-scripts build"
+
+
+Check vercel.json or project settings
+
+If you set "outputDirectory", it must match your actual build output folder (dist, build, etc.).
+
+🔧 Quick Fix Steps
+
+Ensure index.html is in the right place.
+
+Update your build script in package.json.
+
+If using Vite, confirm vite.config.js has the correct root and input.
+
+Re-deploy after cleaning dependencies:
+
+rm -rf node_modules
+npm install
