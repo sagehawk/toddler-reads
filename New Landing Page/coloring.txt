@@ -1,21 +1,42 @@
- For the "4.9/5 Stars" badge:
-      The background is set on line 22:
-   1     <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-8">
-      The class bg-primary/10 applies the primary color (which is a teal color) with 10% opacity.
 
-   2. For the "Watch: 3-Year-Old Reads First Word" section:
-      The background is a gradient set on line 51:
+  These variables are defined as CSS custom properties in src/index.css.
 
-   1     <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 rounded-xl flex items-center 
-     justify-center mb-4">
-      The classes from-primary/20 and to-accent/20 create a gradient using the primary (teal) and accent colors, both with
-  20% opacity.
+  ---
 
-   3. For the "Total Value: $500+" section:
-      The background is set on line 198:
+  Color Variables
 
-   1     <div className="text-center mt-12 bg-primary/5 rounded-2xl p-8 max-w-2xl mx-auto border-2 border-primary/20"
-     >
-      The class bg-primary/5 applies the primary (teal) color with 5% opacity.
+  `--toddler-teal` (aliased as primary and accent in Tailwind)
+   * HSL: 178 67% 55%
+   * Hex: #4FD1C5
+   * Description: This is the main brand color, a soft teal.
 
-  In Tailwind CSS, the / notation after a color (like bg-primary/10) is used to set the opacity of the color.
+  `--destructive`
+   * HSL: 0 84.2% 60.2%
+   * Hex: #F04444
+   * Description: A reddish color used for warnings and destructive actions, like for the "Founder's Pricing" notice.
+
+  `--toddler-cream` (aliased as background in Tailwind)
+   * HSL: 40 100% 97%
+   * Hex: #FFFAF0
+   * Description: A soft, off-white cream color used for the main page background.
+
+  `--toddler-charcoal` (aliased as foreground in Tailwind)       
+   * HSL: 210 21% 21%
+   * Hex: #2D3748
+   * Description: A dark charcoal gray used for most of the text.
+
+  ---
+
+  Shadow Variables
+
+  The shadows are defined using the color variables above.       
+
+  `--shadow-gentle`
+   * CSS Code: 0 4px 20px -4px hsl(var(--toddler-charcoal) / 0.1)
+   * Explanation: This creates a shadow that is offset 4px down, has a 20px blur, and a -4px spread. It uses the
+     --toddler-charcoal color (#2D3748) with 10% opacity.
+
+  `--shadow-button`
+   * CSS Code: 0 2px 8px -2px hsl(var(--toddler-teal) / 0.3)
+   * Explanation: This creates a shadow that is offset 2px down, has an 8px blur, and a -2px spread. It uses the
+     --toddler-teal color (#4FD1C5) with 30% opacity.

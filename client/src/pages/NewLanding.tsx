@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Star, Users, BookOpen, Clock, Trophy, Shield } from "lucide-react";
 import { FloatingLetters } from "@/components/landing/FloatingLetters";
 import { useLocation } from "wouter";
+import logoUrl from '../assets/toddler-reads-logo.png';
 
 const NewLanding = () => {
   const [, navigate] = useLocation();
@@ -13,19 +14,19 @@ const NewLanding = () => {
       {/* Navigation */}
       <nav className="relative z-10 px-6 py-4">
         <div className="container mx-auto flex items-center justify-between">
-          <div className="text-2xl font-bold text-primary">ToddlerReads</div>
+          <img src={logoUrl} alt="ToddlerReads Logo" className="h-16" />
           <Button variant="outline" size="sm" onClick={() => navigate("/login")}>Login</Button>
         </div>
       </nav>
 
       <div className="relative z-10 container mx-auto px-6 pb-20">
         {/* Hero Section */}
-        <section className="text-center py-12 lg:py-20">
+        <section className="text-center pt-8 pb-12 lg:pt-16 lg:pb-20">
           {/* Social Proof Badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full mb-8">
             <Star className="w-4 h-4 fill-current" />
             <span className="font-semibold">4.9/5 Stars</span>
-            <span className="text-muted-foreground">•</span>
+            <span className="text-foreground">•</span>
             <span className="font-semibold">12,847+ Happy Parents</span>
           </div>
 
@@ -222,7 +223,7 @@ const NewLanding = () => {
                 solution: "18+ months is the perfect time. Their brains are wired for language acquisition right now."
               }
             ].map((item, i) => (
-              <div key={i} className="bg-background rounded-xl p-6 text-center">
+              <div key={i} className="bg-background rounded-xl p-6 text-center shadow-gentle">
                 <p className="text-destructive italic font-medium mb-4">{item.objection}</p>
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="w-6 h-6 text-primary" />
@@ -245,23 +246,31 @@ const NewLanding = () => {
               Join 12,847+ parents who chose to give their child this advantage.
             </p>
 
-            <div className="bg-background rounded-xl p-6 mb-8 max-w-md mx-auto">
+            <div className="bg-background rounded-xl p-6 mb-8 max-w-md mx-auto shadow-gentle">
               <h3 className="font-bold text-lg mb-4">🎁 When You Join Today:</h3>
               <div className="text-left space-y-2">
                 <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-primary" />
+                  <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
                   <span>7-Day FREE Trial (No Risk)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-primary" />
+                  <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
                   <span>Founder's Pricing: Save 49%</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-primary" />
+                  <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
                   <span>Bonus: Parent Success Guide</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-primary" />
+                  <div className="w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
                   <span>100% Money-Back Guarantee</span>
                 </div>
               </div>
