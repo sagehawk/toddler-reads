@@ -1,0 +1,87 @@
+### **Prompt: Create a Simple Phonics Web Application (V1)**
+
+Create a beautiful, lightweight, and child-safe web application that helps parents teach toddlers (18-36 months) phonemic awareness. The app should be styled with an iOS-inspired, minimalist aesthetic and feature a clean, responsive interface with no login or user accounts required.
+
+### 🧩 Core Features
+
+The app is built around a **"Drill & Play"** model with two distinct modes.
+
+#### **1. 👨‍👩‍👧 Parent Command Center (Setup UI)**
+This is the parent-facing control panel, visible on the main screen before a session starts.
+*   **Level/Deck Selector:** A simple button group to select the letter deck for the session (e.g., "A-E," "F-J," "Full Alphabet").
+*   **Mode Selector:** A clear toggle to switch between "Drill Mode" and "Play Mode."
+*   **Play Mode Settings (Visible only when "Play Mode" is selected):**
+    *   **Speed:** Simple buttons (Slow, Medium, Fast) to control the time between letters in autoplay.
+    *   **Loops:** Buttons (1x, 3x, 5x, ∞) to set how many times the deck repeats.
+
+#### **2. 👆 Drill Mode (Parent-Led Learning)**
+This is the default, interactive mode for focused, parent-led sessions.
+*   **Letter Display:** Shows a single, large, high-contrast letter from the selected deck.
+*   **On-Tap Audio:** Tapping the letter triggers the text-to-speech audio for that letter's sound. **Audio does not play automatically.**
+*   **Manual Navigation:** Tapping the left/right sides of the screen navigates to the previous/next letter in the deck.
+
+#### **3. ▶️ Play Mode (Child-Led Review)**
+A distraction-free, automated mode for independent reinforcement.
+*   **Full-Screen Experience:** Upon starting, the UI goes full-screen, hiding all setup controls.
+*   **Automated Playback:** The app automatically cycles through the letters of the selected deck at the chosen speed and for the chosen number of loops.
+*   **Automatic Audio:** The sound for each letter plays automatically as it appears.
+*   **Simple Controls:** A single tap on the screen toggles the visibility of large, simple Play/Pause icons. An "Exit" button should be present but subtle.
+
+### 🖌 Visual Design (iOS-Inspired & Toddler-Safe)
+*   **Aesthetic:** Clean, calm, and minimal. Use system fonts and a muted, high-contrast color palette.
+*   **UI Elements:** Rounded corners, subtle shadows, and large, touch-friendly tap targets (minimum 44px).
+*   **Distraction-Free:** No complex menus, characters, or unnecessary animations. The focus is entirely on the letter.
+*   **Custom Modals:** The "Play Mode" settings should be a custom modal, not a browser prompt.
+
+### 💾 Storage
+*   Store the user's last-used settings (Level, Speed, Loops) locally in the browser using `localStorage`.
+*   The app state should persist across page reloads.
+*   No database or backend is required for V1.
+
+### ⚙️ Stack (Recommended)
+*   **Frontend:** React + TypeScript (with Vite)
+*   **State Management:** React Context or Zustand for simple state management.
+*   **Routing:** Wouter or React Router for any potential future page additions (like a parent dashboard).
+*   **Styling:** Tailwind CSS with a custom theme to achieve the clean, iOS-like aesthetic.
+
+### 📁 Suggested File Structure
+```
+src/
+  components/
+    LetterDisplay.tsx
+    DrillMode.tsx
+    PlayMode.tsx
+    SettingsModal.tsx
+    LevelSelector.tsx
+  hooks/
+    usePhonicsData.ts
+    useSpeechSynthesis.ts
+  data/
+    phonicsDecks.json
+  lib/
+    storage.ts (handles localStorage logic)
+  App.tsx
+  index.css (custom global styles)
+```
+
+### 🚫 Excluded for V1
+*   No login, user accounts, or server-side code.
+*   No complex mastery tracking or AI-driven logic.
+*   No on-device speech detection.
+*   No ads, external links, or third-party analytics (COPPA compliance is key).
+*   No complex animations or gamification beyond the core loop.
+
+### 🧪 Optional Extras (For Future Versions)
+*   A parent-facing progress dashboard (tracking time spent, levels completed).
+*   Printable milestone certificates.
+*   Additional decks (Numbers, Blending C-V-C words, Bilingual letters).
+
+### 🔁 Execution Steps
+1.  Set up the React + TypeScript + Vite project with Tailwind CSS.
+2.  Create the `phonicsDecks.json` data structure.
+3.  Build the core `LetterDisplay` component.
+4.  Build the "Drill Mode" functionality (manual navigation, on-tap audio).
+5.  Build the "Play Mode" functionality (settings modal, autoplay loop, full-screen mode).
+6.  Create the "Parent Command Center" UI to toggle modes and select levels.
+7.  Integrate `localStorage` to persist user settings.
+8.  Polish the UI/UX for a clean, intuitive, and distraction-free experience.
