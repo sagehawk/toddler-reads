@@ -17,6 +17,13 @@ const animalData = [
   { name: 'Elephant', type: 'Syllable Chunk', parts: [{ text: 'EL', color: 'text-teal-500' }, { text: 'E', color: 'text-yellow-500' }, { text: 'PHANT', color: 'text-orange-500' }], image: null },
 ];
 
+// Maps Tailwind color classes to hex codes to override default button styles
+const colorMap: { [key: string]: string } = {
+  'text-teal-500': '#14b8a6',
+  'text-orange-500': '#f97316',
+  'text-yellow-500': '#eab308',
+};
+
 const AnimalsApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedParts, setCompletedParts] = useState<string[]>([]);
@@ -93,9 +100,9 @@ const AnimalsApp = () => {
             <Button 
               key={index} 
               size="lg" 
-              className={`text-4xl p-8 ${part.color.replace('text-', 'bg-').replace('-500', '-200')} hover:${part.color.replace('text-', 'bg-').replace('-500', '-300')} ${part.color}`}
+              className={`text-4xl p-8 text-white hover:opacity-90 ${completedParts.includes(part.text) ? 'invisible' : ''}`}
+              style={{ backgroundColor: colorMap[part.color] || '#6b7280' }} // Use color map, fallback to gray
               onClick={() => handlePartClick(part)}
-              disabled={completedParts.includes(part.text)}
             >
               {part.text}
             </Button>
