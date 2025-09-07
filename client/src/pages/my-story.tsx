@@ -1,15 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Navigation } from "@/components/landing/Navigation";
-import { Footer } from "@/components/landing/Footer";
 import { Link } from "wouter";
 
 const MyStory = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <header className="py-4">
+        <div className="container mx-auto px-6">
+          <Link href="/">
+            <Button variant="outline">← Back to Home</Button>
+          </Link>
+        </div>
+      </header>
       
-      <main className="py-20">
+      <main className="py-10 md:py-20">
         <div className="container mx-auto px-6 max-w-4xl">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
@@ -21,7 +25,7 @@ const MyStory = () => {
           </div>
 
           <Card className="bg-card border-border shadow-gentle mb-12">
-            <CardContent className="p-12">
+            <CardContent className="p-8 md:p-12">
               <div className="prose prose-lg max-w-none">
                 <div className="flex flex-col md:flex-row items-start gap-8 mb-8">
                   <div className="flex-shrink-0">
@@ -74,8 +78,6 @@ const MyStory = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

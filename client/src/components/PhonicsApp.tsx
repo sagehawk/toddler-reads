@@ -174,7 +174,10 @@ export default function PhonicsApp() {
     setIsShowingStem(isStem);
   }, []);
 
+  const [showInstruction, setShowInstruction] = useState(true);
+
   const playCurrentSound = useCallback(() => {
+    setShowInstruction(false); // Hide instruction on first click
     if (selectedModule.type === 'letters' && selectedModule.letters) {
       const letter = selectedModule.letters[currentIndex];
       if (letter) playSound(letter.sound);
@@ -402,37 +405,24 @@ export default function PhonicsApp() {
     );
   }
 
-  // Main Learning Screen - V2.0 Layout
+  // Main Learning Screen - V2.1 Layout
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden">
-      {/* Header with Logo, Story Link, and Module Dropdown */}
-      <div className="relative flex items-center justify-between p-4 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          {installPrompt && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleInstallClick}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Install App
-            </Button>
-          )}
-        </div>
-        
-        {/* Centered logo for larger screens, hidden on small */}
-        <div className="hidden sm:block absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      {/* Header with Logo and Module Dropdown */}
+      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
+        {/* Logo */}
+        <div className="flex-1">
           <button onClick={() => navigate('/')} className="focus:outline-none">
             <img 
               src={logoUrl} 
               alt="ToddlerReads" 
-              className="h-12 object-contain"
+              className="h-10 object-contain" // Slightly smaller logo
             />
           </button>
         </div>
 
         {/* Learning Module Dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative flex-1 flex justify-end" ref={dropdownRef}>
           <button
             data-testid="button-module-selector"
             className="touch-target bg-card border border-border shadow-sm rounded-xl py-2 px-4 text-sm hover:bg-secondary/80 transition-all duration-200 flex items-center gap-2 transform hover:scale-105"
@@ -481,21 +471,10 @@ export default function PhonicsApp() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Mobile Logo */}
-      <div className="sm:hidden flex justify-center items-center py-2">
-        <button onClick={() => navigate('/')} className="focus:outline-none">
-          <img
-            src={logoUrl}
-            alt="ToddlerReads"
-            className="h-12 object-contain"
-          />
-        </button>
-      </div>
+      </header>
 
       {/* Main Content Display */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 sm:px-16 md:px-24 py-4 min-h-0">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 -mt-8 min-h-0">
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Navigation Areas */}
           <button
@@ -513,28 +492,33 @@ export default function PhonicsApp() {
             <span className="text-4xl text-muted-foreground">›</span>
           </button>
 
-          {/* Content Card */}
-          <div
-            data-testid="card-content-display"
-            className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow aspect-square max-h-full w-full max-w-lg"
-            onClick={playCurrentSound}
-          >
-            <div data-testid="text-current-content" className="text-center">
-              {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
-                renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
-                <span className={`font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] ${currentDisplay.color}`}>
-                  {currentDisplay.content}
-                </span>
-              }
+          {/* Wrapper for Card and Instruction to contain absolute positioning */}
+          <div className="relative aspect-square max-h-full w-full max-w-md">
+            {/* Content Card */}
+            <div
+              data-testid="card-content-display"
+              className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow w-full h-full"
+              onClick={playCurrentSound}
+            >
+              <div data-testid="text-current-content" className="text-center">
+                {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
+                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
+                  <span className={`font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] ${currentDisplay.color}`}>
+                    {currentDisplay.content}
+                  </span>
+                }
+              </div>
             </div>
+
+            {/* Instruction */}
+            {showInstruction && (
+              <p className="absolute bottom-5 left-0 right-0 text-center text-muted-foreground text-base sm:text-lg opacity-75 pointer-events-none">
+                {selectedModule.type === 'letters' ? "Tap the letter to hear its sound" : "Tap the word to hear it spoken"}
+              </p>
+            )}
           </div>
         </div>
-
-        {/* Instruction */}
-        <p className="text-center mt-4 text-muted-foreground text-base sm:text-lg flex-shrink-0">
-          {selectedModule.type === 'letters' ? 'Tap the letter to hear its sound' : 'Tap the word to hear it spoken'}
-        </p>
-      </div>
+      </main>
 
       {/* Item Selection Tray */}
       <div className="w-full flex-shrink-0" data-testid="container-item-tray">
@@ -543,7 +527,7 @@ export default function PhonicsApp() {
             <button
               key={index}
               data-testid={`button-tray-letter-${letter.letter}`}
-              className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+              className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
                 index === currentIndex
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : getTrayButtonColor(letter.letter)
@@ -559,7 +543,7 @@ export default function PhonicsApp() {
               {/* Stem Button */}
               <button
                 data-testid="button-tray-stem"
-                className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
                   isShowingStem
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
@@ -574,7 +558,7 @@ export default function PhonicsApp() {
                 <button
                   key={index}
                   data-testid={`button-tray-consonant-${consonant}`}
-                  className={`touch-target rounded-2xl py-3 px-4 font-medium text-lg transition-colors min-w-[48px] ${
+                  className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
                     index === currentIndex && !isShowingStem
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : getTrayButtonColor(consonant)

@@ -1,0 +1,19 @@
+The New User Flow
+Here is the revised task description for the "Animals" page, combining all the best ideas:
+Layout: A two-column grid of cute, simple animal face icons at the bottom of the screen.
+Selection: The user taps the "Cat" icon. It gets a bright border.
+Initial State:
+In the center of the screen, the word CAT appears in large, friendly, but faded letters.
+To the right of the word, a cute illustration of a cat appears, also faded.
+Below the word, two brightly colored buttons appear: a teal C button and an orange AT button.
+Interaction:
+The child taps the C button. It makes the /k/ sound, and the "C" in the central word blooms into full teal color.
+The child taps the AT button. It makes the "at" sound, and the "AT" blooms into full orange color.
+The Grand Reward: The moment the word is complete:
+A joyful chime plays.
+The app speaks the syllables ("C-AT") and then the full word ("Cat!").
+The cat illustration blooms into full, vibrant color.
+An audible "Meow!" plays.
+Progression: The highlight border automatically moves to the next animal in the grid ("Dog"), inviting the child to continue their journey.
+
+Example cat src = cat_full.png
