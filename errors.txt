@@ -1,15 +1,84 @@
-client:536 WebSocket connection to 'ws://localhost:443/?token=32IEimZwchcb' failed: 
-setupWebSocket @ client:536Understand this error
-client:560 [vite] server connection lost. Polling for restart...
-:443/:1  Failed to load resource: net::ERR_CONNECTION_REFUSEDUnderstand this error
-:3001/src/components/AnimalsApp.tsx:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this error
-inject.js:22 pageshow:  PageTransitionEvent
-content.js:40 Feature is disabled
-:443/:1  Failed to load resource: net::ERR_CONNECTION_REFUSEDUnderstand this error
-(index):1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
-(index):1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
-:443/:1  Failed to load resource: net::ERR_CONNECTION_REFUSEDUnderstand this error
-client:736  GET http://localhost:443/ net::ERR_CONNECTION_REFUSED
-ping @ client:736
-waitForSuccessfulPing @ client:755Understand this error
-client:736  GET http://localhost:443/ net::ERR_CONNECTION_REFUSED
+[22:53:14.742] Running build in Washington, D.C., USA (East) – iad1
+[22:53:14.743] Build machine configuration: 2 cores, 8 GB
+[22:53:14.782] Cloning github.com/sagehawk/toddler-reads (Branch: main, Commit: a0fdfca)
+[22:53:22.291] Cloning completed: 7.509s
+[22:53:24.493] Restored build cache from previous deployment (3o2PimroGCtMNmtQHRHTNQympRkD)
+[22:53:25.950] Running "vercel build"
+[22:53:26.353] Vercel CLI 47.0.5
+[22:53:27.080] Installing dependencies...
+[22:53:28.980] 
+[22:53:28.981] removed 108 packages in 2s
+[22:53:28.981] 
+[22:53:28.981] 125 packages are looking for funding
+[22:53:28.982]   run `npm fund` for details
+[22:53:29.014] Running "npm run build"
+[22:53:29.597] 
+[22:53:29.597] > rest-express@1.0.0 build
+[22:53:29.598] > node node_modules/vite/bin/vite.js build && node node_modules/typescript/bin/tsc -p tsconfig.json && node scripts/copy-files.js
+[22:53:29.598] 
+[22:53:29.925] [36mvite v5.4.19 [32mbuilding for production...[36m[39m
+[22:53:29.980] transforming...
+[22:53:33.567] [32m✓[39m 1598 modules transformed.
+[22:53:33.743] rendering chunks...
+[22:53:33.754] computing gzip size...
+[22:53:33.766] [2m../dist/[22m[32mindex.html                                            [39m[1m[2m  1.61 kB[22m[1m[22m[2m │ gzip:  0.76 kB[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-700-normal-Ch8EUCfz.woff2    [39m[1m[2m  5.96 kB[22m[1m[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-400-normal-BHkVbP3T.woff2    [39m[1m[2m  6.12 kB[22m[1m[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-500-normal-BpqpEYcO.woff2    [39m[1m[2m  6.15 kB[22m[1m[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-600-normal-BY8O6Cug.woff2    [39m[1m[2m  6.20 kB[22m[1m[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-700-normal-C9SQsXvj.woff     [39m[1m[2m  8.07 kB[22m[1m[22m
+[22:53:33.767] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-400-normal-DtOtW02z.woff     [39m[1m[2m  8.25 kB[22m[1m[22m
+[22:53:33.768] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-500-normal-9ShSsgIA.woff     [39m[1m[2m  8.27 kB[22m[1m[22m
+[22:53:33.768] [2m../dist/[22m[2massets/[22m[32mnunito-vietnamese-600-normal-DO1RqFw5.woff     [39m[1m[2m  8.27 kB[22m[1m[22m
+[22:53:33.768] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-400-normal-Bu20p4cz.woff2      [39m[1m[2m  8.34 kB[22m[1m[22m
+[22:53:33.768] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-500-normal-CJwZw52T.woff2      [39m[1m[2m  8.36 kB[22m[1m[22m
+[22:53:33.768] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-700-normal-BLvSaQJY.woff2      [39m[1m[2m  8.43 kB[22m[1m[22m
+[22:53:33.769] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-600-normal--3rO2vw0.woff2      [39m[1m[2m  8.48 kB[22m[1m[22m
+[22:53:33.769] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-700-normal-8DOm-e63.woff       [39m[1m[2m 10.38 kB[22m[1m[22m
+[22:53:33.769] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-400-normal-D7fCt59d.woff       [39m[1m[2m 10.45 kB[22m[1m[22m
+[22:53:33.769] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-500-normal-DnHpPZUu.woff       [39m[1m[2m 10.46 kB[22m[1m[22m
+[22:53:33.769] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-600-normal-D3Cp-kAp.woff       [39m[1m[2m 10.53 kB[22m[1m[22m
+[22:53:33.770] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-700-normal-BuR0mlCG.woff2  [39m[1m[2m 10.99 kB[22m[1m[22m
+[22:53:33.770] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-500-normal-BooqzoBf.woff2  [39m[1m[2m 11.14 kB[22m[1m[22m
+[22:53:33.770] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-400-normal-CuPM9foi.woff2  [39m[1m[2m 11.16 kB[22m[1m[22m
+[22:53:33.770] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-600-normal-CWPPjBOD.woff2  [39m[1m[2m 11.20 kB[22m[1m[22m
+[22:53:33.770] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-700-normal-DfoqN4Gs.woff   [39m[1m[2m 13.87 kB[22m[1m[22m
+[22:53:33.772] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-600-normal-vnfu4DTE.woff   [39m[1m[2m 14.10 kB[22m[1m[22m
+[22:53:33.772] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-400-normal-xaE7D4Sw.woff   [39m[1m[2m 14.11 kB[22m[1m[22m
+[22:53:33.772] [2m../dist/[22m[2massets/[22m[32mnunito-cyrillic-ext-500-normal-ryWF3qTI.woff   [39m[1m[2m 14.11 kB[22m[1m[22m
+[22:53:33.772] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-700-normal-7ydtQ54b.woff2     [39m[1m[2m 15.88 kB[22m[1m[22m
+[22:53:33.772] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-400-normal-BgvM-LZ6.woff2     [39m[1m[2m 15.90 kB[22m[1m[22m
+[22:53:33.773] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-500-normal-BBcRUr4o.woff2     [39m[1m[2m 16.02 kB[22m[1m[22m
+[22:53:33.773] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-600-normal-_qnRfhha.woff2     [39m[1m[2m 16.10 kB[22m[1m[22m
+[22:53:33.773] [2m../dist/[22m[2massets/[22m[32mnunito-latin-700-normal-B8AD-MIS.woff2         [39m[1m[2m 16.22 kB[22m[1m[22m
+[22:53:33.773] [2m../dist/[22m[2massets/[22m[32mnunito-latin-400-normal-BJBMzcEA.woff2         [39m[1m[2m 16.34 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-500-normal-Bqgi5NEo.woff2         [39m[1m[2m 16.40 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-600-normal-BdusHBVn.woff2         [39m[1m[2m 16.62 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-700-normal-DdI0W2xN.woff          [39m[1m[2m 19.99 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-400-normal-Cx5KBD4V.woff          [39m[1m[2m 20.31 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-500-normal-Bp4k6erJ.woff          [39m[1m[2m 20.42 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-600-normal-DxBl47WI.woff          [39m[1m[2m 20.46 kB[22m[1m[22m
+[22:53:33.776] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-700-normal-IHFdDvMT.woff      [39m[1m[2m 21.03 kB[22m[1m[22m
+[22:53:33.777] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-500-normal-CYpJ0ys6.woff      [39m[1m[2m 21.24 kB[22m[1m[22m
+[22:53:33.777] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-400-normal-B4FNR2UI.woff      [39m[1m[2m 21.31 kB[22m[1m[22m
+[22:53:33.777] [2m../dist/[22m[2massets/[22m[32mnunito-latin-ext-600-normal-BZo5GkDK.woff      [39m[1m[2m 21.31 kB[22m[1m[22m
+[22:53:33.777] [2m../dist/[22m[2massets/[22m[32mcat-IuVsfMOO.png                               [39m[1m[2m168.65 kB[22m[1m[22m
+[22:53:33.777] [2m../dist/[22m[2massets/[22m[32mtoddler-reads-logo-BPMo-0DU.png                [39m[1m[2m192.43 kB[22m[1m[22m
+[22:53:33.778] [2m../dist/[22m[2massets/[22m[35mindex-ByulV3hm.css                             [39m[1m[2m 88.21 kB[22m[1m[22m[2m │ gzip: 13.98 kB[22m
+[22:53:33.778] [2m../dist/[22m[2massets/[22m[36mindex-EOQdXQls.js                              [39m[1m[2m207.47 kB[22m[1m[22m[2m │ gzip: 66.47 kB[22m
+[22:53:33.778] [32m✓ built in 3.82s[39m
+[22:53:41.322] client/src/components/ui/toaster.tsx(1,26): error TS2307: Cannot find module '@/hooks/use-toast' or its corresponding type declarations.
+[22:53:41.323] client/src/components/ui/toaster.tsx(16,31): error TS7031: Binding element 'id' implicitly has an 'any' type.
+[22:53:41.324] client/src/components/ui/toaster.tsx(16,35): error TS7031: Binding element 'title' implicitly has an 'any' type.
+[22:53:41.324] client/src/components/ui/toaster.tsx(16,42): error TS7031: Binding element 'description' implicitly has an 'any' type.
+[22:53:41.325] client/src/components/ui/toaster.tsx(16,55): error TS7031: Binding element 'action' implicitly has an 'any' type.
+[22:53:41.325] client/src/layouts/MainLayout.tsx(1,24): error TS2307: Cannot find module '@/components/landing/Header' or its corresponding type declarations.
+[22:53:41.325] client/src/layouts/MainLayout.tsx(2,24): error TS2307: Cannot find module '@/components/landing/Footer' or its corresponding type declarations.
+[22:53:41.326] client/src/pages/NewLanding.tsx(4,26): error TS7031: Binding element 'icon' implicitly has an 'any' type.
+[22:53:41.326] client/src/pages/NewLanding.tsx(4,32): error TS7031: Binding element 'title' implicitly has an 'any' type.
+[22:53:41.327] client/src/pages/NewLanding.tsx(4,39): error TS7031: Binding element 'href' implicitly has an 'any' type.
+[22:53:41.327] client/src/pages/NewLanding.tsx(4,45): error TS7031: Binding element 'status' implicitly has an 'any' type.
+[22:53:41.327] shared/schema.ts(1,21): error TS2307: Cannot find module 'drizzle-orm' or its corresponding type declarations.
+[22:53:41.328] shared/schema.ts(2,40): error TS2307: Cannot find module 'drizzle-orm/pg-core' or its corresponding type declarations.
+[22:53:41.328] shared/schema.ts(3,36): error TS2307: Cannot find module 'drizzle-zod' or its corresponding type declarations.
+[22:53:41.356] Error: Command "npm run build" exited with 2
