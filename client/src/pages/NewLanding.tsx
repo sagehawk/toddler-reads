@@ -9,18 +9,14 @@ type CardProps = {
 };
 
 const blocks: CardProps[] = [
-  {
-    title: "First Letters",
-    icon: BookOpen,
-    href: "/phonics",
-    status: "Functional",
-  },
+  { title: "First Letters", icon: BookOpen, href: "/phonics", status: "Functional" },
   { title: "Animals", icon: Cat, href: "/animals", status: "Functional" },
   { title: "Foods", icon: Apple, href: "#", status: "Placeholder" },
   { title: "Things That Go", icon: Bus, href: "#", status: "Placeholder" },
   { title: "Colors", icon: Palette, href: "#", status: "Placeholder" },
   { title: "Shapes", icon: Shapes, href: "#", status: "Placeholder" },
 ];
+
 
 const LearningBlock = ({ icon, title, href, status }: CardProps) => {
   const Icon = icon;
