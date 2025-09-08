@@ -469,7 +469,7 @@ export default function PhonicsApp() {
             {/* Content Card */}
             <div
               data-testid="card-content-display"
-              className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow w-full h-full"
+              className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow w-full h-full touch-auto"
               onClick={playCurrentSound}
             >
               <div data-testid="text-current-content" className="text-center">
@@ -501,7 +501,7 @@ export default function PhonicsApp() {
               <button
                 key={index}
                 data-testid={`button-tray-letter-${letter.letter}`}
-                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white ${
+                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white touch-auto ${
                   completedIndices.includes(index)
                     ? 'invisible'
                     : index === currentIndex
