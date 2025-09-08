@@ -1,7 +1,14 @@
 import { Link } from "wouter";
 import { BookOpen, Cat, Apple, Bus, Palette, Shapes } from "lucide-react";
 
-const LearningBlock = ({ icon, title, href, status }) => {
+type CardProps = {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  href: string;
+  status: "Functional" | "Placeholder"; // adjust as needed
+};
+
+const LearningBlock = ({ icon, title, href, status }: CardProps) => {
   const Icon = icon;
   const isPlaceholder = status === "Placeholder";
 
