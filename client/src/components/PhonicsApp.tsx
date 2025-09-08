@@ -53,6 +53,7 @@ export default function PhonicsApp() {
   const [showModuleDropdown, setShowModuleDropdown] = useState(false);
   const [isShowingStem, setIsShowingStem] = useState(false);
   const [animationPhase, setAnimationPhase] = useState(0); // 0: default, 1: first letter visible, 2: rest visible, 3: all fade
+  const [completedIndices, setCompletedIndices] = useState<number[]>([]);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -215,6 +216,7 @@ export default function PhonicsApp() {
       setCurrentIndex(0);
       setIsShowingStem(false);
     }
+    setCompletedIndices([]);
   }, [selectedModuleId]);
 
   // Effect to reset animation and clear timeouts when item changes
@@ -500,11 +502,25 @@ export default function PhonicsApp() {
                 key={index}
                 data-testid={`button-tray-letter-${letter.letter}`}
                 className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white ${
-                  index === currentIndex
+                  completedIndices.includes(index)
+                    ? 'invisible'
+                    : index === currentIndex
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : `${colors.background} ${colors.hoverBackground}`
                 }`}
-                onClick={() => jumpToItem(index)}
+                onClick={() => {
+                  jumpToItem(index);
+                  if (!completedIndices.includes(index)) {
+                    const newCompletedIndices = [...completedIndices, index];
+                    setCompletedIndices(newCompletedIndices);
+
+                    if (newCompletedIndices.length === selectedModule.letters?.length) {
+                      setTimeout(() => {
+                        setCompletedIndices([]);
+                      }, 1000);
+                    }
+                  }
+                }}
               >
                 {letter.letter}
               </button>

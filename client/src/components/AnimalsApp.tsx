@@ -135,7 +135,7 @@ const AnimalsApp = () => {
             <Button 
               key={index} 
               size="lg" 
-              className={`text-4xl p-8 text-white hover:opacity-90 ${completedParts.includes(part.text) ? 'invisible' : ''}`}
+              className={`text-4xl p-8 text-white ${completedParts.includes(part.text) ? 'invisible' : ''}`}
               style={{ backgroundColor: colorClassToHex[part.color as keyof typeof colorClassToHex] || '#6b7280' }} // Use color map, fallback to gray
               onClick={() => handlePartClick(part)}
             >
