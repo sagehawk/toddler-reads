@@ -5,7 +5,7 @@ type CardProps = {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   href: string;
-  status: "Functional" | "Placeholder"; // adjust as needed
+  status: "Functional" | "Placeholder";
 };
 
 const blocks: CardProps[] = [
@@ -49,20 +49,6 @@ const LearningBlock = ({ icon, title, href, status }: CardProps) => {
 };
 
 const DigitalPlayshelf = () => {
-  const blocks = [
-    {
-      title: "First Letters",
-      icon: BookOpen,
-      href: "/phonics",
-      status: "Functional",
-    },
-    { title: "Animals", icon: Cat, href: "/animals", status: "Functional" },
-    { title: "Foods", icon: Apple, href: "#", status: "Placeholder" },
-    { title: "Things That Go", icon: Bus, href: "#", status: "Placeholder" },
-    { title: "Colors", icon: Palette, href: "#", status: "Placeholder" },
-    { title: "Shapes", icon: Shapes, href: "#", status: "Placeholder" },
-  ];
-
   return (
     <div className="h-screen overflow-hidden bg-muted/30 flex items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-4xl">
