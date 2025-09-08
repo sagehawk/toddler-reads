@@ -3,26 +3,61 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import catImage from '../assets/animals/cat.png';
+import { getLetterColors } from '../lib/colorUtils'; // Import the centralized color utility
+
+// Define a mapping from the color class to the hex code for the button style
+const colorClassToHex: { [key: string]: string } = {
+  'text-red-400': '#f87171',
+  'text-orange-400': '#fb923c',
+  'text-amber-400': '#fbbf24',
+  'text-yellow-400': '#facc15',
+  'text-lime-400': '#a3e635',
+  'text-green-400': '#4ade80',
+  'text-emerald-400': '#34d399',
+  'text-teal-400': '#2dd4bf',
+  'text-cyan-400': '#22d3ee',
+  'text-sky-400': '#38bdf8',
+  'text-blue-400': '#60a5fa',
+  'text-indigo-400': '#818cf8',
+  'text-violet-400': '#a78bfa',
+  'text-purple-400': '#c084fc',
+  'text-fuchsia-400': '#e879f9',
+  'text-pink-400': '#f472b6',
+  'text-rose-400': '#fb7185',
+
+  // optional darker hover states
+  'text-red-500': '#ef4444',
+  'text-orange-500': '#f97316',
+  'text-amber-500': '#f59e0b',
+  'text-yellow-500': '#eab308',
+  'text-lime-500': '#84cc16',
+  'text-green-500': '#22c55e',
+  'text-emerald-500': '#10b981',
+  'text-teal-500': '#14b8a6',
+  'text-cyan-500': '#06b6d4',
+  'text-sky-500': '#0ea5e9',
+  'text-blue-500': '#3b82f6',
+  'text-indigo-500': '#6366f1',
+  'text-violet-500': '#8b5cf6',
+  'text-purple-500': '#a855f7',
+  'text-fuchsia-500': '#d946ef',
+  'text-pink-500': '#ec4899',
+  'text-rose-500': '#f43f5e',
+};
+
 
 const animalData = [
-  { name: 'Cat', type: 'Syllable Pop', parts: [{ text: 'C', color: 'text-teal-500' }, { text: 'AT', color: 'text-orange-500' }], image: catImage },
-  { name: 'Dog', type: 'Syllable Pop', parts: [{ text: 'D', color: 'text-teal-500' }, { text: 'OG', color: 'text-orange-500' }], image: null },
-  { name: 'Pig', type: 'Syllable Pop', parts: [{ text: 'P', color: 'text-teal-500' }, { text: 'IG', color: 'text-orange-500' }], image: null },
-  { name: 'Duck', type: 'Sound String', parts: [{ text: 'D', color: 'text-teal-500' }, { text: 'U', color: 'text-yellow-500' }, { text: 'CK', color: 'text-orange-500' }], image: null },
-  { name: 'Fish', type: 'Sound String', parts: [{ text: 'F', color: 'text-teal-500' }, { text: 'I', color: 'text-yellow-500' }, { text: 'SH', color: 'text-orange-500' }], image: null },
-  { name: 'Cow', type: 'Sound String', parts: [{ text: 'C', color: 'text-teal-500' }, { text: 'OW', color: 'text-orange-500' }], image: null },
-  { name: 'Lion', type: 'Syllable Chunk', parts: [{ text: 'LI', color: 'text-teal-500' }, { text: 'ON', color: 'text-orange-500' }], image: null },
-  { name: 'Tiger', type: 'Syllable Chunk', parts: [{ text: 'TI', color: 'text-teal-500' }, { text: 'GER', color: 'text-orange-500' }], image: null },
-  { name: 'Turtle', type: 'Syllable Chunk', parts: [{ text: 'TUR', color: 'text-teal-500' }, { text: 'TLE', color: 'text-orange-500' }], image: null },
-  { name: 'Elephant', type: 'Syllable Chunk', parts: [{ text: 'EL', color: 'text-teal-500' }, { text: 'E', color: 'text-yellow-500' }, { text: 'PHANT', color: 'text-orange-500' }], image: null },
+  { name: 'Cat', type: 'Syllable Pop', parts: [{ text: 'C', color: getLetterColors('C').text }, { text: 'AT', color: getLetterColors('A').text }], image: catImage },
+  { name: 'Dog', type: 'Syllable Pop', parts: [{ text: 'D', color: getLetterColors('D').text }, { text: 'OG', color: getLetterColors('O').text }], image: null },
+  { name: 'Pig', type: 'Syllable Pop', parts: [{ text: 'P', color: getLetterColors('P').text }, { text: 'IG', color: getLetterColors('I').text }], image: null },
+  { name: 'Duck', type: 'Sound String', parts: [{ text: 'D', color: getLetterColors('D').text }, { text: 'U', color: getLetterColors('U').text }, { text: 'CK', color: getLetterColors('C').text }], image: null },
+  { name: 'Fish', type: 'Sound String', parts: [{ text: 'F', color: getLetterColors('F').text }, { text: 'I', color: getLetterColors('I').text }, { text: 'SH', color: getLetterColors('S').text }], image: null },
+  { name: 'Cow', type: 'Sound String', parts: [{ text: 'C', color: getLetterColors('C').text }, { text: 'OW', color: getLetterColors('O').text }], image: null },
+  { name: 'Lion', type: 'Syllable Chunk', parts: [{ text: 'LI', color: getLetterColors('L').text }, { text: 'ON', color: getLetterColors('O').text }], image: null },
+  { name: 'Tiger', type: 'Syllable Chunk', parts: [{ text: 'TI', color: getLetterColors('T').text }, { text: 'GER', color: getLetterColors('G').text }], image: null },
+  { name: 'Turtle', type: 'Syllable Chunk', parts: [{ text: 'TUR', color: getLetterColors('T').text }, { text: 'TLE', color: getLetterColors('L').text }], image: null },
+  { name: 'Elephant', type: 'Syllable Chunk', parts: [{ text: 'EL', color: getLetterColors('E').text }, { text: 'E', color: getLetterColors('E').text }, { text: 'PHANT', color: getLetterColors('P').text }], image: null },
 ];
-
-// Maps Tailwind color classes to hex codes to override default button styles
-const colorMap: { [key: string]: string } = {
-  'text-teal-500': '#14b8a6',
-  'text-orange-500': '#f97316',
-  'text-yellow-500': '#eab308',
-};
 
 const AnimalsApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,7 +136,7 @@ const AnimalsApp = () => {
               key={index} 
               size="lg" 
               className={`text-4xl p-8 text-white hover:opacity-90 ${completedParts.includes(part.text) ? 'invisible' : ''}`}
-              style={{ backgroundColor: colorMap[part.color] || '#6b7280' }} // Use color map, fallback to gray
+              style={{ backgroundColor: colorClassToHex[part.color as keyof typeof colorClassToHex] || '#6b7280' }} // Use color map, fallback to gray
               onClick={() => handlePartClick(part)}
             >
               {part.text}

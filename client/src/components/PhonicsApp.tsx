@@ -3,6 +3,7 @@ import { learningModules } from '../data/phonicsDecks';
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { useLocation } from 'wouter';
+import { getLetterColors } from '../lib/colorUtils';
 
 import logoUrl from '../assets/toddler-reads-logo.png';
 
@@ -71,39 +72,6 @@ export default function PhonicsApp() {
 
   const currentAudio = useRef<HTMLAudioElement | null>(null); // Declare a ref
   const animationTimeouts = useRef<number[]>([]); // To store timeout IDs
-
-  // Color palette for letters and consonants (Montessori-inspired)
-  const getLetterColor = (letter: string): string => {
-    const colors = {
-      'A': 'text-red-600', 'B': 'text-orange-600', 'C': 'text-amber-600', 'D': 'text-yellow-600',
-      'E': 'text-lime-600', 'F': 'text-green-600', 'G': 'text-emerald-600', 'H': 'text-teal-600',
-      'I': 'text-cyan-600', 'J': 'text-sky-600', 'K': 'text-blue-600', 'L': 'text-indigo-600',
-      'M': 'text-violet-600', 'N': 'text-purple-600', 'O': 'text-fuchsia-600', 'P': 'text-pink-600',
-      'Q': 'text-rose-600', 'R': 'text-red-700', 'S': 'text-orange-700', 'T': 'text-amber-700',
-      'U': 'text-yellow-700', 'V': 'text-lime-700', 'W': 'text-green-700', 'X': 'text-emerald-700',
-      'Y': 'text-teal-700', 'Z': 'text-cyan-700'
-    };
-    return colors[letter as keyof typeof colors] || 'text-foreground';
-  };
-
-  const getTrayButtonColor = (letter: string): string => {
-    const colors = {
-      'A': 'bg-red-200 hover:bg-red-300 text-red-800', 'B': 'bg-orange-200 hover:bg-orange-300 text-orange-800',
-      'C': 'bg-amber-200 hover:bg-amber-300 text-amber-800', 'D': 'bg-yellow-200 hover:bg-yellow-300 text-yellow-800',
-      'E': 'bg-lime-200 hover:bg-lime-300 text-lime-800', 'F': 'bg-green-200 hover:bg-green-300 text-green-800',
-      'G': 'bg-emerald-200 hover:bg-emerald-300 text-emerald-800', 'H': 'bg-teal-200 hover:bg-teal-300 text-teal-800',
-      'I': 'bg-cyan-200 hover:bg-cyan-300 text-cyan-800', 'J': 'bg-sky-200 hover:bg-sky-300 text-sky-800',
-      'K': 'bg-blue-200 hover:bg-blue-300 text-blue-800', 'L': 'bg-indigo-200 hover:bg-indigo-300 text-indigo-800',
-      'M': 'bg-violet-200 hover:bg-violet-300 text-violet-800', 'N': 'bg-purple-200 hover:bg-purple-300 text-purple-800',
-      'O': 'bg-fuchsia-200 hover:bg-fuchsia-300 text-fuchsia-800', 'P': 'bg-pink-200 hover:bg-pink-300 text-pink-800',
-      'Q': 'bg-rose-200 hover:bg-rose-300 text-rose-800', 'R': 'bg-red-300 hover:bg-red-400 text-red-800',
-      'S': 'bg-orange-300 hover:bg-orange-400 text-orange-800', 'T': 'bg-amber-300 hover:bg-amber-400 text-amber-800',
-      'U': 'bg-yellow-300 hover:bg-yellow-400 text-yellow-800', 'V': 'bg-lime-300 hover:bg-lime-400 text-lime-800',
-      'W': 'bg-green-300 hover:bg-green-400 text-green-800', 'X': 'bg-emerald-300 hover:bg-emerald-400 text-emerald-800',
-      'Y': 'bg-teal-300 hover:bg-teal-400 text-teal-800', 'Z': 'bg-cyan-300 hover:bg-cyan-400 text-cyan-800'
-    };
-    return colors[letter as keyof typeof colors] || 'bg-gray-200 hover:bg-gray-300 text-gray-800';
-  };
 
   const playSound = (soundFile: string) => {
     if (currentAudio.current) {
@@ -266,9 +234,11 @@ export default function PhonicsApp() {
   const getCurrentDisplay = () => {
     if (selectedModule.type === 'letters' && selectedModule.letters) {
       const letter = selectedModule.letters[currentIndex];
+      const upper = letter?.letter || 'A';
+      const lower = upper.toLowerCase();
       return {
-        content: letter?.letter || 'A',
-        color: getLetterColor(letter?.letter || 'A'),
+        content: `${upper}${lower}`,
+        color: getLetterColors(upper).text,
         isWord: false
       };
     } else if (selectedModule.type === 'cvc') {
@@ -291,7 +261,7 @@ export default function PhonicsApp() {
         };
       }
     }
-    return { content: 'A', color: 'text-foreground', isWord: false };
+    return { content: 'Aa', color: getLetterColors('A').text, isWord: false };
   };
 
   const currentDisplay = getCurrentDisplay();
@@ -314,7 +284,7 @@ export default function PhonicsApp() {
     return (
       <span className="font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem]">
         <span
-          className={getLetterColor(consonant)}
+          className={getLetterColors(consonant).text}
           style={{ opacity: firstLetterOpacity, transition: 'opacity 0.5s ease-in-out' }}
         >
           {consonant}
@@ -503,7 +473,7 @@ export default function PhonicsApp() {
               <div data-testid="text-current-content" className="text-center">
                 {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
                   renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
-                  <span className={`font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] ${currentDisplay.color}`}>
+                  <span className={`font-semibold text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem] ${currentDisplay.color}`}>
                     {currentDisplay.content}
                   </span>
                 }
@@ -523,27 +493,30 @@ export default function PhonicsApp() {
       {/* Item Selection Tray */}
       <div className="w-full flex-shrink-0" data-testid="container-item-tray">
         <div className="flex flex-wrap justify-center gap-3 p-4">
-          {selectedModule.type === 'letters' && selectedModule.letters?.map((letter, index) => (
-            <button
-              key={index}
-              data-testid={`button-tray-letter-${letter.letter}`}
-              className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
-                index === currentIndex
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : getTrayButtonColor(letter.letter)
-              }`}
-              onClick={() => jumpToItem(index)}
-            >
-              {letter.letter}
-            </button>
-          ))}
+          {selectedModule.type === 'letters' && selectedModule.letters?.map((letter, index) => {
+            const colors = getLetterColors(letter.letter);
+            return (
+              <button
+                key={index}
+                data-testid={`button-tray-letter-${letter.letter}`}
+                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white ${
+                  index === currentIndex
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : `${colors.background} ${colors.hoverBackground}`
+                }`}
+                onClick={() => jumpToItem(index)}
+              >
+                {letter.letter}
+              </button>
+            );
+          })}
           
           {selectedModule.type === 'cvc' && (
             <>
               {/* Stem Button */}
               <button
                 data-testid="button-tray-stem"
-                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
+                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${
                   isShowingStem
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
@@ -554,20 +527,23 @@ export default function PhonicsApp() {
               </button>
               
               {/* Consonant Buttons */}
-              {selectedModule.consonants?.map((consonant, index) => (
-                <button
-                  key={index}
-                  data-testid={`button-tray-consonant-${consonant}`}
-                  className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${ // Increased size
-                    index === currentIndex && !isShowingStem
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : getTrayButtonColor(consonant)
-                  }`}
-                  onClick={() => jumpToItem(index, false)}
-                >
-                  {consonant}
-                </button>
-              ))}
+              {selectedModule.consonants?.map((consonant, index) => {
+                const colors = getLetterColors(consonant);
+                return (
+                  <button
+                    key={index}
+                    data-testid={`button-tray-consonant-${consonant}`}
+                    className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white ${
+                      index === currentIndex && !isShowingStem
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : `${colors.background} ${colors.hoverBackground}`
+                    }`}
+                    onClick={() => jumpToItem(index, false)}
+                  >
+                    {consonant}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>
