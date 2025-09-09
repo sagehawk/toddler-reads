@@ -47,6 +47,6 @@ export const getLetterColors = (letter: string): LetterColors => {
   const colors = colorPalette[upperLetter] || defaultColors;
   return {
     ...colors,
-    darkText: colors.text.replace('-400', '-600').replace('-500', '-700'), // for lighter backgrounds
+    darkText: colors.text.replace('-400', '-800').replace('-500', '-900'), // for lighter backgrounds
   };
 };

@@ -5,63 +5,23 @@ import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import catImage from '../assets/animals/cat.png';
 import { getLetterColors } from '../lib/colorUtils'; // Import the centralized color utility
 
-// Define a mapping from the color class to the hex code for the button style
-const colorClassToHex: { [key: string]: string } = {
-  'text-red-400': '#f87171',
-  'text-orange-400': '#fb923c',
-  'text-amber-400': '#fbbf24',
-  'text-yellow-400': '#facc15',
-  'text-lime-400': '#a3e635',
-  'text-green-400': '#4ade80',
-  'text-emerald-400': '#34d399',
-  'text-teal-400': '#2dd4bf',
-  'text-cyan-400': '#22d3ee',
-  'text-sky-400': '#38bdf8',
-  'text-blue-400': '#60a5fa',
-  'text-indigo-400': '#818cf8',
-  'text-violet-400': '#a78bfa',
-  'text-purple-400': '#c084fc',
-  'text-fuchsia-400': '#e879f9',
-  'text-pink-400': '#f472b6',
-  'text-rose-400': '#fb7185',
-
-  // optional darker hover states
-  'text-red-500': '#ef4444',
-  'text-orange-500': '#f97316',
-  'text-amber-500': '#f59e0b',
-  'text-yellow-500': '#eab308',
-  'text-lime-500': '#84cc16',
-  'text-green-500': '#22c55e',
-  'text-emerald-500': '#10b981',
-  'text-teal-500': '#14b8a6',
-  'text-cyan-500': '#06b6d4',
-  'text-sky-500': '#0ea5e9',
-  'text-blue-500': '#3b82f6',
-  'text-indigo-500': '#6366f1',
-  'text-violet-500': '#8b5cf6',
-  'text-purple-500': '#a855f7',
-  'text-fuchsia-500': '#d946ef',
-  'text-pink-500': '#ec4899',
-  'text-rose-500': '#f43f5e',
-};
-
-
 const animalData = [
-  { name: 'Cat', type: 'Syllable Pop', parts: [{ text: 'C', color: getLetterColors('C').text }, { text: 'AT', color: getLetterColors('A').text }], image: catImage },
-  { name: 'Dog', type: 'Syllable Pop', parts: [{ text: 'D', color: getLetterColors('D').text }, { text: 'OG', color: getLetterColors('O').text }], image: null },
-  { name: 'Pig', type: 'Syllable Pop', parts: [{ text: 'P', color: getLetterColors('P').text }, { text: 'IG', color: getLetterColors('I').text }], image: null },
-  { name: 'Duck', type: 'Sound String', parts: [{ text: 'D', color: getLetterColors('D').text }, { text: 'U', color: getLetterColors('U').text }, { text: 'CK', color: getLetterColors('C').text }], image: null },
-  { name: 'Fish', type: 'Sound String', parts: [{ text: 'F', color: getLetterColors('F').text }, { text: 'I', color: getLetterColors('I').text }, { text: 'SH', color: getLetterColors('S').text }], image: null },
-  { name: 'Cow', type: 'Sound String', parts: [{ text: 'C', color: getLetterColors('C').text }, { text: 'OW', color: getLetterColors('O').text }], image: null },
-  { name: 'Lion', type: 'Syllable Chunk', parts: [{ text: 'LI', color: getLetterColors('L').text }, { text: 'ON', color: getLetterColors('O').text }], image: null },
-  { name: 'Tiger', type: 'Syllable Chunk', parts: [{ text: 'TI', color: getLetterColors('T').text }, { text: 'GER', color: getLetterColors('G').text }], image: null },
-  { name: 'Turtle', type: 'Syllable Chunk', parts: [{ text: 'TUR', color: getLetterColors('T').text }, { text: 'TLE', color: getLetterColors('L').text }], image: null },
-  { name: 'Elephant', type: 'Syllable Chunk', parts: [{ text: 'EL', color: getLetterColors('E').text }, { text: 'E', color: getLetterColors('E').text }, { text: 'PHANT', color: getLetterColors('P').text }], image: null },
+  { name: 'Cat', type: 'Syllable Pop', parts: [{ text: 'C', colors: getLetterColors('C') }, { text: 'AT', colors: getLetterColors('A') }], image: catImage },
+  { name: 'Dog', type: 'Syllable Pop', parts: [{ text: 'D', colors: getLetterColors('D') }, { text: 'OG', colors: getLetterColors('O') }], image: null },
+  { name: 'Pig', type: 'Syllable Pop', parts: [{ text: 'P', colors: getLetterColors('P') }, { text: 'IG', colors: getLetterColors('I') }], image: null },
+  { name: 'Duck', type: 'Sound String', parts: [{ text: 'D', colors: getLetterColors('D') }, { text: 'U', colors: getLetterColors('U') }, { text: 'CK', colors: getLetterColors('C') }], image: null },
+  { name: 'Fish', type: 'Sound String', parts: [{ text: 'F', colors: getLetterColors('F') }, { text: 'I', colors: getLetterColors('I') }, { text: 'SH', colors: getLetterColors('S') }], image: null },
+  { name: 'Cow', type: 'Sound String', parts: [{ text: 'C', colors: getLetterColors('C') }, { text: 'OW', colors: getLetterColors('O') }], image: null },
+  { name: 'Lion', type: 'Syllable Chunk', parts: [{ text: 'LI', colors: getLetterColors('L') }, { text: 'ON', colors: getLetterColors('O') }], image: null },
+  { name: 'Tiger', type: 'Syllable Chunk', parts: [{ text: 'TI', colors: getLetterColors('T') }, { text: 'GER', colors: getLetterColors('G') }], image: null },
+  { name: 'Turtle', type: 'Syllable Chunk', parts: [{ text: 'TUR', colors: getLetterColors('T') }, { text: 'TLE', colors: getLetterColors('L') }], image: null },
+  { name: 'Elephant', type: 'Syllable Chunk', parts: [{ text: 'EL', colors: getLetterColors('E') }, { text: 'E', colors: getLetterColors('E') }, { text: 'PHANT', colors: getLetterColors('P') }], image: null },
 ];
 
 const AnimalsApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedParts, setCompletedParts] = useState<string[]>([]);
+  const [completedAnimalIndices, setCompletedAnimalIndices] = useState<number[]>([]);
   const { speak } = useSpeechSynthesis();
 
   const currentAnimal = animalData[currentIndex];
@@ -71,7 +31,7 @@ const AnimalsApp = () => {
     setCompletedParts([]);
   }, [currentIndex]);
 
-  const handlePartClick = (part: { text: string, color: string }) => {
+  const handlePartClick = (part: { text: string, colors: any }) => {
     if (isComplete) return;
 
     const nextPartIndex = completedParts.length;
@@ -114,7 +74,7 @@ const AnimalsApp = () => {
           {/* Word Canvas */}
           <h2 className="text-8xl font-bold tracking-widest">
             {currentAnimal.parts.map((part, index) => (
-              <span key={index} className={`transition-colors duration-500 ${completedParts.includes(part.text) ? part.color : 'text-gray-300'}`}>
+              <span key={index} className={`transition-colors duration-500 ${completedParts.includes(part.text) ? part.colors.text : 'text-gray-300'}`}>
                 {part.text}
               </span>
             ))}
@@ -135,8 +95,7 @@ const AnimalsApp = () => {
             <Button 
               key={index} 
               size="lg" 
-              className={`text-4xl p-8 text-white ${completedParts.includes(part.text) ? 'invisible' : ''}`}
-              style={{ backgroundColor: colorClassToHex[part.color as keyof typeof colorClassToHex] || '#6b7280' }} // Use color map, fallback to gray
+              className={`text-4xl p-8 ${completedParts.includes(part.text) ? 'invisible' : ''} ${part.colors.background} ${part.colors.darkText}`}
               onClick={() => handlePartClick(part)}
             >
               {part.text}
@@ -151,9 +110,16 @@ const AnimalsApp = () => {
           {animalData.map((animal, index) => (
             <button 
               key={animal.name} 
-              onClick={() => setCurrentIndex(index)}
-              className={`p-2 rounded-lg border-4 ${currentIndex === index ? 'border-primary' : 'border-transparent'}`}
-            >
+              onClick={() => {
+                const newCompleted = [...completedAnimalIndices, currentIndex];
+                const finalCompleted = newCompleted.filter(i => i !== index);
+                setCompletedAnimalIndices(finalCompleted);
+                setCurrentIndex(index);
+                if (finalCompleted.length === animalData.length - 1) {
+                  setTimeout(() => setCompletedAnimalIndices([]), 1000);
+                }
+              }}
+              className={`p-2 rounded-lg border-4 transition-all ${currentIndex === index ? 'border-primary' : 'border-transparent'} ${completedAnimalIndices.includes(index) ? 'invisible' : ''}`}>
               <div className="w-24 h-24 bg-gray-200 rounded flex items-center justify-center">
                 {animal.image ? <img src={animal.image} alt={animal.name} className="w-full h-full object-cover rounded-sm" /> : <span className="text-sm text-gray-500">{animal.name}</span>}
               </div>

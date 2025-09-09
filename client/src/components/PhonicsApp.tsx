@@ -6,6 +6,61 @@ import { useLocation } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 
 import logoUrl from '../assets/toddler-reads-logo.png';
+import appleImg from '../assets/animals/apple.png';
+import ballImg from '../assets/animals/ball.png';
+import catImg from '../assets/animals/cat.png';
+import dogImg from '../assets/animals/dog.png';
+import eggImg from '../assets/animals/egg.png';
+import fishImg from '../assets/animals/fish.png';
+import goatImg from '../assets/animals/goat.png';
+import hatImg from '../assets/animals/hat.png';
+import iceImg from '../assets/animals/ice.png';
+import juiceImg from '../assets/animals/juice.png';
+import keyImg from '../assets/animals/key.png';
+import lionImg from '../assets/animals/lion.png';
+import moonImg from '../assets/animals/moon.png';
+import nestImg from '../assets/animals/nest.png';
+import orangeImg from '../assets/animals/orange.png';
+import pizzaImg from '../assets/animals/pizza.png';
+import quackImg from '../assets/animals/quack.png';
+import rabbitImg from '../assets/animals/rabbit.png';
+import sunImg from '../assets/animals/sun.png';
+import turtleImg from '../assets/animals/turtle.png';
+import umbrellaImg from '../assets/animals/umbrella.png';
+import vacuumImg from '../assets/animals/vacuum.png';
+import watermelonImg from '../assets/animals/watermelon.png';
+import boxImg from '../assets/animals/box.png';
+import yogurtImg from '../assets/animals/yogurt.png';
+import zebraImg from '../assets/animals/zebra.png';
+
+const letterImages: { [key: string]: string } = {
+  A: appleImg,
+  B: ballImg,
+  C: catImg,
+  D: dogImg,
+  E: eggImg,
+  F: fishImg,
+  G: goatImg,
+  H: hatImg,
+  I: iceImg,
+  J: juiceImg,
+  K: keyImg,
+  L: lionImg,
+  M: moonImg,
+  N: nestImg,
+  O: orangeImg,
+  P: pizzaImg,
+  Q: quackImg,
+  R: rabbitImg,
+  S: sunImg,
+  T: turtleImg,
+  U: umbrellaImg,
+  V: vacuumImg,
+  W: watermelonImg,
+  X: boxImg,
+  Y: yogurtImg,
+  Z: zebraImg,
+};
 
 type AppMode = 'learning' | 'story';
 
@@ -239,9 +294,11 @@ export default function PhonicsApp() {
       const upper = letter?.letter || 'A';
       const lower = upper.toLowerCase();
       return {
-        content: `${upper}${lower}`,
+        upper,
+        lower,
         color: getLetterColors(upper).text,
-        isWord: false
+        isWord: false,
+        image: letterImages[upper]
       };
     } else if (selectedModule.type === 'cvc') {
       if (isShowingStem) {
@@ -263,7 +320,7 @@ export default function PhonicsApp() {
         };
       }
     }
-    return { content: 'Aa', color: getLetterColors('A').text, isWord: false };
+    return { upper: 'A', lower: 'a', color: getLetterColors('A').text, isWord: false, image: letterImages['A'] };
   };
 
   const currentDisplay = getCurrentDisplay();
@@ -473,12 +530,23 @@ export default function PhonicsApp() {
               onClick={playCurrentSound}
             >
               <div data-testid="text-current-content" className="text-center">
-                {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? 
-                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase) :
+                {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? (
+                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase)
+                ) : currentDisplay.upper ? (
+                  <div className="flex items-center justify-center">
+                    <span className={`font-semibold ${currentDisplay.color}`}>
+                      <span className="text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]">{currentDisplay.upper}</span>
+                      <span className="text-5xl sm:text-[6rem] md:text-[8rem] lg:text-[10rem] xl:text-[11rem]">{currentDisplay.lower}</span>
+                    </span>
+                    {currentDisplay.image && (
+                      <img src={currentDisplay.image} alt={currentDisplay.upper} className="w-24 h-24 ml-4" />
+                    )}
+                  </div>
+                ) : (
                   <span className={`font-semibold text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem] ${currentDisplay.color}`}>
                     {currentDisplay.content}
                   </span>
-                }
+                )}
               </div>
             </div>
 
@@ -501,28 +569,29 @@ export default function PhonicsApp() {
               <button
                 key={index}
                 data-testid={`button-tray-letter-${letter.letter}`}
-                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white touch-auto ${
+                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-all min-w-[64px] touch-auto ${
                   completedIndices.includes(index)
                     ? 'invisible'
                     : index === currentIndex
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : `${colors.background} ${colors.hoverBackground}`
+                    ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-offset-2 ring-primary transform scale-110'
+                    : `${colors.background} ${colors.hoverBackground} ${colors.darkText}`
                 }`}
                 onClick={() => {
+                  const newCompletedIndices = [...completedIndices, currentIndex];
+                  const finalCompleted = newCompletedIndices.filter(i => i !== index);
+                  setCompletedIndices(finalCompleted);
                   jumpToItem(index);
-                  if (!completedIndices.includes(index)) {
-                    const newCompletedIndices = [...completedIndices, index];
-                    setCompletedIndices(newCompletedIndices);
 
-                    if (newCompletedIndices.length === selectedModule.letters?.length) {
-                      setTimeout(() => {
-                        setCompletedIndices([]);
-                      }, 1000);
-                    }
+                  if (finalCompleted.length === (selectedModule.letters?.length || 0) - 1) {
+                    setTimeout(() => {
+                      setCompletedIndices([]);
+                    }, 1000);
                   }
                 }}
               >
-                {letter.letter}
+                <span className={`${completedIndices.includes(index) ? 'opacity-0' : 'opacity-100'} transition-opacity duration-150`}>
+                  {letter.letter}
+                </span>
               </button>
             );
           })}
