@@ -73,4 +73,17 @@
     scrollbar-width: auto;
     scrollbar-color: hsl(var(--toddler-teal-hsl)) hsl(var(--muted));
   }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }

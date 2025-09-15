@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, Link } from 'wouter';
-import { Button } from '@/components/ui/button';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Progress } from "@/components/ui/progress";
@@ -31,6 +30,8 @@ import watermelonImg from '../assets/animals/watermelon.png';
 import boxImg from '../assets/animals/box.png';
 import yogurtImg from '../assets/animals/yogurt.png';
 import zebraImg from '../assets/animals/zebra.png';
+
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const letterImages: { [key: string]: string } = {
   A: appleImg, B: ballImg, C: catImg, D: dogImg, E: eggImg, F: fishImg, G: goatImg, H: hatImg, I: iceImg, J: juiceImg, K: keyImg, L: lionImg, M: moonImg, N: nestImg, O: orangeImg, P: pizzaImg, Q: quackImg, R: rabbitImg, S: sunImg, T: turtleImg, U: umbrellaImg, V: vacuumImg, W: watermelonImg, X: boxImg, Y: yogurtImg, Z: zebraImg,
@@ -147,8 +148,9 @@ export default function PhonicsApp() {
     });
   }, [stopAllTimers]);
 
-  const playSoundOnce = useCallback((soundFile: string) => {
+  const playSoundOnce = useCallback(async (soundFile: string) => {
       stopAllSounds();
+      await delay(300);
       return new Promise<void>(resolve => {
           const audio = new Audio(soundFile);
           audioRef.current = audio;
@@ -179,6 +181,7 @@ export default function PhonicsApp() {
             loopShouldContinue.current = false;
             stopAllTimers();
             if (femaleVoice) {
+                await delay(300);
                 speak(letterWords[letterInfo.letter], { voice: femaleVoice });
             }
         }
@@ -229,6 +232,7 @@ export default function PhonicsApp() {
         }
     } else if (displayState === 'WORD') {
         if (femaleVoice) {
+            await delay(300);
             await speak(letterWords[letterInfo.letter], { voice: femaleVoice });
         }
     }
@@ -244,7 +248,11 @@ export default function PhonicsApp() {
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
         <Link href="/">
-          <Button variant="outline">← Home</Button>
+          <a className="text-foreground hover:text-gray-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </a>
         </Link>
       </header>
 
@@ -257,7 +265,7 @@ export default function PhonicsApp() {
                   {displayState === 'LETTER' && (
                     <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]`}>
                       <span>{currentDisplayData.letter}</span>
-                      <span className="text-6xl sm:text-[7rem] md:text-[8rem] lg:text-[9rem] xl:text-[10rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
+                      <span className="text-4xl sm:text-[5rem] md:text-[6rem] lg:text-[7rem] xl:text-[8rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
                     </span>
                   )}
                   {displayState === 'WORD' && (
@@ -296,7 +304,7 @@ export default function PhonicsApp() {
       </main>
 
       <div className="w-full flex-shrink-0" data-testid="container-item-tray">
-        <div className="flex flex-wrap justify-center gap-3 p-4">
+        <div className="flex flex-wrap justify-center gap-3 p-4 max-w-4xl mx-auto">
           {selectedModule.letters?.map((letter, index) => {
             const colors = getLetterColors(letter.letter);
             return (

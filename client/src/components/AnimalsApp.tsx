@@ -61,12 +61,10 @@ const phonicsSounds: { [key: string]: string } = {
 const AnimalsApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedParts, setCompletedParts] = useState<string[]>([]);
+  const [isWordComplete, setIsWordComplete] = useState(false);
   const { speak, stop, voices } = useSpeechSynthesis();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const isWheeling = useRef(false);
 
   const currentAnimal = animalData[currentIndex];
 
@@ -97,74 +95,9 @@ const AnimalsApp = () => {
     }
     stopAllSounds();
     setCompletedParts([]);
+    setIsWordComplete(false);
     setCurrentIndex(index);
-
-    itemRefs.current[index]?.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'center',
-      block: 'nearest'
-    });
   };
-
-  useEffect(() => {
-    const slider = scrollContainerRef.current;
-    if (!slider) return;
-
-    let isDown = false;
-    let startX: number;
-    let scrollLeft: number;
-
-    const handleMouseDown = (e: MouseEvent) => {
-      isDown = true;
-      slider.classList.add('active');
-      startX = e.pageX - slider.offsetLeft;
-      scrollLeft = slider.scrollLeft;
-    };
-
-    const handleMouseLeave = () => {
-      isDown = false;
-      slider.classList.remove('active');
-    };
-
-    const handleMouseUp = () => {
-      isDown = false;
-      slider.classList.remove('active');
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - slider.offsetLeft;
-      const walk = (x - startX) * 2; //scroll-fast
-      slider.scrollLeft = scrollLeft - walk;
-    };
-
-    const onWheel = (e: WheelEvent) => {
-      if (isWheeling.current) return;
-      e.preventDefault();
-      isWheeling.current = true;
-      
-      slider.scrollLeft += e.deltaY;
-
-      setTimeout(() => {
-        isWheeling.current = false;
-      }, 100); // Cooldown period
-    };
-
-    slider.addEventListener('mousedown', handleMouseDown);
-    slider.addEventListener('mouseleave', handleMouseLeave);
-    slider.addEventListener('mouseup', handleMouseUp);
-    slider.addEventListener('mousemove', handleMouseMove);
-    slider.addEventListener("wheel", onWheel, { passive: false });
-
-    return () => {
-      slider.removeEventListener('mousedown', handleMouseDown);
-      slider.removeEventListener('mouseleave', handleMouseLeave);
-      slider.removeEventListener('mouseup', handleMouseUp);
-      slider.removeEventListener('mousemove', handleMouseMove);
-      slider.removeEventListener("wheel", onWheel);
-    };
-  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -177,64 +110,66 @@ const AnimalsApp = () => {
   }, [stopAllSounds]);
 
   const handlePartClick = async (part: { text: string, colors: any, pronunciation?: string }) => {
-    // Do nothing if the part is already completed
     if (completedParts.includes(part.text)) return;
 
-    // Immediately update state to make button disappear
     const newCompletedParts = [...completedParts, part.text];
     setCompletedParts(newCompletedParts);
 
     const textToSpeak = part.pronunciation || part.text;
 
-    // Play sound
     if (part.text.length === 1 && phonicsSounds[part.text.toUpperCase()]) {
       await playSound(phonicsSounds[part.text.toUpperCase()]);
     } else {
       if (femaleVoice) await speak(textToSpeak, { voice: femaleVoice });
     }
 
-    // Check if all parts are now complete
     if (newCompletedParts.length === currentAnimal.parts.length) {
+      setIsWordComplete(true);
       if (femaleVoice) {
         const fullWordToSpeak = currentAnimal.pronunciation || currentAnimal.name;
         await speak(fullWordToSpeak, { voice: femaleVoice });
       }
-      // Set a timeout to reset the current animal's state
       resetTimeoutRef.current = setTimeout(() => {
         setCompletedParts([]);
+        setIsWordComplete(false);
       }, 1500);
     }
   };
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden">
+    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative">
       <header className="flex items-center p-4 flex-shrink-0 w-full">
         <Link href="/">
-          <Button variant="outline">← Home</Button>
+          <a className="text-foreground hover:text-gray-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+          </a>
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center p-4 overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-center gap-8 mb-8">
-          <h2 className="text-8xl font-bold tracking-widest">
+      {isWordComplete && currentAnimal.image && (
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-40 h-40">
+            <img
+                src={currentAnimal.image}
+                alt={currentAnimal.name}
+                className="w-full h-full object-contain animate-fade-in"
+            />
+        </div>
+      )}
+
+      <main className="flex-1 flex flex-col items-center justify-start pt-20 text-center p-4">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <h2 className="text-6xl md:text-8xl font-bold tracking-widest">
             {currentAnimal.parts.map((part, index) => (
               <span key={index} className={`transition-colors duration-500 ${completedParts.includes(part.text) ? part.colors.text : 'text-gray-300'}`}>
                 {part.text}
               </span>
             ))}
           </h2>
-          {currentAnimal.image && (
-            <img 
-              key={currentIndex} // This key will force a remount when the animal changes
-              src={currentAnimal.image} 
-              alt={currentAnimal.name} 
-              className={`w-48 h-48 transition-opacity duration-500 ${completedParts.length === currentAnimal.parts.length ? 'opacity-100' : 'opacity-20'} select-none object-contain`}
-              draggable="false"
-            />
-          )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-4 mt-8">
           {currentAnimal.parts.map((part, index) => (
             <Button 
               key={index} 
@@ -248,19 +183,15 @@ const AnimalsApp = () => {
         </div>
       </main>
 
-      <div className="w-full flex-shrink-0 p-4">
-        <div 
-          ref={scrollContainerRef} 
-          className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto overflow-x-auto pb-4 custom-scrollbar cursor-grab active:cursor-grabbing"
-        >
-          <div className="flex flex-nowrap -ml-2 md:-ml-4">
+      <div className="w-full flex-shrink-0 p-2">
+        <div className="w-full max-w-2xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-4">
             {animalData.map((animal, index) => (
-              <div key={animal.name} className="pl-2 md:pl-4 basis-1/3 sm:basis-1/4 md:basis-1/5 flex-shrink-0">
+              <div key={animal.name} className="flex-shrink-0">
                 <button 
-                  ref={el => itemRefs.current[index] = el}
                   onClick={() => selectAnimal(index)}
-                  className={`p-2 rounded-lg border-4 transition-all w-full ${currentIndex === index ? 'border-primary' : 'border-transparent'}`}>
-                  <div className="w-full aspect-square bg-muted rounded flex items-center justify-center">
+                  className={`p-2 rounded-lg border-4 transition-all w-24 h-24 ${currentIndex === index ? 'border-primary' : 'border-transparent'}`}>
+                  <div className="w-full h-full bg-muted rounded flex items-center justify-center">
                     {animal.image ? <img src={animal.image} alt={animal.name} className="w-full h-full object-cover rounded-sm select-none" draggable="false" /> : <span className="text-sm text-gray-500">{animal.name}</span>}
                   </div>
                 </button>
@@ -270,7 +201,7 @@ const AnimalsApp = () => {
         </div>
       </div>
     </div>
-  );
+  )
 };
 
 export default AnimalsApp;
