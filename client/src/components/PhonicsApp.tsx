@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { learningModules } from '../data/phonicsDecks';
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
+import { Button } from '@/components/ui/button';
 import { getLetterColors } from '../lib/colorUtils';
-
+import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { Progress } from "@/components/ui/progress";
 import logoUrl from '../assets/toddler-reads-logo.png';
 import appleImg from '../assets/animals/apple.png';
 import ballImg from '../assets/animals/ball.png';
@@ -34,603 +33,287 @@ import yogurtImg from '../assets/animals/yogurt.png';
 import zebraImg from '../assets/animals/zebra.png';
 
 const letterImages: { [key: string]: string } = {
-  A: appleImg,
-  B: ballImg,
-  C: catImg,
-  D: dogImg,
-  E: eggImg,
-  F: fishImg,
-  G: goatImg,
-  H: hatImg,
-  I: iceImg,
-  J: juiceImg,
-  K: keyImg,
-  L: lionImg,
-  M: moonImg,
-  N: nestImg,
-  O: orangeImg,
-  P: pizzaImg,
-  Q: quackImg,
-  R: rabbitImg,
-  S: sunImg,
-  T: turtleImg,
-  U: umbrellaImg,
-  V: vacuumImg,
-  W: watermelonImg,
-  X: boxImg,
-  Y: yogurtImg,
-  Z: zebraImg,
+  A: appleImg, B: ballImg, C: catImg, D: dogImg, E: eggImg, F: fishImg, G: goatImg, H: hatImg, I: iceImg, J: juiceImg, K: keyImg, L: lionImg, M: moonImg, N: nestImg, O: orangeImg, P: pizzaImg, Q: quackImg, R: rabbitImg, S: sunImg, T: turtleImg, U: umbrellaImg, V: vacuumImg, W: watermelonImg, X: boxImg, Y: yogurtImg, Z: zebraImg,
 };
 
-type AppMode = 'learning' | 'story';
+const letterWords: { [key: string]: string } = {
+  A: 'Apple', B: 'Ball', C: 'Cat', D: 'Dog', E: 'Egg', F: 'Fish', G: 'Goat', H: 'Hat', I: 'Ice', J: 'Juice', K: 'Key', L: 'Lion', M: 'Moon', N: 'Nest', O: 'Orange', P: 'Pizza', Q: 'Quack', R: 'Rabbit', S: 'Sun', T: 'Turtle', U: 'Umbrella', V: 'Vacuum', W: 'Watermelon', X: 'Box', Y: 'Yogurt', Z: 'Zebra',
+};
 
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: Array<string>;
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed',
-    platform: string,
-  }>;
-  prompt(): Promise<void>;
+export interface PhonicsLetter {
+  letter: string;
+  sound: string;
 }
+
+export interface LearningModule {
+  id: string;
+  name: string;
+  type: 'letters' | 'cvc';
+  letters?: PhonicsLetter[];
+}
+
+export const learningModules: LearningModule[] = [
+  {
+    id: 'letters-full',
+    name: 'Full Alphabet',
+    type: 'letters',
+    letters: [
+      { letter: 'A', sound: '/sounds/Phonics/Sound 01.mp3' },
+      { letter: 'B', sound: '/sounds/Phonics/Sound 02.mp3' },
+      { letter: 'C', sound: '/sounds/Phonics/Sound 03.mp3' },
+      { letter: 'D', sound: '/sounds/Phonics/Sound 04.mp3' },
+      { letter: 'E', sound: '/sounds/Phonics/Sound 05.mp3' },
+      { letter: 'F', sound: '/sounds/Phonics/Sound 06.mp3' },
+      { letter: 'G', sound: '/sounds/Phonics/Sound 07.mp3' },
+      { letter: 'H', sound: '/sounds/Phonics/Sound 08.mp3' },
+      { letter: 'I', sound: '/sounds/Phonics/Sound 09.mp3' },
+      { letter: 'J', sound: '/sounds/Phonics/Sound 10.mp3' },
+      { letter: 'K', sound: '/sounds/Phonics/Sound 11.mp3' },
+      { letter: 'L', sound: '/sounds/Phonics/Sound 12.mp3' },
+      { letter: 'M', sound: '/sounds/Phonics/Sound 13.mp3' },
+      { letter: 'N', sound: '/sounds/Phonics/Sound 14.mp3' },
+      { letter: 'O', sound: '/sounds/Phonics/Sound 15.mp3' },
+      { letter: 'P', sound: '/sounds/Phonics/Sound 16.mp3' },
+      { letter: 'Q', sound: '/sounds/Phonics/Sound 17.mp3' },
+      { letter: 'R', sound: '/sounds/Phonics/Sound 18.mp3' },
+      { letter: 'S', sound: '/sounds/Phonics/Sound 19.mp3' },
+      { letter: 'T', sound: '/sounds/Phonics/Sound 20.mp3' },
+      { letter: 'U', sound: '/sounds/Phonics/Sound 21.mp3' },
+      { letter: 'V', sound: '/sounds/Phonics/Sound 22.mp3' },
+      { letter: 'W', sound: '/sounds/Phonics/Sound 23.mp3' },
+      { letter: 'X', sound: '/sounds/Phonics/Sound 24.mp3' },
+      { letter: 'Y', sound: '/sounds/Phonics/Sound 25.mp3' },
+      { letter: 'Z', sound: '/sounds/Phonics/Sound 26.mp3' },
+    ]
+  },
+];
 
 export default function PhonicsApp() {
   const [, navigate] = useLocation();
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+  const [displayState, setDisplayState] = useState('LETTER'); // LETTER, WORD
+  const [isPlaying, setIsPlaying] = useState(false);
+  const { speak, stop, voices } = useSpeechSynthesis();
+  const [progress, setProgress] = useState(0);
+  const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const loopShouldContinue = useRef(false);
+
+  const selectedModule = learningModules[0];
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e as BeforeInstallPromptEvent);
-    };
+    if (voices && voices.length > 0) {
+        const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
+        setFemaleVoice(foundVoice || null);
+    }
+  }, [voices]);
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+  const stopAllTimers = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setProgress(0);
   }, []);
 
-  const handleInstallClick = () => {
-    if (!installPrompt) {
+  const stopAllSounds = useCallback(() => {
+    loopShouldContinue.current = false;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    stop(); // Stop TTS
+    stopAllTimers();
+  }, [stop, stopAllTimers]);
+
+  const waitWithProgress = useCallback((duration: number) => {
+    stopAllTimers();
+    return new Promise<void>(resolve => {
+      setProgress(0);
+      const startTime = Date.now();
+      
+      intervalRef.current = setInterval(() => {
+        const elapsedTime = Date.now() - startTime;
+        const currentProgress = Math.min((elapsedTime / duration) * 100, 100);
+        setProgress(currentProgress);
+      }, 50);
+
+      timeoutRef.current = setTimeout(() => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setProgress(100);
+        resolve();
+      }, duration);
+    });
+  }, [stopAllTimers]);
+
+  const playSoundOnce = useCallback((soundFile: string) => {
+      stopAllSounds();
+      return new Promise<void>(resolve => {
+          const audio = new Audio(soundFile);
+          audioRef.current = audio;
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play();
+      });
+  }, [stopAllSounds]);
+
+  useEffect(() => {
+    if (currentIndex === null || !isPlaying) {
+      loopShouldContinue.current = false;
       return;
     }
-    installPrompt.prompt();
-    installPrompt.userChoice.then(({ outcome }) => {
-      if (outcome === 'accepted') {
-        setInstallPrompt(null);
-      }
-    });
+
+    const letterInfo = selectedModule.letters?.[currentIndex];
+    if (!letterInfo) return;
+
+    const runAsync = async () => {
+        if (displayState === 'LETTER') {
+            loopShouldContinue.current = true;
+            while (loopShouldContinue.current) {
+                await playSoundOnce(letterInfo.sound);
+                if (!loopShouldContinue.current) break;
+                await waitWithProgress(4000);
+            }
+        } else if (displayState === 'WORD') {
+            loopShouldContinue.current = false;
+            stopAllTimers();
+            if (femaleVoice) {
+                speak(letterWords[letterInfo.letter], { voice: femaleVoice });
+            }
+        }
+    }
+
+    runAsync();
+
+    return () => {
+        loopShouldContinue.current = false;
+        stopAllSounds();
+    };
+  }, [currentIndex, displayState, isPlaying, selectedModule.letters, femaleVoice, playSoundOnce, waitWithProgress, speak, stopAllSounds, stopAllTimers]);
+
+
+  const handleTrayClick = (index: number) => {
+    stopAllSounds();
+    
+    const letterInfo = selectedModule.letters?.[index];
+    if (!letterInfo) return;
+
+    if (currentIndex === index && isPlaying) {
+        setDisplayState(prevState => prevState === 'LETTER' ? 'WORD' : 'LETTER');
+    } else {
+        setCurrentIndex(index);
+        setIsPlaying(true);
+        setDisplayState('LETTER');
+    }
+  };
+
+  const handleScreenClick = () => {
+    if (!isPlaying) return;
+    setDisplayState(prevState => prevState === 'LETTER' ? 'WORD' : 'LETTER');
   };
   
-  const [appMode, setAppMode] = useState<AppMode>('learning');
-  const [selectedModuleId, setSelectedModuleId] = useState('letters-full');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [showModuleDropdown, setShowModuleDropdown] = useState(false);
-  const [isShowingStem, setIsShowingStem] = useState(false);
-  const [animationPhase, setAnimationPhase] = useState(0); // 0: default, 1: first letter visible, 2: rest visible, 3: all fade
-  const [completedIndices, setCompletedIndices] = useState<number[]>([]);
+  const replaySound = async () => {
+    if (currentIndex === null) return;
+    const letterInfo = selectedModule.letters?.[currentIndex];
+    if (!letterInfo) return;
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowModuleDropdown(false);
-      }
+    stopAllSounds();
+    
+    if (displayState === 'LETTER') {
+        loopShouldContinue.current = true;
+        while (loopShouldContinue.current) {
+            await playSoundOnce(letterInfo.sound);
+            if (!loopShouldContinue.current) break;
+            await waitWithProgress(4000);
+        }
+    } else if (displayState === 'WORD') {
+        if (femaleVoice) {
+            await speak(letterWords[letterInfo.letter], { voice: femaleVoice });
+        }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownRef]);
-
-  const selectedModule = learningModules.find(m => m.id === selectedModuleId) || learningModules[0];
-
-  const currentAudio = useRef<HTMLAudioElement | null>(null); // Declare a ref
-  const animationTimeouts = useRef<number[]>([]); // To store timeout IDs
-
-  const playSound = (soundFile: string) => {
-    if (currentAudio.current) {
-      currentAudio.current.pause();
-      currentAudio.current.currentTime = 0; // Reset to beginning
-    }
-
-    const audio = new Audio(soundFile);
-    audio.play();
-    currentAudio.current = audio; // Store the new audio object
   };
 
-  // Navigation with arrow keys
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        navigateItem('prev');
-      } else if (e.key === 'ArrowRight') {
-        navigateItem('next');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentIndex, selectedModule]);
-
-  const navigateItem = useCallback((direction: 'prev' | 'next') => {
-    if (selectedModule.type === 'letters') {
-      const maxIndex = (selectedModule.letters?.length || 0) - 1;
-      setCurrentIndex(prevIndex => {
-        if (direction === 'prev') {
-          return prevIndex > 0 ? prevIndex - 1 : maxIndex;
-        } else {
-          return prevIndex < maxIndex ? prevIndex + 1 : 0;
-        }
-      });
-    } else if (selectedModule.type === 'cvc') {
-      // For CVC: navigate between stem (-1) and consonants (0 to n-1)
-      const maxIndex = (selectedModule.consonants?.length || 0) - 1;
-      const minIndex = -1; // -1 represents the stem button
-      
-      setCurrentIndex(prevIndex => {
-        if (direction === 'prev') {
-          if (prevIndex > minIndex) {
-            const newIndex = prevIndex - 1;
-            setIsShowingStem(newIndex === -1);
-            return newIndex;
-          } else {
-            setIsShowingStem(false);
-            return maxIndex;
-          }
-        } else {
-          if (prevIndex < maxIndex) {
-            const newIndex = prevIndex + 1;
-            setIsShowingStem(newIndex === -1);
-            return newIndex;
-          } else {
-            setIsShowingStem(true);
-            return minIndex;
-          }
-        }
-      });
-    }
-  }, [selectedModule, currentIndex]);
-
-  const jumpToItem = useCallback((index: number, isStem = false) => {
-    setCurrentIndex(index);
-    setIsShowingStem(isStem);
-  }, []);
-
-  const [showInstruction, setShowInstruction] = useState(true);
-
-  const playCurrentSound = useCallback(() => {
-    setShowInstruction(false); // Hide instruction on first click
-    if (selectedModule.type === 'letters' && selectedModule.letters) {
-      const letter = selectedModule.letters[currentIndex];
-      if (letter) playSound(letter.sound);
-    } else if (selectedModule.type === 'cvc') {
-      if (isShowingStem && selectedModule.stemSound) {
-        playSound(selectedModule.stemSound);
-      } else if (selectedModule.words && currentIndex >= 0) {
-        const word = selectedModule.words[currentIndex];
-        if (word) {
-          playSound(word.audioFile);
-
-          // Reset animation before starting
-          setAnimationPhase(0);
-          animationTimeouts.current.forEach(clearTimeout);
-          animationTimeouts.current = [];
-
-          // Animation sequence for CVC words
-          setTimeout(() => {
-            setAnimationPhase(1); // Phase 1: First letter visible, rest transparent
-            const timeout1 = setTimeout(() => {
-              setAnimationPhase(2); // Phase 2: First letter transparent, rest visible
-              const timeout2 = setTimeout(() => {
-                setAnimationPhase(3); // Phase 3: All fade
-                const timeout3 = setTimeout(() => {
-                  setAnimationPhase(0); // Phase 0: All back to 100% (default)
-                }, 500); // 0.5 seconds for phase 3
-                animationTimeouts.current.push(timeout3 as unknown as number);
-              }, 1500); // 1.5 seconds for phase 2
-              animationTimeouts.current.push(timeout2 as unknown as number);
-            }, 900); // 0.9 seconds for phase 1
-            animationTimeouts.current.push(timeout1 as unknown as number);
-          }, 50); // Small delay to allow React to process the state change
-        }
-      }
-    }
-  }, [selectedModule, currentIndex, isShowingStem]);
-
-  const selectModule = useCallback((moduleId: string) => {
-    setSelectedModuleId(moduleId);
-    const newModule = learningModules.find(m => m.id === moduleId);
-    
-    if (newModule?.type === 'cvc') {
-      // Default to stem for CVC modules
-      setCurrentIndex(-1);
-      setIsShowingStem(true);
-      // Auto-play stem sound on load
-      setTimeout(() => {
-        if (newModule.stemSound) {
-          playSound(newModule.stemSound);
-        }
-      }, 100);
-    } else {
-      setCurrentIndex(0);
-      setIsShowingStem(false);
-    }
-    
-    setShowModuleDropdown(false);
-  }, []);
-
-  // Reset index when switching modules
-  useEffect(() => {
-    const module = learningModules.find(m => m.id === selectedModuleId);
-    if (module?.type === 'cvc') {
-      setCurrentIndex(-1);
-      setIsShowingStem(true);
-    } else {
-      setCurrentIndex(0);
-      setIsShowingStem(false);
-    }
-    setCompletedIndices([]);
-  }, [selectedModuleId]);
-
-  // Effect to reset animation and clear timeouts when item changes
-  useEffect(() => {
-    animationTimeouts.current.forEach(clearTimeout);
-    animationTimeouts.current = [];
-    setAnimationPhase(0);
-
-    // Stop current audio playback
-    if (currentAudio.current) {
-      currentAudio.current.pause();
-      currentAudio.current.currentTime = 0;
-    }
-  }, [currentIndex, selectedModuleId]);
-
-  // Get current display content
-  const getCurrentDisplay = () => {
-    if (selectedModule.type === 'letters' && selectedModule.letters) {
-      const letter = selectedModule.letters[currentIndex];
-      const upper = letter?.letter || 'A';
-      const lower = upper.toLowerCase();
-      return {
-        upper,
-        lower,
-        color: getLetterColors(upper).text,
-        isWord: false,
-        image: letterImages[upper]
-      };
-    } else if (selectedModule.type === 'cvc') {
-      if (isShowingStem) {
-        return {
-          content: selectedModule.wordStem || '',
-          color: 'text-foreground',
-          isWord: true,
-          consonant: '',
-          family: selectedModule.family || ''
-        };
-      } else if (selectedModule.words && currentIndex >= 0) {
-        const word = selectedModule.words[currentIndex];
-        return {
-          content: word?.word || selectedModule.wordStem || '',
-          color: 'text-foreground',
-          isWord: true,
-          consonant: word?.consonant || '',
-          family: selectedModule.family || ''
-        };
-      }
-    }
-    return { upper: 'A', lower: 'a', color: getLetterColors('A').text, isWord: false, image: letterImages['A'] };
-  };
-
-  const currentDisplay = getCurrentDisplay();
-
-  // Render word with color-coded consonant and black stem
-  const renderWordDisplay = (word: string, consonant: string, family: string, phase: number) => {
-    if (!consonant || word.startsWith('_')) {
-      // Word stem only - render normally (no animation for stem)
-      return (
-        <span className="font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem] text-foreground">
-          {word}
-        </span>
-      );
-    }
-    
-    const stemPart = family;
-    const firstLetterOpacity = phase === 1 ? 1 : (phase === 2 ? 0.25 : (phase === 3 ? 0.25 : 1));
-    const restOfWordOpacity = phase === 1 ? 0.25 : (phase === 2 ? 1 : (phase === 3 ? 0.25 : 1));
-
-    return (
-      <span className="font-semibold text-9xl sm:text-[10rem] md:text-[12rem] lg:text-[14rem] xl:text-[16rem]">
-        <span
-          className={getLetterColors(consonant).text}
-          style={{ opacity: firstLetterOpacity, transition: 'opacity 0.5s ease-in-out' }}
-        >
-          {consonant}
-        </span>
-        <span
-          className="text-foreground"
-          style={{ opacity: restOfWordOpacity, transition: 'opacity 0.5s ease-in-out' }}
-        >
-          {stemPart}
-        </span>
-      </span>
-    );
-  };
-
-  // Story Mode
-  if (appMode === 'story') {
-    return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-8 max-w-3xl">
-          <header className="flex items-center mb-8">
-            <button
-              data-testid="button-back-from-story"
-              className="touch-target bg-muted text-muted-foreground rounded-xl py-2 px-4 text-sm hover:bg-muted/80 transition-colors mr-4"
-              onClick={() => setAppMode('learning')}
-            >
-              ← Back to App
-            </button>
-            <h1 className="text-2xl font-light text-foreground">My Story</h1>
-          </header>
-
-          <div className="bg-card rounded-3xl p-8 shadow-sm border border-border">
-            <h2 className="text-xl font-medium mb-6 text-card-foreground text-center">
-              My Story: From Failing English to My 20-Month-Old Son Mastering Phonics
-            </h2>
-            
-            <div className="prose prose-lg max-w-none text-card-foreground space-y-6">
-              <p className="text-card-foreground mb-6">
-                I'll be honest with you - I wasn't the brightest kid in school. I still remember standing in front of a Frosted Flakes box at five years old, unable to decipher the words. That feeling of being behind, of not understanding, followed me for years. It's a struggle I was determined my son would never face.
-              </p>
-              
-              <p className="text-card-foreground mb-6">
-                When my son turned 18 months, I started noticing his fascination with letters. But here's the thing - most "educational" apps are overwhelming chaos. Flashing lights, distracting animations, multiple sounds at once. They're designed to entertain, not to teach.
-              </p>
-              
-              <p className="text-card-foreground mb-6">
-                So I stripped everything down to what actually works: one letter, one sound, crystal clear pronunciation. No distractions. No overwhelm. Just pure, focused learning.
-              </p>
-
-              <p className="text-card-foreground mb-6">
-                In today's world, this is more important than ever. With AI that threatens to do our thinking for us, our children's greatest advantage will be their ability to think, articulate, and express themselves with confidence. That journey starts with their first words, which starts with their first sounds.
-              </p>
-              
-              <p className="text-card-foreground mb-6">
-                The results were incredible. By 20 months, my son was identifying letter sounds with confidence. By 22 months, he was blending simple words. By 24 months, he was ahead of kids twice his age. His preschool teachers couldn't believe how advanced his phonemic awareness was. Most importantly, I watched him grow into a confident communicator - something I struggled with for years.
-              </p>
-              
-              <p className="text-card-foreground mb-6">
-                That's why I built ToddlerReads. It's not just an app - it's the exact method that transformed my son into a confident early reader and communicator. Every feature, every design choice comes from real experience with real results.
-              </p>
-              
-              <div className="bg-muted rounded-xl p-6 border border-border">
-                <h3 className="font-medium text-card-foreground mb-2">The Science Behind ToddlerReads</h3>
-                <ul className="text-card-foreground text-sm space-y-1">
-                  <li>• <strong>Guided Discovery:</strong> Builds neural pathways through active recall and parent interaction</li>
-                  <li>• <strong>Structured Learning Modules:</strong> Provides systematic progression from letters to words</li>
-                  <li>• <strong>Distraction-Free Design:</strong> Removes cognitive load so focus stays on learning</li>
-                  <li>• <strong>Progressive Development:</strong> Optimized for toddler attention spans and prevents overwhelm</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Single Clear Call to Action */}
-          <div className="text-center mt-8">
-            <button
-              data-testid="button-start-free-trial"
-              className="touch-target bg-green-600 text-white rounded-3xl py-4 px-8 text-xl font-semibold shadow-lg hover:bg-green-700 transition-colors"
-              onClick={() => window.open('https://toddlerreads.com/signup', '_blank')}
-            >
-              Start Your 7-Day Free Trial
-            </button>
-            <p className="text-sm text-muted-foreground mt-2">
-              Get instant access for your toddler
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+  if (!selectedModule) {
+    return <div>Error: Letter module not found.</div>;
   }
 
-  // Main Learning Screen - V2.1 Layout
+  const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
+
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden">
-      {/* Header with Logo and Module Dropdown */}
-      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        {/* Logo */}
-        <div className="flex-1">
-          <button onClick={() => navigate('/')} className="focus:outline-none">
-            <img 
-              src={logoUrl} 
-              alt="ToddlerReads" 
-              className="h-10 object-contain" // Slightly smaller logo
-            />
-          </button>
-        </div>
-
-        {/* Learning Module Dropdown */}
-        <div className="relative flex-1 flex justify-end" ref={dropdownRef}>
-          <button
-            data-testid="button-module-selector"
-            className="touch-target bg-card border border-border shadow-sm rounded-xl py-2 px-4 text-sm hover:bg-secondary/80 transition-all duration-200 flex items-center gap-2 transform hover:scale-105"
-            onClick={() => setShowModuleDropdown(!showModuleDropdown)}
-          >
-            {selectedModule.name}
-            <span className="text-muted-foreground text-lg transition-transform duration-200" style={{ transform: showModuleDropdown ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-          </button>
-
-          {showModuleDropdown && (
-            <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl shadow-lg z-50 min-w-[200px] bg-background/80 backdrop-blur-sm">
-              <div className="p-2">
-                <div className="mb-2">
-                  <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">Letters</h3>
-                  <button
-                    data-testid="button-select-letters"
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedModuleId === 'letters-full'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted text-card-foreground'
-                    }`}
-                    onClick={() => selectModule('letters-full')}
-                  >
-                    Full Alphabet
-                  </button>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground px-2 py-1">First Words (CVC)</h3>
-                  {learningModules.filter(m => m.type === 'cvc').map((module) => (
-                    <button
-                      key={module.id}
-                      data-testid={`button-select-${module.id}`}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        selectedModuleId === module.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-muted text-card-foreground'
-                      }`}
-                      onClick={() => selectModule(module.id)}
-                    >
-                      {module.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
+      <header className="flex items-center p-4 flex-shrink-0 w-full">
+        <Link href="/">
+          <Button variant="outline">← Home</Button>
+        </Link>
       </header>
 
-      {/* Main Content Display */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 -mt-8 min-h-0">
         <div className="relative w-full h-full flex items-center justify-center">
-          {/* Navigation Areas */}
-          <button
-            data-testid="button-nav-previous"
-            className="absolute left-0 top-0 bottom-0 w-10 sm:w-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
-            onClick={() => navigateItem('prev')}
-          >
-            <span className="text-4xl text-muted-foreground">‹</span>
-          </button>
-          <button
-            data-testid="button-nav-next"
-            className="absolute right-0 top-0 bottom-0 w-10 sm:w-20 touch-target flex items-center justify-center opacity-0 hover:opacity-20 transition-opacity"
-            onClick={() => navigateItem('next')}
-          >
-            <span className="text-4xl text-muted-foreground">›</span>
-          </button>
-
-          {/* Wrapper for Card and Instruction to contain absolute positioning */}
-          <div className="relative aspect-square max-h-full w-full max-w-md">
-            {/* Content Card */}
-            <div
-              data-testid="card-content-display"
-              className="bg-card rounded-3xl shadow-2xl p-4 sm:p-8 flex items-center justify-center cursor-pointer hover:shadow-3xl transition-shadow w-full h-full touch-auto"
-              onClick={playCurrentSound}
-            >
-              <div data-testid="text-current-content" className="text-center">
-                {currentDisplay.isWord && currentDisplay.consonant && currentDisplay.family ? (
-                  renderWordDisplay(currentDisplay.content, currentDisplay.consonant, currentDisplay.family, animationPhase)
-                ) : currentDisplay.upper ? (
-                  <div className="flex items-center justify-center">
-                    <span className={`font-semibold ${currentDisplay.color}`}>
-                      <span className="text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]">{currentDisplay.upper}</span>
-                      <span className="text-5xl sm:text-[6rem] md:text-[8rem] lg:text-[10rem] xl:text-[11rem]">{currentDisplay.lower}</span>
+          <div className="relative">
+            <div className="text-center">
+              {currentIndex !== null && currentDisplayData && (
+                <>
+                  {displayState === 'LETTER' && (
+                    <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]`}>
+                      <span>{currentDisplayData.letter}</span>
+                      <span className="text-6xl sm:text-[7rem] md:text-[8rem] lg:text-[9rem] xl:text-[10rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
                     </span>
-                    {currentDisplay.image && (
-                      <img src={currentDisplay.image} alt={currentDisplay.upper} className="w-24 h-24 ml-4" />
-                    )}
-                  </div>
-                ) : (
-                  <span className={`font-semibold text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem] ${currentDisplay.color}`}>
-                    {currentDisplay.content}
-                  </span>
-                )}
-              </div>
+                  )}
+                  {displayState === 'WORD' && (
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-x-8 animate-fade-in">
+                      <span className={`font-semibold text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem]`}>
+                        {currentDisplayData.letter === 'X' ? (
+                          <>
+                            <span className="text-gray-600">Bo</span>
+                            <span className={getLetterColors('X').text}>x</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className={getLetterColors(currentDisplayData.letter).text}>{letterWords[currentDisplayData.letter].charAt(0)}</span>
+                            <span className="text-gray-600">{letterWords[currentDisplayData.letter].slice(1)}</span>
+                          </>
+                        )}
+                      </span>
+                      {letterImages[currentDisplayData.letter] && (
+                         <img
+                            src={letterImages[currentDisplayData.letter]}
+                            alt={letterWords[currentDisplayData.letter]}
+                            className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 select-none"
+                            draggable="false"
+                         />
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-
-            {/* Instruction */}
-            {showInstruction && (
-              <p className="absolute bottom-5 left-0 right-0 text-center text-muted-foreground text-base sm:text-lg opacity-75 pointer-events-none">
-                {selectedModule.type === 'letters' ? "Tap the letter to hear its sound" : "Tap the word to hear it spoken"}
-              </p>
-            )}
           </div>
+        </div>
+        <div onClick={(e) => { e.stopPropagation(); replaySound(); }} className="w-full max-w-md p-4 absolute bottom-0 cursor-pointer">
+          <Progress value={progress} className="h-2" />
         </div>
       </main>
 
-      {/* Item Selection Tray */}
       <div className="w-full flex-shrink-0" data-testid="container-item-tray">
         <div className="flex flex-wrap justify-center gap-3 p-4">
-          {selectedModule.type === 'letters' && selectedModule.letters?.map((letter, index) => {
+          {selectedModule.letters?.map((letter, index) => {
             const colors = getLetterColors(letter.letter);
             return (
               <button
                 key={index}
-                data-testid={`button-tray-letter-${letter.letter}`}
+                onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleTrayClick(index); }}
+                disabled={voices.length === 0}
                 className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-all min-w-[64px] touch-auto ${
-                  completedIndices.includes(index)
-                    ? 'invisible'
-                    : index === currentIndex
+                  currentIndex === index && isPlaying
                     ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-offset-2 ring-primary transform scale-110'
                     : `${colors.background} ${colors.hoverBackground} ${colors.darkText}`
-                }`}
-                onClick={() => {
-                  const newCompletedIndices = [...completedIndices, currentIndex];
-                  const finalCompleted = newCompletedIndices.filter(i => i !== index);
-                  setCompletedIndices(finalCompleted);
-                  jumpToItem(index);
-
-                  if (finalCompleted.length === (selectedModule.letters?.length || 0) - 1) {
-                    setTimeout(() => {
-                      setCompletedIndices([]);
-                    }, 1000);
-                  }
-                }}
+                } ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
               >
-                <span className={`${completedIndices.includes(index) ? 'opacity-0' : 'opacity-100'} transition-opacity duration-150`}>
-                  {letter.letter}
-                </span>
+                {letter.letter}
               </button>
             );
           })}
-          
-          {selectedModule.type === 'cvc' && (
-            <>
-              {/* Stem Button */}
-              <button
-                data-testid="button-tray-stem"
-                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] ${
-                  isShowingStem
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                }`}
-                onClick={() => jumpToItem(-1, true)}
-              >
-                _
-              </button>
-              
-              {/* Consonant Buttons */}
-              {selectedModule.consonants?.map((consonant, index) => {
-                const colors = getLetterColors(consonant);
-                return (
-                  <button
-                    key={index}
-                    data-testid={`button-tray-consonant-${consonant}`}
-                    className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-colors min-w-[64px] text-white ${
-                      index === currentIndex && !isShowingStem
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : `${colors.background} ${colors.hoverBackground}`
-                    }`}
-                    onClick={() => jumpToItem(index, false)}
-                  >
-                    {consonant}
-                  </button>
-                );
-              })}
-            </>
-          )}
         </div>
       </div>
     </div>

@@ -1,34 +1,50 @@
-import { useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const useSpeechSynthesis = () => {
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const speak = useCallback((text: string) => {
-    if (!('speechSynthesis' in window)) {
-      console.warn('Speech synthesis not supported');
-      return;
+  useEffect(() => {
+    const handleVoicesChanged = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+
+    if ('speechSynthesis' in window) {
+      setVoices(window.speechSynthesis.getVoices());
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
     }
 
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
-    utteranceRef.current = new SpeechSynthesisUtterance(text);
-    utteranceRef.current.rate = 0.8;
-    utteranceRef.current.pitch = 1.2;
-    utteranceRef.current.volume = 1;
+  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null }) => {
+    return new Promise<void>(resolve => {
+      if (!('speechSynthesis' in window)) {
+        console.warn('Speech synthesis not supported');
+        resolve();
+        return;
+      }
 
-    // Try to use a child-friendly voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoices = voices.filter(voice => 
-      voice.lang.startsWith('en') && 
-      (voice.name.includes('Female') || voice.name.includes('Google'))
-    );
-    
-    if (preferredVoices.length > 0) {
-      utteranceRef.current.voice = preferredVoices[0];
-    }
+      window.speechSynthesis.cancel();
 
-    window.speechSynthesis.speak(utteranceRef.current);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.8;
+      utterance.pitch = 1.2;
+      utterance.volume = 1;
+
+      if (options?.voice) {
+        utterance.voice = options.voice;
+      }
+      
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve(); // Also resolve on error to not block the sequence
+
+      window.speechSynthesis.speak(utterance);
+    });
   }, []);
 
   const stop = useCallback(() => {
@@ -37,5 +53,5 @@ export const useSpeechSynthesis = () => {
     }
   }, []);
 
-  return { speak, stop };
+  return { speak, stop, voices };
 };

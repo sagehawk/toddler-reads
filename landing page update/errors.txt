@@ -1,0 +1,50 @@
+client:536 WebSocket connection to 'ws://localhost:443/?token=e3VBVRg2PD55' failed: 
+client:560 [vite] server connection lost. Polling for restart...
+:443/:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+:443/:1 
+ Failed to load resource: net::ERR_CONNECTION_REFUSED
+inject.js:22 pageshow:  
+PageTransitionEvent
+content.js:40 Feature is disabled
+content.js:148 Refused to load the script 'blob:http://localhost:3001/9e55cdeb-c9bb-46c4-ba41-5dbfd538f182' because it violates the following Content Security Policy directive: "script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' chrome-extension://74ad73c4-0bcc-4240-8562-f3068f1f8fae/". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+:3001/:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+:3001/:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+2
+hook.js:608 Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. Error Component Stack
+    at carousel.tsx:49:7
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at AnimalsApp (AnimalsApp.tsx:63:43)
+chunk-QRULMDK5.js?v=2a490a60:1074 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at carousel.tsx:59:32
+2
+hook.js:608 Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem. Error Component Stack
+    at carousel.tsx:49:7
+    at div (<anonymous>)
+    at div (<anonymous>)
+    at AnimalsApp (AnimalsApp.tsx:63:43)
+chunk-QRULMDK5.js?v=2a490a60:1074 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at carousel.tsx:59:32
+hook.js:608 The above error occurred in the <Carousel> component:
+
+    at http://localhost:3001/src/components/ui/carousel.tsx:36:7
+    at div
+    at div
+    at AnimalsApp (http://localhost:3001/src/components/AnimalsApp.tsx?t=1757893330464:76:43)
+    at Route (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=d5ce1526:338:16)
+    at Switch (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=d5ce1526:394:17)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-TDH2IRYZ.js?v=99ae5d95:9129 Uncaught TypeError: Cannot read properties of null (reading 'useRef')
+    at carousel.tsx:59:32
