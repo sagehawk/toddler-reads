@@ -28,7 +28,7 @@ const blocks = [
 const HomePageIcon = ({ icon, href }: { icon: React.ReactNode; href: string; }) => {
   const isPlaceholder = href === "#";
   const content = (
-    <div className={`w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 p-2 rounded-3xl bg-white shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-xl active:scale-95 ${isPlaceholder ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
+    <div className={`w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 p-2 rounded-3xl bg-card shadow-lg transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-xl active:scale-95 ${isPlaceholder ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
       <div className="w-full h-full bg-muted rounded-2xl flex items-center justify-center">
         {icon}
       </div>
@@ -44,7 +44,7 @@ const HomePageIcon = ({ icon, href }: { icon: React.ReactNode; href: string; }) 
 
 const DigitalPlayshelf = () => {
   return (
-    <div className="min-h-dvh w-full bg-muted/30 flex flex-col items-center justify-around pt-16 sm:pt-20 gap-10">
+    <div className="min-h-dvh w-full bg-background flex flex-col items-center justify-around pt-16 sm:pt-20 gap-10">
       <div className="flex-shrink-0">
         <img src={logoUrl} alt="ToddlerReads Logo" className="h-16 sm:h-20 select-none" draggable="false" />
       </div>

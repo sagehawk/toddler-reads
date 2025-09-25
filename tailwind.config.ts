@@ -15,17 +15,36 @@ export default {
         button: '0 2px 8px -2px hsla(178, 67%, 55%, 0.3)',
       },
       colors: {
-        background: 'hsl(40, 100%, 97%)',
-        foreground: 'hsl(210, 21%, 21%)',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
         destructive: {
-          DEFAULT: 'hsl(0, 84.2%, 60.2%)',
-          foreground: 'hsl(0, 0%, 98%)',
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
-        accent: 'hsl(178, 67%, 55%)',
+        accent: 'hsl(var(--accent))',
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
       },
       fontFamily: {
         sans: ["'Nunito'", "sans-serif"],

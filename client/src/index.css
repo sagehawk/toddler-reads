@@ -87,3 +87,24 @@
     }
   }
 }
+
+.dark {
+  --toddler-cream-hsl: 210 21% 15%; /* Dark background */
+  --toddler-charcoal-hsl: 40 100% 97%; /* Light foreground */
+
+  --background: hsl(var(--toddler-cream-hsl));
+  --foreground: hsl(var(--toddler-charcoal-hsl));
+
+  --card: hsl(210 21% 20%);
+  --card-foreground: hsl(var(--toddler-charcoal-hsl));
+  --popover: hsl(210 21% 20%);
+  --popover-foreground: hsl(var(--toddler-charcoal-hsl));
+
+  --secondary: hsl(210 21% 25%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(210 21% 25%);
+  --muted-foreground: hsl(0 0% 63%);
+  --border: hsl(210 21% 30%);
+  --input: hsl(210 21% 25%);
+  --ring: hsl(var(--toddler-teal-hsl));
+}

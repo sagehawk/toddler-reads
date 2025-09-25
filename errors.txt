@@ -1,27 +1,33 @@
-ET http://localhost:3001/src/components/AnimalsApp.tsx?t=1757969977851 net::ERR_ABORTED 500 (Internal Server Error)Understand this error
-inject.js:22 pageshow:  PageTransitionEvent {isTrusted: true, persisted: false, type: 'pageshow', target: document, currentTarget: Window, …}
-content.js:148 Refused to load the script 'blob:http://localhost:3001/afadd479-e1b3-4096-8846-0d2f6d224f67' because it violates the following Content Security Policy directive: "script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' chrome-extension://74ad73c4-0bcc-4240-8562-f3068f1f8fae/". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback.
+Uncaught ReferenceError: useTheme is not defined
+    at PhonicsApp (PhonicsApp.tsx:93:39)
+    at renderWithHooks (chunk-TDH2IRYZ.js?v=d0db4d24:11548:26)
+    at mountIndeterminateComponent (chunk-TDH2IRYZ.js?v=d0db4d24:14926:21)
+    at beginWork (chunk-TDH2IRYZ.js?v=d0db4d24:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-TDH2IRYZ.js?v=d0db4d24:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-TDH2IRYZ.js?v=d0db4d24:3699:24)
+    at invokeGuardedCallback (chunk-TDH2IRYZ.js?v=d0db4d24:3733:39)
+    at beginWork$1 (chunk-TDH2IRYZ.js?v=d0db4d24:19765:15)
+    at performUnitOfWork (chunk-TDH2IRYZ.js?v=d0db4d24:19198:20)
+    at workLoopSync (chunk-TDH2IRYZ.js?v=d0db4d24:19137:13)Understand this error
+hook.js:608 The above error occurred in the <PhonicsApp> component:
 
-(anonymous) @ content.js:148
-Promise.then
-(anonymous) @ content.js:139Understand this error
-content.js:80 Feature is disabled
-animals:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
-animals:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this error
-client:536 WebSocket connection to 'ws://localhost:443/?token=G9E-fCGNDsjX' failed: 
-setupWebSocket @ client:536
-(anonymous) @ client:531Understand this error
-client:560 [vite] server connection lost. Polling for restart...
-12The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.Understand this warning
-client:736  GET http://localhost:443/ net::ERR_CONNECTION_REFUSED
+    at PhonicsApp (http://localhost:3001/src/components/PhonicsApp.tsx?t=1758821559983:143:39)
+    at Route (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=d2eeb739:338:16)
+    at Switch (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=d2eeb739:394:17)
+    at App
+    at ThemeProvider (http://localhost:3001/src/hooks/useTheme.tsx:29:33)
 
-4:00:51 PM [vite] Internal server error: C:\Users\secte\OneDrive\Documents\GitHub\toddler-reads\client\src\components\AnimalsApp.tsx: Unexpected token (205:2)
-
-  203 |     </div>
-  204 |   )
-> 205 |   );
-      |   ^
-  206 | };
-  207 |
-  208 | export default AnimalsApp;
-  Plugin: vite:react-babel
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+overrideMethod @ hook.js:608Understand this error
+chunk-TDH2IRYZ.js?v=d0db4d24:9129 Uncaught ReferenceError: useTheme is not defined
+    at PhonicsApp (PhonicsApp.tsx:93:39)
+    at renderWithHooks (chunk-TDH2IRYZ.js?v=d0db4d24:11548:26)
+    at mountIndeterminateComponent (chunk-TDH2IRYZ.js?v=d0db4d24:14926:21)
+    at beginWork (chunk-TDH2IRYZ.js?v=d0db4d24:15914:22)
+    at beginWork$1 (chunk-TDH2IRYZ.js?v=d0db4d24:19753:22)
+    at performUnitOfWork (chunk-TDH2IRYZ.js?v=d0db4d24:19198:20)
+    at workLoopSync (chunk-TDH2IRYZ.js?v=d0db4d24:19137:13)
+    at renderRootSync (chunk-TDH2IRYZ.js?v=d0db4d24:19116:15)
+    at recoverFromConcurrentError (chunk-TDH2IRYZ.js?v=d0db4d24:18736:28)
+    at performSyncWorkOnRoot (chunk-TDH2IRYZ.js?v=d0db4d24:18879:28)

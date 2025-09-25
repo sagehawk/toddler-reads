@@ -58,6 +58,8 @@ const phonicsSounds: { [key: string]: string } = {
     'Z': '/sounds/Phonics/Sound 26.mp3',
 };
 
+
+
 const AnimalsApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedParts, setCompletedParts] = useState<string[]>([]);
@@ -140,7 +142,7 @@ const AnimalsApp = () => {
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative">
       <header className="flex items-center p-4 flex-shrink-0 w-full">
         <Link href="/">
-          <a className="text-foreground hover:text-gray-600 transition-colors">
+          <a className="text-foreground hover:text-gray-600 transition-colors p-2 -m-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
