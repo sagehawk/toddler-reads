@@ -20,4 +20,9 @@ export default defineConfig({
       clientPort: 443,
     },
   },
+  preview: {
+    port: 8080,
+    strictPort: true,
+    historyApiFallback: true,
+  },
 });

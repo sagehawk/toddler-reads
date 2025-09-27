@@ -69,6 +69,8 @@ const AnimalsApp = () => {
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentAnimal = animalData[currentIndex];
+  const prevAnimal = animalData[(currentIndex - 1 + animalData.length) % animalData.length];
+  const nextAnimal = animalData[(currentIndex + 1) % animalData.length];
 
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
 
@@ -99,6 +101,14 @@ const AnimalsApp = () => {
     setCompletedParts([]);
     setIsWordComplete(false);
     setCurrentIndex(index);
+  };
+
+  const handleNext = () => {
+    selectAnimal((currentIndex + 1) % animalData.length);
+  };
+
+  const handlePrevious = () => {
+    selectAnimal((currentIndex - 1 + animalData.length) % animalData.length);
   };
 
   // Cleanup on unmount
@@ -187,18 +197,17 @@ const AnimalsApp = () => {
 
       <div className="w-full flex-shrink-0 p-2">
         <div className="w-full max-w-2xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-4">
-            {animalData.map((animal, index) => (
-              <div key={animal.name} className="flex-shrink-0">
-                <button 
-                  onClick={() => selectAnimal(index)}
-                  className={`p-2 rounded-lg border-4 transition-all w-24 h-24 ${currentIndex === index ? 'border-primary' : 'border-transparent'}`}>
-                  <div className="w-full h-full bg-muted rounded flex items-center justify-center">
-                    {animal.image ? <img src={animal.image} alt={animal.name} className="w-full h-full object-cover rounded-sm select-none" draggable="false" /> : <span className="text-sm text-gray-500">{animal.name}</span>}
-                  </div>
-                </button>
-              </div>
-            ))}
+          <div className="flex justify-between items-center p-4 max-w-4xl mx-auto">
+            <button 
+              onClick={handlePrevious}
+              className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-all min-w-[64px] touch-auto ${getLetterColors(prevAnimal.name.charAt(0)).background} ${getLetterColors(prevAnimal.name.charAt(0)).hoverBackground} ${getLetterColors(prevAnimal.name.charAt(0)).darkText}`}>
+              {prevAnimal.name.charAt(0)}
+            </button>
+            <button 
+              onClick={handleNext}
+              className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-all min-w-[64px] touch-auto ${getLetterColors(nextAnimal.name.charAt(0)).background} ${getLetterColors(nextAnimal.name.charAt(0)).hoverBackground} ${getLetterColors(nextAnimal.name.charAt(0)).darkText}`}>
+              {nextAnimal.name.charAt(0)}
+            </button>
           </div>
         </div>
       </div>

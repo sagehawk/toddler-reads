@@ -197,7 +197,7 @@ export default function PhonicsApp() {
   }, [currentIndex, displayState, isPlaying, selectedModule.letters, femaleVoice, playSoundOnce, waitWithProgress, speak, stopAllSounds, stopAllTimers]);
 
 
-  const handleTrayClick = (index: number) => {
+  const handleLetterClick = (index: number) => {
     stopAllSounds();
     
     const letterInfo = selectedModule.letters?.[index];
@@ -210,6 +210,18 @@ export default function PhonicsApp() {
         setIsPlaying(true);
         setDisplayState('LETTER');
     }
+  };
+
+  const handleNext = () => {
+    if (currentIndex === null) return;
+    const nextIndex = (currentIndex + 1) % (selectedModule.letters?.length || 1);
+    handleLetterClick(nextIndex);
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex === null) return;
+    const prevIndex = (currentIndex - 1 + (selectedModule.letters?.length || 1)) % (selectedModule.letters?.length || 1);
+    handleLetterClick(prevIndex);
   };
 
   const handleScreenClick = () => {
@@ -239,11 +251,19 @@ export default function PhonicsApp() {
     }
   };
 
+  useEffect(() => {
+    // Start with the letter 'A'
+    handleLetterClick(0);
+  }, []);
+
+
   if (!selectedModule) {
     return <div>Error: Letter module not found.</div>;
   }
 
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
+  const prevLetter = currentIndex !== null ? selectedModule.letters?.[(currentIndex - 1 + (selectedModule.letters?.length || 1)) % (selectedModule.letters?.length || 1)] : null;
+  const nextLetter = currentIndex !== null ? selectedModule.letters?.[(currentIndex + 1) % (selectedModule.letters?.length || 1)] : null;
 
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
@@ -264,14 +284,14 @@ export default function PhonicsApp() {
               {currentIndex !== null && currentDisplayData && (
                 <>
                   {displayState === 'LETTER' && (
-                    <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-8xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]`}>
+                    <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-9xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]`}>
                       <span>{currentDisplayData.letter}</span>
-                      <span className="text-4xl sm:text-[5rem] md:text-[6rem] lg:text-[7rem] xl:text-[8rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
+                      <span className="text-5xl sm:text-[5rem] md:text-[6rem] lg:text-[7rem] xl:text-[8rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
                     </span>
                   )}
                   {displayState === 'WORD' && (
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-x-8 animate-fade-in">
-                      <span className={`font-semibold text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem]`}>
+                    <div className="flex flex-col-reverse md:flex-col items-center justify-center gap-x-8 animate-fade-in max-w-screen-md mx-auto">
+                      <span className={`font-semibold text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl`}>
                         {currentDisplayData.letter === 'X' ? (
                           <>
                             <span className="text-gray-600">Bo</span>
@@ -288,7 +308,7 @@ export default function PhonicsApp() {
                          <img
                             src={letterImages[currentDisplayData.letter]}
                             alt={letterWords[currentDisplayData.letter]}
-                            className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 select-none"
+                            className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 select-none"
                             draggable="false"
                          />
                       )}
@@ -305,24 +325,25 @@ export default function PhonicsApp() {
       </main>
 
       <div className="w-full flex-shrink-0" data-testid="container-item-tray">
-        <div className="flex flex-wrap justify-center gap-3 p-4 max-w-4xl mx-auto">
-          {selectedModule.letters?.map((letter, index) => {
-            const colors = getLetterColors(letter.letter);
-            return (
-              <button
-                key={index}
-                onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleTrayClick(index); }}
-                disabled={voices.length === 0}
-                className={`touch-target rounded-2xl py-4 px-5 font-bold text-2xl transition-all min-w-[64px] touch-auto ${
-                  currentIndex === index && isPlaying
-                    ? 'bg-primary text-primary-foreground shadow-lg ring-2 ring-offset-2 ring-primary transform scale-110'
-                    : `${colors.background} ${colors.hoverBackground} ${colors.darkText}`
-                } ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-              >
-                {letter.letter}
-              </button>
-            );
-          })}
+        <div className="flex justify-between items-center p-6 max-w-5xl mx-auto">
+          {prevLetter && (
+            <button
+              onClick={(e) => { e.stopPropagation(); voices.length > 0 && handlePrevious(); }}
+              disabled={voices.length === 0}
+              className={`touch-target rounded-2xl py-5 px-6 font-bold text-3xl transition-all min-w-[72px] touch-auto ${getLetterColors(prevLetter.letter).background} ${getLetterColors(prevLetter.letter).hoverBackground} ${getLetterColors(prevLetter.letter).darkText} ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+            >
+              {prevLetter.letter}
+            </button>
+          )}
+          {nextLetter && (
+            <button
+              onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleNext(); }}
+              disabled={voices.length === 0}
+              className={`touch-target rounded-2xl py-5 px-6 font-bold text-3xl transition-all min-w-[72px] touch-auto ${getLetterColors(nextLetter.letter).background} ${getLetterColors(nextLetter.letter).hoverBackground} ${getLetterColors(nextLetter.letter).darkText} ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+            >
+              {nextLetter.letter}
+            </button>
+          )}
         </div>
       </div>
     </div>
