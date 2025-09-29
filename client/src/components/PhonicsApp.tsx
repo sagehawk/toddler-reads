@@ -278,7 +278,7 @@ export default function PhonicsApp() {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-around overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-start pt-8 overflow-y-auto">
         <main className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 min-h-0">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Shuffle } from 'lucide-react';
@@ -11,6 +11,10 @@ const VocabApp = () => {
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
+  const wordContainerRef = useRef<HTMLDivElement>(null);
+  const wordRef = useRef<HTMLHeadingElement>(null);
+
+  const currentItem = vocabData[currentIndex];
 
   const shuffleItems = useCallback(() => {
     const indices = vocabData.map((_, i) => i);
@@ -33,6 +37,22 @@ const VocabApp = () => {
   useEffect(() => {
     shuffleItems();
   }, []);
+
+  useEffect(() => {
+    if (wordContainerRef.current && wordRef.current) {
+      const containerWidth = wordContainerRef.current.offsetWidth;
+      const wordWidth = wordRef.current.scrollWidth;
+
+      if (wordWidth > containerWidth) {
+        const scale = containerWidth / wordWidth;
+        wordRef.current.style.transform = `scale(${scale})`;
+        wordRef.current.style.transformOrigin = 'center';
+      } else {
+        wordRef.current.style.transform = 'scale(1)';
+        wordRef.current.style.transformOrigin = 'center';
+      }
+    }
+  }, [currentItem]);
 
   const handleNext = useCallback(() => {
     const nextShuffledIndex = (shuffledIndex + 1) % shuffledIndices.length;
@@ -63,7 +83,6 @@ const VocabApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      const currentItem = vocabData[currentIndex];
       if (currentItem) {
         speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
       }
@@ -72,7 +91,12 @@ const VocabApp = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
+      if (e.key >= 'a' && e.key <= 'z') {
+        const newIndex = vocabData.findIndex(item => item.name.toLowerCase().startsWith(e.key));
+        if (newIndex !== -1) {
+          setCurrentIndex(newIndex);
+        }
+      } else if (e.key === 'ArrowLeft') {
         handlePrevious();
       } else if (e.key === 'ArrowRight') {
         handleNext();
@@ -87,13 +111,10 @@ const VocabApp = () => {
   }, [handlePrevious, handleNext]);
 
   useEffect(() => {
-    const currentItem = vocabData[currentIndex];
     if (currentItem) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
     }
   }, [currentIndex, femaleVoice, speak]);
-
-  const currentItem = vocabData[currentIndex];
 
   if (!currentItem) {
     return <div>Loading...</div>;
@@ -102,47 +123,49 @@ const VocabApp = () => {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-around overflow-y-auto">
-        <main className="relative flex flex-col items-center justify-start text-center px-4">
+      <div className="flex-1 flex flex-col justify-around">
+        <main className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
           <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-y-8 animate-fade-in">
-            <h2 className="text-8xl md:text-9xl font-bold tracking-widest">
-              <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-              <span className="text-gray-600">{currentItem.name.slice(1)}</span>
-            </h2>
-            <img
-              src={currentItem.image}
-              alt={currentItem.name}
-              className="w-52 h-52 md:w-52 md:h-52 object-contain"
-            />
+          <div ref={wordContainerRef} className="w-full flex justify-center">
+            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
+              <h2 ref={wordRef} className="text-8xl md:text-9xl font-bold tracking-widest text-nowrap">
+                <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
+                <span className="text-gray-600">{currentItem.name.slice(1)}</span>
+              </h2>
+              <img
+                src={currentItem.image}
+                alt={currentItem.name}
+                className="w-52 h-52 md:w-48 md:h-48 object-contain"
+              />
+            </div>
           </div>
         </main>
 
-        <div className="w-full p-4 pb-8 -mb-12">
+        <div className="w-full p-4">
           <div className="w-full max-w-2xl mx-auto">
             <div className="flex justify-center items-center p-4 max-w-4xl mx-auto">
               <button
                 onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
-                className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
+                className={`touch-target rounded-2xl py-4 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
               >
-                <Shuffle className="w-8 h-8 md:w-12 md:h-12" />
+                <Shuffle className="w-8 h-8 md:w-10 md:h-10" />
               </button>
             </div>
           </div>
