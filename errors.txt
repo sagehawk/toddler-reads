@@ -1,13 +1,17 @@
-hook.js:608 The above error occurred in the <PhonicsApp> component:
+19:39 AM [vite] Internal server error: Failed to resolve import "@fontsource/nunito/400-block.css" from "client/src/main.tsx". Does the file exist?
+  Plugin: vite:import-analysis
+  File: C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/client/src/main.tsx:5:7
+  4  |  import "./index.css";
+  5  |  import { ThemeProvider } from "./hooks/useTheme";
+  6  |  import "@fontsource/nunito/400-block.css";
+     |          ^
+  7  |  import "@fontsource/nunito/500-block.css";
+  8  |  import "@fontsource/nunito/600-block.css";
+      at TransformPluginContext._formatError (file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49258:41)
+      at TransformPluginContext.error (file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49253:16)
+      at normalizeUrl (file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64291:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64423:39
+      at async Promise.all (index 5)
+12:19:39 AM [vite] Pre-transform error: Failed to resolve import "@fontsource/nunito/400-block.css" from "client/src/main.tsx". Does the file exist? (x5)
 
-    at PhonicsApp (http://localhost:3001/src/components/PhonicsApp.tsx?t=1758828701089:143:24)
-    at Route (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=62ca85e6:338:16)
-    at Switch (http://localhost:3001/@fs/C:/Users/secte/OneDrive/Documents/GitHub/toddler-reads/node_modules/.vite/deps/wouter.js?v=62ca85e6:394:17)
-    at App
-    at ThemeProvider (http://localhost:3001/src/hooks/useTheme.tsx:29:33)
-
-Consider adding an error boundary to your tree to customize error handling behavior.
-Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
-chunk-TDH2IRYZ.js?v=23411c79:9129 Uncaught ReferenceError: currentDisplayDataletter is not defined
-    at PhonicsApp (PhonicsApp.tsx:303:74)
-client:536 WebSocket connection to 'ws://localhost:443/?token=s6MyzLAK2sKe' failed:

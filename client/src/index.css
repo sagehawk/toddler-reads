@@ -8,35 +8,33 @@
 @tailwind utilities;
 
 :root {
-  --toddler-teal-hsl: 178 67% 55%;
-  --destructive-hsl: 0 84.2% 60.2%;
-  --toddler-cream-hsl: 40 100% 97%;
-  --toddler-charcoal-hsl: 210 21% 21%;
+  --background: 40 100% 97%;
+  --foreground: 210 21% 21%;
 
-  --background: hsl(var(--toddler-cream-hsl));
-  --foreground: hsl(var(--toddler-charcoal-hsl));
+  --card: 0 0% 100%;
+  --card-foreground: 210 21% 21%;
 
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(var(--toddler-charcoal-hsl));
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(var(--toddler-charcoal-hsl));
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 21% 21%;
 
-  --primary: var(--toddler-teal-hsl);
+  --primary: 178 67% 55%;
   --primary-foreground: 0 0% 98%;
-  --secondary: hsl(32, 25%, 94%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --muted: hsl(32, 25%, 94%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
-  --accent: hsl(var(--toddler-teal-hsl));
-  --accent-foreground: hsl(24, 9.8%, 10%);
-  --destructive: hsl(var(--destructive-hsl));
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --border: hsl(32, 18%, 88%);
-  --input: hsl(32, 20%, 96%);
-  --ring: hsl(var(--toddler-teal-hsl));
 
-  --shadow-gentle: 0 4px 20px -4px hsla(var(--toddler-charcoal-hsl), 0.1);
-  --shadow-button: 0 2px 8px -2px hsla(var(--toddler-teal-hsl), 0.3);
+  --secondary: 32 25% 94%;
+  --secondary-foreground: 24 9.8% 10%;
+
+  --muted: 32 25% 94%;
+  --muted-foreground: 25 5.3% 44.7%;
+
+  --accent: 178 67% 55%;
+  --accent-foreground: 24 9.8% 10%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 32 18% 88%;
+  --input: 32 20% 96%;
+  --ring: 178 67% 55%;
 
   --radius: 16px;
 }
@@ -63,7 +61,7 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--toddler-teal-hsl));
+    background-color: hsl(var(--primary));
     border-radius: 10px;
     border: 3px solid hsl(var(--muted));
   }
@@ -71,7 +69,7 @@
   /* For Firefox */
   .custom-scrollbar {
     scrollbar-width: auto;
-    scrollbar-color: hsl(var(--toddler-teal-hsl)) hsl(var(--muted));
+    scrollbar-color: hsl(var(--primary)) hsl(var(--muted));
   }
 
   .animate-fade-in {
@@ -89,22 +87,31 @@
 }
 
 .dark {
-  --toddler-cream-hsl: 210 21% 15%; /* Dark background */
-  --toddler-charcoal-hsl: 40 100% 97%; /* Light foreground */
+  --background: 210 21% 15%;
+  --foreground: 40 100% 97%;
 
-  --background: hsl(var(--toddler-cream-hsl));
-  --foreground: hsl(var(--toddler-charcoal-hsl));
+  --card: 210 21% 20%;
+  --card-foreground: 40 100% 97%;
 
-  --card: hsl(210 21% 20%);
-  --card-foreground: hsl(var(--toddler-charcoal-hsl));
-  --popover: hsl(210 21% 20%);
-  --popover-foreground: hsl(var(--toddler-charcoal-hsl));
+  --popover: 210 21% 20%;
+  --popover-foreground: 40 100% 97%;
 
-  --secondary: hsl(210 21% 25%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(210 21% 25%);
-  --muted-foreground: hsl(0 0% 63%);
-  --border: hsl(210 21% 30%);
-  --input: hsl(210 21% 25%);
-  --ring: hsl(var(--toddler-teal-hsl));
+  --primary: 178 67% 55%;
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 210 21% 25%;
+  --secondary-foreground: 0 0% 98%;
+
+  --muted: 210 21% 25%;
+  --muted-foreground: 0 0% 63%;
+
+  --accent: 178 67% 55%;
+  --accent-foreground: 0 0% 98%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border: 210 21% 30%;
+  --input: 210 21% 25%;
+  --ring: 178 67% 55%;
 }

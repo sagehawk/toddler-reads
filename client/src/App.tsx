@@ -1,7 +1,8 @@
 import { Route, Switch } from "wouter";
 import NewLanding from "./pages/NewLanding";
 import PhonicsApp from "./components/PhonicsApp";
-import AnimalsApp from "./components/AnimalsApp"; // Import AnimalsApp
+import VocabApp from "./components/VocabApp";
+import SentencesApp from "./components/SentencesApp";
 import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 
@@ -10,7 +11,8 @@ function App() {
     <Switch>
       <Route path="/" component={NewLanding} />
       <Route path="/phonics" component={PhonicsApp} />
-      <Route path="/animals" component={AnimalsApp} /> {/* Add animals route */}
+      <Route path="/vocab" component={VocabApp} />
+      <Route path="/sentences" component={SentencesApp} />
       <Route path="/my-story" component={MyStory} />
       <Route component={NotFound} />
     </Switch>

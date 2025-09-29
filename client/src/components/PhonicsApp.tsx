@@ -2,44 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, Link } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Progress } from "@/components/ui/progress";
-import logoUrl from '../assets/toddler-reads-logo.png';
-import appleImg from '../assets/animals/apple.png';
-import ballImg from '../assets/animals/ball.png';
-import catImg from '../assets/animals/cat.png';
-import dogImg from '../assets/animals/dog.png';
-import eggImg from '../assets/animals/egg.png';
-import fishImg from '../assets/animals/fish.png';
-import goatImg from '../assets/animals/goat.png';
-import hatImg from '../assets/animals/hat.png';
-import iceImg from '../assets/animals/ice.png';
-import juiceImg from '../assets/animals/juice.png';
-import keyImg from '../assets/animals/key.png';
-import lionImg from '../assets/animals/lion.png';
-import moonImg from '../assets/animals/moon.png';
-import nestImg from '../assets/animals/nest.png';
-import orangeImg from '../assets/animals/orange.png';
-import pizzaImg from '../assets/animals/pizza.png';
-import quackImg from '../assets/animals/quack.png';
-import rabbitImg from '../assets/animals/rabbit.png';
-import sunImg from '../assets/animals/sun.png';
-import turtleImg from '../assets/animals/turtle.png';
-import umbrellaImg from '../assets/animals/umbrella.png';
-import vacuumImg from '../assets/animals/vacuum.png';
-import watermelonImg from '../assets/animals/watermelon.png';
-import boxImg from '../assets/animals/box.png';
-import yogurtImg from '../assets/animals/yogurt.png';
-import zebraImg from '../assets/animals/zebra.png';
 
-const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
-const letterImages: { [key: string]: string } = {
-  A: appleImg, B: ballImg, C: catImg, D: dogImg, E: eggImg, F: fishImg, G: goatImg, H: hatImg, I: iceImg, J: juiceImg, K: keyImg, L: lionImg, M: moonImg, N: nestImg, O: orangeImg, P: pizzaImg, Q: quackImg, R: rabbitImg, S: sunImg, T: turtleImg, U: umbrellaImg, V: vacuumImg, W: watermelonImg, X: boxImg, Y: yogurtImg, Z: zebraImg,
-};
-
-const letterWords: { [key: string]: string } = {
-  A: 'Apple', B: 'Ball', C: 'Cat', D: 'Dog', E: 'Egg', F: 'Fish', G: 'Goat', H: 'Hat', I: 'Ice', J: 'Juice', K: 'Key', L: 'Lion', M: 'Moon', N: 'Nest', O: 'Orange', P: 'Pizza', Q: 'Quack', R: 'Rabbit', S: 'Sun', T: 'Turtle', U: 'Umbrella', V: 'Vacuum', W: 'Watermelon', X: 'Box', Y: 'Yogurt', Z: 'Zebra',
-};
+import { Shuffle } from 'lucide-react';
 
 export interface PhonicsLetter {
   letter: string;
@@ -93,30 +57,23 @@ export default function PhonicsApp() {
   
   const [, navigate] = useLocation();
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
-  const [displayState, setDisplayState] = useState('LETTER'); // LETTER, WORD
+  const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
+  const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const { speak, stop, voices } = useSpeechSynthesis();
-  const [progress, setProgress] = useState(0);
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const loopShouldContinue = useRef(false);
+  const isSoundPlayingRef = useRef(false);
 
   const selectedModule = learningModules[0];
-
-  useEffect(() => {
-    if (voices && voices.length > 0) {
-        const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
-        setFemaleVoice(foundVoice || null);
-    }
-  }, [voices]);
 
   const stopAllTimers = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
-    setProgress(0);
   }, []);
 
   const stopAllSounds = useCallback(() => {
@@ -127,36 +84,69 @@ export default function PhonicsApp() {
     }
     stop(); // Stop TTS
     stopAllTimers();
+    isSoundPlayingRef.current = false;
   }, [stop, stopAllTimers]);
 
-  const waitWithProgress = useCallback((duration: number) => {
-    stopAllTimers();
-    return new Promise<void>(resolve => {
-      setProgress(0);
-      const startTime = Date.now();
-      
-      intervalRef.current = setInterval(() => {
-        const elapsedTime = Date.now() - startTime;
-        const currentProgress = Math.min((elapsedTime / duration) * 100, 100);
-        setProgress(currentProgress);
-      }, 50);
+  const handleLetterClick = useCallback((index: number) => {
+    stopAllSounds();
+    
+    const letterInfo = selectedModule.letters?.[index];
+    if (!letterInfo) return;
 
-      timeoutRef.current = setTimeout(() => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        setProgress(100);
-        resolve();
-      }, duration);
-    });
-  }, [stopAllTimers]);
+    setCurrentIndex(index);
+    setIsPlaying(true);
+  }, [selectedModule.letters, stopAllSounds]);
+
+  const shuffleLetters = useCallback(() => {
+    const indices = selectedModule.letters?.map((_, i) => i) || [];
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    if (indices[0] === currentIndex && indices.length > 1) {
+      const secondElement = indices[1];
+      indices[1] = indices[0];
+      indices[0] = secondElement;
+    }
+
+    setShuffledIndices(indices);
+    setShuffledIndex(0);
+    if (indices.length > 0) {
+      handleLetterClick(indices[0]);
+    }
+  }, [currentIndex, selectedModule.letters, handleLetterClick]);
+
+  useEffect(() => {
+    shuffleLetters();
+    return () => {
+      stopAllSounds();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (voices && voices.length > 0) {
+        const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
+        setFemaleVoice(foundVoice || null);
+    }
+  }, [voices]);
 
   const playSoundOnce = useCallback(async (soundFile: string) => {
+      if (isSoundPlayingRef.current) return;
       stopAllSounds();
-      await delay(300);
+      isSoundPlayingRef.current = true;
+      await new Promise(res => setTimeout(res, 300));
       return new Promise<void>(resolve => {
           const audio = new Audio(soundFile);
           audioRef.current = audio;
-          audio.onended = () => resolve();
-          audio.onerror = () => resolve();
+          audio.onended = () => {
+            isSoundPlayingRef.current = false;
+            resolve();
+          };
+          audio.onerror = () => {
+            isSoundPlayingRef.current = false;
+            resolve();
+          };
           audio.play();
       });
   }, [stopAllSounds]);
@@ -171,20 +161,11 @@ export default function PhonicsApp() {
     if (!letterInfo) return;
 
     const runAsync = async () => {
-        if (displayState === 'LETTER') {
-            loopShouldContinue.current = true;
-            while (loopShouldContinue.current) {
-                await playSoundOnce(letterInfo.sound);
-                if (!loopShouldContinue.current) break;
-                await waitWithProgress(4000);
-            }
-        } else if (displayState === 'WORD') {
-            loopShouldContinue.current = false;
-            stopAllTimers();
-            if (femaleVoice) {
-                await delay(300);
-                speak(letterWords[letterInfo.letter], { voice: femaleVoice });
-            }
+        loopShouldContinue.current = true;
+        while (loopShouldContinue.current) {
+            await playSoundOnce(letterInfo.sound);
+            if (!loopShouldContinue.current) break;
+            await new Promise(res => setTimeout(res, 4000));
         }
     }
 
@@ -194,39 +175,43 @@ export default function PhonicsApp() {
         loopShouldContinue.current = false;
         stopAllSounds();
     };
-  }, [currentIndex, displayState, isPlaying, selectedModule.letters, femaleVoice, playSoundOnce, waitWithProgress, speak, stopAllSounds, stopAllTimers]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds]);
 
 
-  const handleLetterClick = (index: number) => {
-    stopAllSounds();
-    
-    const letterInfo = selectedModule.letters?.[index];
-    if (!letterInfo) return;
-
-    if (currentIndex === index && isPlaying) {
-        setDisplayState(prevState => prevState === 'LETTER' ? 'WORD' : 'LETTER');
+  const handleShuffle = useCallback(() => {
+    if (shuffledIndex >= shuffledIndices.length - 1) {
+      shuffleLetters();
     } else {
-        setCurrentIndex(index);
-        setIsPlaying(true);
-        setDisplayState('LETTER');
+      const nextShuffledIndex = shuffledIndex + 1;
+      setShuffledIndex(nextShuffledIndex);
+      handleLetterClick(shuffledIndices[nextShuffledIndex]);
     }
-  };
+  }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentIndex === null) return;
     const nextIndex = (currentIndex + 1) % (selectedModule.letters?.length || 1);
     handleLetterClick(nextIndex);
-  };
+  }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentIndex === null) return;
     const prevIndex = (currentIndex - 1 + (selectedModule.letters?.length || 1)) % (selectedModule.letters?.length || 1);
     handleLetterClick(prevIndex);
-  };
+  }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
-  const handleScreenClick = () => {
+  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isPlaying) return;
-    setDisplayState(prevState => prevState === 'LETTER' ? 'WORD' : 'LETTER');
+    const screenWidth = window.innerWidth;
+    const clickX = e.clientX;
+
+    if (clickX < screenWidth / 4) {
+      handlePrevious();
+    } else if (clickX > screenWidth * 3 / 4) {
+      handleNext();
+    } else {
+      replaySound();
+    }
   };
   
   const replaySound = async () => {
@@ -236,25 +221,45 @@ export default function PhonicsApp() {
 
     stopAllSounds();
     
-    if (displayState === 'LETTER') {
-        loopShouldContinue.current = true;
-        while (loopShouldContinue.current) {
-            await playSoundOnce(letterInfo.sound);
-            if (!loopShouldContinue.current) break;
-            await waitWithProgress(4000);
-        }
-    } else if (displayState === 'WORD') {
-        if (femaleVoice) {
-            await delay(300);
-            await speak(letterWords[letterInfo.letter], { voice: femaleVoice });
-        }
+    loopShouldContinue.current = true;
+    while (loopShouldContinue.current) {
+        await playSoundOnce(letterInfo.sound);
+        if (!loopShouldContinue.current) break;
+        await new Promise(res => setTimeout(res, 4000));
     }
   };
 
   useEffect(() => {
-    // Start with the letter 'A'
-    handleLetterClick(0);
-  }, []);
+    // Start with the first shuffled letter
+    if (shuffledIndices.length > 0) {
+      handleLetterClick(shuffledIndices[0]);
+      setShuffledIndex(1);
+    }
+  }, [shuffledIndices, handleLetterClick]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        handlePrevious();
+      } else if (e.key === 'ArrowRight') {
+        handleNext();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        handleShuffle();
+      } else if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+        const letterIndex = selectedModule.letters?.findIndex(l => l.letter.toLowerCase() === e.key.toLowerCase());
+        if (letterIndex !== undefined && letterIndex !== -1) {
+          handleLetterClick(letterIndex);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentIndex, handlePrevious, handleNext, handleShuffle, handleLetterClick, selectedModule.letters]);
 
 
   if (!selectedModule) {
@@ -262,88 +267,53 @@ export default function PhonicsApp() {
   }
 
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
-  const prevLetter = currentIndex !== null ? selectedModule.letters?.[(currentIndex - 1 + (selectedModule.letters?.length || 1)) % (selectedModule.letters?.length || 1)] : null;
-  const nextLetter = currentIndex !== null ? selectedModule.letters?.[(currentIndex + 1) % (selectedModule.letters?.length || 1)] : null;
 
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/">
-          <a className="text-foreground hover:text-gray-600 transition-colors p-2 -m-2">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
-          </a>
         </Link>
       </header>
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 -mt-8 min-h-0">
-        <div className="relative w-full h-full flex items-center justify-center">
-          <div className="relative">
-            <div className="text-center">
-              {currentIndex !== null && currentDisplayData && (
-                <>
-                  {displayState === 'LETTER' && (
-                    <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-9xl sm:text-[9rem] md:text-[11rem] lg:text-[13rem] xl:text-[14rem]`}>
-                      <span>{currentDisplayData.letter}</span>
-                      <span className="text-5xl sm:text-[5rem] md:text-[6rem] lg:text-[7rem] xl:text-[8rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
-                    </span>
-                  )}
-                  {displayState === 'WORD' && (
-                    <div className="flex flex-col-reverse md:flex-col items-center justify-center gap-x-8 animate-fade-in max-w-screen-md mx-auto">
-                      <span className={`font-semibold text-7xl sm:text-8xl md:text-9xl lg:text-10xl xl:text-11xl`}>
-                        {currentDisplayData.letter === 'X' ? (
-                          <>
-                            <span className="text-gray-600">Bo</span>
-                            <span className={getLetterColors('X').text}>x</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className={getLetterColors(currentDisplayData.letter).text}>{letterWords[currentDisplayData.letter].charAt(0)}</span>
-                            <span className="text-gray-600">{letterWords[currentDisplayData.letter].slice(1)}</span>
-                          </>
-                        )}
-                      </span>
-                      {letterImages[currentDisplayData.letter] && (
-                         <img
-                            src={letterImages[currentDisplayData.letter]}
-                            alt={letterWords[currentDisplayData.letter]}
-                            className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 select-none"
-                            draggable="false"
-                         />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+      <div className="flex-1 flex flex-col justify-around overflow-y-auto">
+        <main className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-8 md:px-12 min-h-0">
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+
+          <div className="relative w-full h-full flex items-center justify-center">
+            <div className="relative">
+              <div className="text-center">
+                {currentIndex !== null && currentDisplayData && (
+                  <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-[15rem] sm:text-[11rem] md:text-[13rem] lg:text-[15rem] xl:text-[17rem]`}>
+                    <span>{currentDisplayData.letter}</span>
+                    <span className="text-8xl sm:text-[6rem] md:text-[7rem] lg:text-[8rem] xl:text-[9rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div onClick={(e) => { e.stopPropagation(); replaySound(); }} className="w-full max-w-md p-4 absolute bottom-0 cursor-pointer">
-          <Progress value={progress} className="h-2" />
-        </div>
-      </main>
+        </main>
 
-      <div className="w-full flex-shrink-0" data-testid="container-item-tray">
-        <div className="flex justify-between items-center p-6 max-w-5xl mx-auto">
-          {prevLetter && (
-            <button
-              onClick={(e) => { e.stopPropagation(); voices.length > 0 && handlePrevious(); }}
-              disabled={voices.length === 0}
-              className={`touch-target rounded-2xl py-5 px-6 font-bold text-3xl transition-all min-w-[72px] touch-auto ${getLetterColors(prevLetter.letter).background} ${getLetterColors(prevLetter.letter).hoverBackground} ${getLetterColors(prevLetter.letter).darkText} ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-            >
-              {prevLetter.letter}
-            </button>
-          )}
-          {nextLetter && (
-            <button
-              onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleNext(); }}
-              disabled={voices.length === 0}
-              className={`touch-target rounded-2xl py-5 px-6 font-bold text-3xl transition-all min-w-[72px] touch-auto ${getLetterColors(nextLetter.letter).background} ${getLetterColors(nextLetter.letter).hoverBackground} ${getLetterColors(nextLetter.letter).darkText} ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-            >
-              {nextLetter.letter}
-            </button>
-          )}
+        <div className="w-full md:mb-8" data-testid="container-item-tray">
+          <div className="flex justify-center items-center p-6 max-w-5xl mx-auto">
+          <button
+            onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
+            disabled={voices.length === 0}
+            className={`touch-target rounded-2xl py-6 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+          >
+            <Shuffle className="w-8 h-8" />
+          </button>          </div>
         </div>
       </div>
     </div>
