@@ -65,7 +65,7 @@ const VocabApp = () => {
     } else {
       const currentItem = vocabData[currentIndex];
       if (currentItem) {
-        speak(currentItem.tts || currentItem.name, { voice: femaleVoice });
+        speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
       }
     }
   };
@@ -89,7 +89,7 @@ const VocabApp = () => {
   useEffect(() => {
     const currentItem = vocabData[currentIndex];
     if (currentItem) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice });
+      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
     }
   }, [currentIndex, femaleVoice, speak]);
 

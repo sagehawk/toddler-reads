@@ -161,7 +161,7 @@ const SentencesApp = () => {
   const words = currentSentence.split(' ');
 
   useEffect(() => {
-    speak(currentSentence, { voice: femaleVoice });
+    speak(currentSentence, { voice: femaleVoice ?? null });
   }, [currentSentence, femaleVoice, speak]);
 
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -173,7 +173,7 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      speak(currentSentence, { voice: femaleVoice });
+      speak(currentSentence, { voice: femaleVoice ?? null });
     }
   };
 
