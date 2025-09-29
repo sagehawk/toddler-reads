@@ -1,3 +1,4 @@
 .env
 dist
 errors.txt
+node_modules
