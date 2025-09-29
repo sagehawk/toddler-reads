@@ -295,9 +295,9 @@ export default function PhonicsApp() {
             <div className="relative">
               <div className="text-center">
                 {currentIndex !== null && currentDisplayData && (
-                  <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-[15rem] sm:text-[11rem] md:text-[13rem] lg:text-[15rem] xl:text-[17rem]`}>
+                  <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-[15rem] sm:text-[11rem] md:text-[20rem] lg:text-[17rem] xl:text-[19rem]`}>
                     <span>{currentDisplayData.letter}</span>
-                    <span className="text-8xl sm:text-[6rem] md:text-[7rem] lg:text-[8rem] xl:text-[9rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
+                    <span className="text-8xl sm:text-[6rem] md:text-[10rem] lg:text-[9rem] xl:text-[10rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
                   </span>
                 )}
               </div>
@@ -305,14 +305,14 @@ export default function PhonicsApp() {
           </div>
         </main>
 
-        <div className="w-full md:mb-8" data-testid="container-item-tray">
+        <div className="fixed bottom-0 left-0 right-0 w-full mb-8" data-testid="container-item-tray">
           <div className="flex justify-center items-center p-6 max-w-5xl mx-auto">
           <button
             onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
             disabled={voices.length === 0}
-            className={`touch-target rounded-2xl py-6 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+            className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
           >
-            <Shuffle className="w-8 h-8" />
+            <Shuffle className="w-8 h-8 md:w-16 md:h-16" />
           </button>          </div>
         </div>
       </div>

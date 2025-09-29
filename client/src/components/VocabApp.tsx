@@ -123,7 +123,7 @@ const VocabApp = () => {
           </div>
 
           <div className="flex flex-col items-center justify-center gap-y-8 animate-fade-in">
-            <h2 className="text-8xl md:text-8xl font-bold tracking-widest">
+            <h2 className="text-8xl md:text-9xl font-bold tracking-widest">
               <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
               <span className="text-gray-600">{currentItem.name.slice(1)}</span>
             </h2>
@@ -135,14 +135,14 @@ const VocabApp = () => {
           </div>
         </main>
 
-        <div className="w-full p-4 pb-8">
+        <div className="w-full p-4 pb-8 -mb-12">
           <div className="w-full max-w-2xl mx-auto">
             <div className="flex justify-center items-center p-4 max-w-4xl mx-auto">
               <button
                 onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
-                className={`touch-target rounded-2xl py-6 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
+                className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
               >
-                <Shuffle className="w-8 h-8" />
+                <Shuffle className="w-8 h-8 md:w-12 md:h-12" />
               </button>
             </div>
           </div>

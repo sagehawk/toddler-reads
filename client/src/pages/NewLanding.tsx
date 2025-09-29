@@ -23,7 +23,7 @@ const DigitalPlayshelf = () => {
       </div>
       <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-6">
         {menuItems.map((item) => (
-          <Link key={item.title} href={item.href} className={`w-full p-8 sm:p-10 rounded-2xl text-white text-4xl sm:text-5xl font-bold text-center shadow-lg transition-transform transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
+          <Link key={item.title} href={item.href} className={`w-full p-8 sm:p-10 md:p-12 rounded-2xl text-white text-4xl sm:text-5xl md:text-6xl font-bold text-center shadow-lg transition-transform transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
               {item.title}
           </Link>
         ))}

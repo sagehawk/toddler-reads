@@ -203,7 +203,7 @@ const SentencesApp = () => {
           <div className="flex flex-wrap justify-center items-start gap-x-4 gap-y-8 animate-fade-in">
             {words.map((word, index) => (
               <div key={index} className="flex flex-col items-center gap-y-2">
-                <span className="text-6xl md:text-6xl font-bold tracking-wider">{word}</span>
+                <span className="text-6xl md:text-8xl font-bold tracking-wider">{word}</span>
                 {wordImageMap[word.toLowerCase()] && (
                   <img 
                     src={wordImageMap[word.toLowerCase()]} 
@@ -216,14 +216,14 @@ const SentencesApp = () => {
           </div>
         </main>
 
-        <div className="w-full p-4 pb-8">
+        <div className="w-full p-4 pb-8 -mb-12">
           <div className="w-full max-w-2xl mx-auto">
             <div className="flex justify-center items-center p-4 max-w-4xl mx-auto">
               <button
                 onClick={handleShuffle}
-                className={`touch-target rounded-2xl py-6 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
+                className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
               >
-                <Shuffle className="w-8 h-8" />
+                <Shuffle className="w-8 h-8 md:w-12 md:h-12" />
               </button>
             </div>
           </div>
