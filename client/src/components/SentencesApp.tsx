@@ -164,8 +164,21 @@ const SentencesApp = () => {
     speak(currentSentence, { voice: femaleVoice });
   }, [currentSentence, femaleVoice, speak]);
 
+  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const screenWidth = window.innerWidth;
+    const clickX = e.clientX;
+
+    if (clickX < screenWidth / 4) {
+      handlePrevious();
+    } else if (clickX > screenWidth * 3 / 4) {
+      handleNext();
+    } else {
+      speak(currentSentence, { voice: femaleVoice });
+    }
+  };
+
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative">
+    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
@@ -175,7 +188,18 @@ const SentencesApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-around overflow-y-auto">
-        <main className="flex flex-col items-center justify-center text-center p-4">
+        <main className="relative flex flex-col items-center justify-center text-center p-4">
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+            <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+
           <div className="flex flex-wrap justify-center items-start gap-x-4 gap-y-8 animate-fade-in">
             {words.map((word, index) => (
               <div key={index} className="flex flex-col items-center gap-y-2">
