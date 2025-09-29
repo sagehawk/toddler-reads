@@ -280,12 +280,12 @@ export default function PhonicsApp() {
 
       <div className="flex-1 flex flex-col justify-center items-center">
         <main className="relative z-10 flex flex-col items-center px-4 sm:px-8 md:px-12 min-h-0" style={{ transform: 'translateY(-25%)' }}>
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+          <div className="absolute left-0 top-0 h-full w-1/6 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+          <div className="absolute right-0 top-0 h-full w-1/6 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
