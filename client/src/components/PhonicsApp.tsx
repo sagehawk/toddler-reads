@@ -133,7 +133,6 @@ export default function PhonicsApp() {
 
   const playSoundOnce = useCallback(async (soundFile: string) => {
       if (isSoundPlayingRef.current) return;
-      stopAllSounds();
       isSoundPlayingRef.current = true;
       await new Promise(res => setTimeout(res, 300));
       return new Promise<void>(resolve => {
@@ -149,7 +148,7 @@ export default function PhonicsApp() {
           };
           audio.play();
       });
-  }, [stopAllSounds]);
+  }, []);
 
   useEffect(() => {
     if (currentIndex === null || !isPlaying) {
@@ -175,7 +174,7 @@ export default function PhonicsApp() {
         loopShouldContinue.current = false;
         stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce]);
 
 
   const handleShuffle = useCallback(() => {
@@ -271,7 +270,7 @@ export default function PhonicsApp() {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
@@ -303,17 +302,15 @@ export default function PhonicsApp() {
             </div>
           </div>
         </main>
-
-        <div className="fixed bottom-0 left-0 right-0 w-full mb-8" data-testid="container-item-tray">
-          <div className="flex justify-center items-center p-6 max-w-5xl mx-auto">
-          <button
-            onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
-            disabled={voices.length === 0}
-            className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-          >
-            <Shuffle className="w-8 h-8 md:w-16 md:h-16" />
-          </button>          </div>
-        </div>
+      </div>
+      <div className="h-1/4">
+        <button
+          onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
+          disabled={voices.length === 0}
+          className={`w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+        >
+          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+        </button>
       </div>
     </div>
   );

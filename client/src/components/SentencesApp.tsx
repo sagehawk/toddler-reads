@@ -18,7 +18,7 @@ import fishImage from '../assets/animals/fish.png';
 import goatImage from '../assets/animals/goat.png';
 import hatImage from '../assets/animals/hat.png';
 import iceImage from '../assets/animals/ice.png';
-import iglooImage from '../assets/animals/igloo.png';
+import inkImage from '../assets/animals/ink.png';
 import juiceImage from '../assets/animals/juice.png';
 import keyImage from '../assets/animals/key.png';
 import lionImage from '../assets/animals/lion.png';
@@ -53,7 +53,7 @@ const wordImageMap: { [key: string]: string } = {
   'goat': goatImage,
   'hat': hatImage,
   'ice': iceImage,
-  'igloo': iglooImage,
+  'ink': inkImage,
   'juice': juiceImage,
   'key': keyImage,
   'lion': lionImage,
@@ -84,7 +84,7 @@ const sentences = [
   "an elephant has an apple",
   "a lion and a tiger",
   "the duck has an egg",
-  "a goat in an igloo",
+  "a goat in an ink",
   "a zebra has a watermelon",
   "the key is in the box",
   "a rabbit has a ball",
@@ -180,14 +180,14 @@ const SentencesApp = () => {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-around overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-center overflow-y-auto">
         <main className="relative flex flex-col items-center justify-center text-center p-4">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-50 md:opacity-10 md:hover:opacity-50 transition-opacity">
             <svg className="w-12 h-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -215,22 +215,16 @@ const SentencesApp = () => {
             ))}
           </div>
         </main>
-
-        <div className="w-full p-4 pb-8 -mb-12">
-          <div className="w-full max-w-2xl mx-auto">
-            <div className="flex justify-center items-center p-4 max-w-4xl mx-auto">
-              <button
-                onClick={handleShuffle}
-                className={`touch-target rounded-2xl py-6 px-12 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
-              >
-                <Shuffle className="w-8 h-8 md:w-12 md:h-12" />
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
-
+      <div className="h-1/4">
+        <button
+          onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
+          className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
+        >
+          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+        </button>
+      </div>
     </div>
   );
 };

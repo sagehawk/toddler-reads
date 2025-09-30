@@ -123,15 +123,15 @@ const VocabApp = () => {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-around">
-        <main className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden">
+      <div className="flex-1 flex flex-col justify-center">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -145,9 +145,9 @@ const VocabApp = () => {
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} className="text-8xl md:text-9xl font-bold tracking-widest text-nowrap">
+              <h2 ref={wordRef} className="text-8xl md:text-9xl font-bold tracking-widest">
                 <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                <span className="text-gray-600">{currentItem.name.slice(1)}</span>
+                <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
               </h2>
               <img
                 src={currentItem.image}
@@ -157,19 +157,15 @@ const VocabApp = () => {
             </div>
           </div>
         </main>
+      </div>
 
-        <div className="w-full p-4">
-          <div className="w-full max-w-2xl mx-auto">
-            <div className="flex justify-center items-center p-4 max-w-4xl mx-auto">
-              <button
-                onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
-                className={`touch-target rounded-2xl py-4 px-8 transition-all bg-gray-200 hover:bg-gray-300 text-gray-800`}
-              >
-                <Shuffle className="w-8 h-8 md:w-10 md:h-10" />
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="h-1/4">
+        <button
+          onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
+          className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
+        >
+          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+        </button>
       </div>
     </div>
   )

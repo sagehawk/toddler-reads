@@ -12,7 +12,7 @@ import fishImage from '../assets/animals/fish.png';
 import goatImage from '../assets/animals/goat.png';
 import hatImage from '../assets/animals/hat.png';
 import iceImage from '../assets/animals/ice.png';
-import iglooImage from '../assets/animals/igloo.png';
+import inkImage from '../assets/animals/ink.png';
 import juiceImage from '../assets/animals/juice.png';
 import keyImage from '../assets/animals/key.png';
 import lionImage from '../assets/animals/lion.png';
@@ -53,7 +53,7 @@ export const vocabData: VocabItem[] = [
   { name: 'Goat', image: goatImage },
   { name: 'Hat', image: hatImage },
   { name: 'Ice', image: iceImage },
-  { name: 'Igloo', image: iglooImage },
+  { name: 'Ink', image: inkImage },
   { name: 'Juice', image: juiceImage },
   { name: 'Key', image: keyImage },
   { name: 'Lion', image: lionImage },

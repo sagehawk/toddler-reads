@@ -28,6 +28,18 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    let themeColorMeta = document.querySelector("meta[name='theme-color']");
+    if (!themeColorMeta) {
+      themeColorMeta = document.createElement('meta');
+      themeColorMeta.setAttribute('name', 'theme-color');
+      document.head.appendChild(themeColorMeta);
+    }
+    
+    const newColor = isDarkMode ? '#1D2633' : '#FFFCEB';
+    themeColorMeta.setAttribute('content', newColor);
+  }, [isDarkMode]);
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
