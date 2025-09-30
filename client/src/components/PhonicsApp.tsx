@@ -63,7 +63,7 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const loopShouldContinue = useRef(false);
@@ -80,7 +80,6 @@ export default function PhonicsApp() {
     loopShouldContinue.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current = null;
     }
     stop(); // Stop TTS
     stopAllTimers();
@@ -134,19 +133,17 @@ export default function PhonicsApp() {
   const playSoundOnce = useCallback(async (soundFile: string) => {
       if (isSoundPlayingRef.current) return;
       isSoundPlayingRef.current = true;
-      await new Promise(res => setTimeout(res, 300));
       return new Promise<void>(resolve => {
-          const audio = new Audio(soundFile);
-          audioRef.current = audio;
-          audio.onended = () => {
+          audioRef.current.src = soundFile;
+          audioRef.current.onended = () => {
             isSoundPlayingRef.current = false;
             resolve();
           };
-          audio.onerror = () => {
+          audioRef.current.onerror = () => {
             isSoundPlayingRef.current = false;
             resolve();
           };
-          audio.play();
+          audioRef.current.play();
       });
   }, []);
 
@@ -174,7 +171,7 @@ export default function PhonicsApp() {
         loopShouldContinue.current = false;
         stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds]);
 
 
   const handleShuffle = useCallback(() => {
