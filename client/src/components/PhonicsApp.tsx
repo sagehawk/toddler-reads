@@ -265,7 +265,7 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
+    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
@@ -274,7 +274,7 @@ export default function PhonicsApp() {
         </Link>
       </header>
 
-      <div className="flex-1 relative">
+      <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
         <div onClick={(e) => { e.stopPropagation(); handlePrevious(); }} className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -285,7 +285,7 @@ export default function PhonicsApp() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
         </div>
-        <main className="h-full flex flex-col items-center justify-center" style={{ transform: 'translateY(-15%)' }}>
+        <main className="flex flex-col items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center">
             <div className="relative">
               <div className="text-center">
@@ -300,7 +300,7 @@ export default function PhonicsApp() {
           </div>
         </main>
       </div>
-      <div className="h-1/4">
+      <div className="h-24">
         <button
           onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
           disabled={voices.length === 0}

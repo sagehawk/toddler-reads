@@ -217,7 +217,7 @@ const SentencesApp = () => {
         </main>
       </div>
 
-      <div className="h-1/4">
+      <div className="h-24">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
           className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
