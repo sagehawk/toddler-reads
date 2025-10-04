@@ -1,0 +1,130 @@
+Create a sub page for the vocabs page that lets us choose a category.
+If there's currently anything in the vocabs that aren't these you can remove/replace them. Like we're no longer doing vacuum for instance. So you can remove the image for it from the assets.
+
+Animals
+
+cat, dog, fish, goat, lion, rabbit, turtle, zebra, panda, hen, cow, duck, bat
+
+Objects / Things
+
+apple, ball, hat, key, box, cup, bed, toy, pen, bag, juice, pizza, yogurt, orange, watermelon
+
+Nature
+
+sun, moon, nest, tree, rock, log
+
+Vehicles
+
+car, bus, van, jet, boat, bike, train, ship
+
+People
+
+mom, dad, kid, man
+
+Actions (Verbs)
+
+run, sit, hop, eat, hug, nap, go, see
+
+Sight Words
+
+I, a, the, we, in, on, to, is
+
+
+Do the same for sentences, create a sub page for the sentences as well. Here are the new sentences:
+Animals
+
+I see a cat.
+
+The dog can run.
+
+The hen is on a log.
+
+We see a cow.
+
+The rat is in a box.
+
+A bat is on a rock.
+
+The lion is big.
+
+I see a fish.
+
+The turtle can nap.
+
+Objects
+
+The ball is in a bag.
+
+I see a hat.
+
+The cup is on a bed.
+
+A toy is in the box.
+
+I eat an apple.
+
+We see a pizza.
+
+The key is on the bed.
+
+The kid has a pen.
+
+I see yogurt.
+
+The man has an orange.
+
+Nature
+
+We see the sun.
+
+The moon is up.
+
+A nest is in a tree.
+
+I sit on a rock.
+
+A log is big.
+
+Vehicles
+
+I see a car.
+
+The bus is big.
+
+A van is in the sun.
+
+I see a jet.
+
+We go on a boat.
+
+The kid is on a bike.
+
+The train can go.
+
+I see a ship.
+
+People
+
+Mom and Dad hug.
+
+I see a man.
+
+The kid can hop.
+
+Actions
+
+I run to a box.
+
+We sit on a log.
+
+The cat can hop.
+
+I eat an apple.
+
+Mom and Dad hug.
+
+The kid can nap.
+
+We go to a tree.
+
+I see the dog run.

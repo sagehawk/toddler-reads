@@ -11,8 +11,8 @@ function App() {
     <Switch>
       <Route path="/" component={NewLanding} />
       <Route path="/phonics" component={PhonicsApp} />
-      <Route path="/vocab" component={VocabApp} />
-      <Route path="/sentences" component={SentencesApp} />
+      <Route path="/vocab/:category?" component={VocabApp} />
+      <Route path="/sentences/:category?" component={SentencesApp} />
       <Route path="/my-story" component={MyStory} />
       <Route component={NotFound} />
     </Switch>

@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, Link } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
-import { Shuffle } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 
 export interface PhonicsLetter {
   letter: string;
@@ -62,6 +63,7 @@ export default function PhonicsApp() {
   const [isPlaying, setIsPlaying] = useState(false);
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
   
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -165,7 +167,9 @@ export default function PhonicsApp() {
         }
     }
 
-    runAsync();
+    if (isAutoplayEnabled) {
+      runAsync();
+    }
 
     return () => {
         loopShouldContinue.current = false;
@@ -217,11 +221,15 @@ export default function PhonicsApp() {
 
     stopAllSounds();
     
-    loopShouldContinue.current = true;
-    while (loopShouldContinue.current) {
-        await playSoundOnce(letterInfo.sound);
-        if (!loopShouldContinue.current) break;
-        await new Promise(res => setTimeout(res, 4000));
+    if (isAutoplayEnabled) {
+      loopShouldContinue.current = true;
+      while (loopShouldContinue.current) {
+          await playSoundOnce(letterInfo.sound);
+          if (!loopShouldContinue.current) break;
+          await new Promise(res => setTimeout(res, 4000));
+      }
+    } else {
+      await playSoundOnce(letterInfo.sound);
     }
   };
 
@@ -239,9 +247,9 @@ export default function PhonicsApp() {
         handlePrevious();
       } else if (e.key === 'ArrowRight') {
         handleNext();
-      } else if (e.key === ' ') {
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        handleShuffle();
+        replaySound();
       } else if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
         const letterIndex = selectedModule.letters?.findIndex(l => l.letter.toLowerCase() === e.key.toLowerCase());
         if (letterIndex !== undefined && letterIndex !== -1) {
@@ -266,12 +274,15 @@ export default function PhonicsApp() {
 
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
-      <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-12 h-12 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
+        <button onClick={(e) => { setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
+          {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
+        </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
@@ -302,10 +313,9 @@ export default function PhonicsApp() {
       </div>
       <div className="h-24">
         <button
-          onClick={(e) => { e.stopPropagation(); voices.length > 0 && handleShuffle(); }}
+          onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-        >
+          className={`w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}        >
           <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
         </button>
       </div>

@@ -1,11 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'wouter';
+import { Link, useRoute } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Shuffle } from 'lucide-react';
 import { getLetterColors } from '../lib/colorUtils';
-import { vocabData } from '../data/vocabData';
+import { vocabData, VocabItem } from '../data/vocabData';
+
+const categoryOrder = ['Animals', 'Things', 'Nature', 'Vehicles', 'People'];
+
+const sortedVocabData = [...vocabData].sort((a, b) => {
+  const categoryA = categoryOrder.indexOf(a.category);
+  const categoryB = categoryOrder.indexOf(b.category);
+  if (categoryA !== categoryB) {
+    return categoryA - categoryB;
+  }
+  return a.name.localeCompare(b.name);
+});
 
 const VocabApp = () => {
+  const [match, params] = useRoute("/vocab/:category?");
+  const category = params?.category;
+
+  const filteredVocab = (category && category !== 'all')
+    ? sortedVocabData.filter(item => item.category.toLowerCase().replace(/[\s/]+/g, '-') === category)
+    : sortedVocabData;
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
@@ -14,29 +32,21 @@ const VocabApp = () => {
   const wordContainerRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLHeadingElement>(null);
 
-  const currentItem = vocabData[currentIndex];
+  const currentItem = filteredVocab[currentIndex];
 
   const shuffleItems = useCallback(() => {
-    const indices = vocabData.map((_, i) => i);
+    const indices = filteredVocab.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
-
-    if (indices[0] === currentIndex && indices.length > 1) {
-      const secondElement = indices[1];
-      indices[1] = indices[0];
-      indices[0] = secondElement;
-    }
-
     setShuffledIndices(indices);
     setShuffledIndex(0);
-    setCurrentIndex(indices[0]);
-  }, [currentIndex]);
+  }, [filteredVocab]);
 
   useEffect(() => {
     shuffleItems();
-  }, []);
+  }, [category]);
 
   useEffect(() => {
     if (wordContainerRef.current && wordRef.current) {
@@ -55,22 +65,27 @@ const VocabApp = () => {
   }, [currentItem]);
 
   const handleNext = useCallback(() => {
-    const nextShuffledIndex = (shuffledIndex + 1) % shuffledIndices.length;
-    setShuffledIndex(nextShuffledIndex);
-    setCurrentIndex(shuffledIndices[nextShuffledIndex]);
-  }, [shuffledIndex, shuffledIndices]);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
+  }, [filteredVocab.length]);
 
   const handlePrevious = useCallback(() => {
-    const prevShuffledIndex = (shuffledIndex - 1 + shuffledIndices.length) % shuffledIndices.length;
-    setShuffledIndex(prevShuffledIndex);
-    setCurrentIndex(shuffledIndices[prevShuffledIndex]);
-  }, [shuffledIndex, shuffledIndices]);
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredVocab.length) % filteredVocab.length);
+  }, [filteredVocab.length]);
 
   const handleShuffle = () => {
-    if (shuffledIndex >= shuffledIndices.length - 1) {
+    if (shuffledIndex >= shuffledIndices.length) {
       shuffleItems();
+      setCurrentIndex(shuffledIndices[0]);
+      setShuffledIndex(1);
     } else {
-      handleNext();
+      setCurrentIndex(shuffledIndices[shuffledIndex]);
+      setShuffledIndex(shuffledIndex + 1);
+    }
+  };
+
+  const replaySound = () => {
+    if (currentItem) {
+      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
     }
   };
 
@@ -83,16 +98,14 @@ const VocabApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      if (currentItem) {
-        speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
-      }
+      replaySound();
     }
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= 'a' && e.key <= 'z') {
-        const newIndex = vocabData.findIndex(item => item.name.toLowerCase().startsWith(e.key));
+        const newIndex = filteredVocab.findIndex(item => item.name.toLowerCase().startsWith(e.key));
         if (newIndex !== -1) {
           setCurrentIndex(newIndex);
         }
@@ -100,6 +113,9 @@ const VocabApp = () => {
         handlePrevious();
       } else if (e.key === 'ArrowRight') {
         handleNext();
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        replaySound();
       }
     };
 
@@ -108,13 +124,13 @@ const VocabApp = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePrevious, handleNext]);
+  }, [handlePrevious, handleNext, filteredVocab, replaySound]);
 
   useEffect(() => {
     if (currentItem) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
     }
-  }, [currentIndex, femaleVoice, speak]);
+  }, [currentIndex, femaleVoice, speak, currentItem]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
@@ -123,8 +139,8 @@ const VocabApp = () => {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-10 h-10 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
@@ -153,6 +169,7 @@ const VocabApp = () => {
                 src={currentItem.image}
                 alt={currentItem.name}
                 className="w-52 h-52 md:w-48 md:h-48 object-contain"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
               />
             </div>
           </div>
@@ -161,7 +178,7 @@ const VocabApp = () => {
 
       <div className="h-24">
         <button
-          onClick={(e) => { e.stopPropagation(); handleShuffle(); }}
+          onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
         >
           <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
