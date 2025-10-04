@@ -290,7 +290,7 @@ const SentencesApp = () => {
 
       <div className="flex-1 flex flex-col justify-center overflow-y-auto">
         <main className="relative flex flex-col items-center justify-center text-center p-4">
-          <div className="flex flex-wrap justify-center items-center gap-x-2 text-4xl md:text-6xl font-bold tracking-wider">
+          <div className="flex flex-wrap justify-center items-center gap-x-2 text-6xl md:text-8xl font-bold tracking-wider">
             {words.map((word, index) => {
               const cleanedWord = word.toLowerCase().replace('.', '');
               const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
@@ -320,7 +320,7 @@ const SentencesApp = () => {
               <img
                 src={wordImageMap[noun]}
                 alt={noun}
-                className="w-40 h-40 md:w-40 md:h-40 object-contain rounded-lg p-2 shadow-sm animate-fade-in"
+                className="w-40 h-40 md:w-40 md:h-40 object-contain rounded-lg animate-fade-in"
                 onError={(e) => (e.currentTarget.style.display = 'none')}
                 onClick={(e) => {
                   e.stopPropagation();
