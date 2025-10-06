@@ -187,10 +187,10 @@ const VocabApp = () => {
         </main>
       </div>
 
-      <div className="h-24">
+      <div className="h-32">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
         >
           <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
         </button>

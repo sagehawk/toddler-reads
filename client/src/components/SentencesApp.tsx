@@ -389,97 +389,99 @@ const SentencesApp = () => {
         </button>
       </header>
 
-      <div className="bg-background flex-1 flex flex-col justify-center">
-        <main className="flex flex-col items-center justify-center text-center p-4">
-          <div className="flex flex-wrap justify-center items-center gap-x-2 text-5xl md:text-7xl font-bold tracking-wider">
-            {words.map((word, index) => {
-              const cleanedWord = word.toLowerCase().replace('.', '');
-              const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-              return (
-                <span 
-                  key={index} 
-                  className={`${isNoun ? 'text-blue-500 cursor-pointer' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isNoun) {
-                      handleNounTap(cleanedWord);
-                    } else {
-                      playSoundAndAnimate();
-                    }
-                  }}
-                >
-                  {word}
-                </span>
-              );
-            })}
-          </div>
-        </main>
-      </div>
+      <div className="flex-1 overflow-y-hidden">
+        <div className="bg-background flex flex-col justify-center">
+          <main className="flex flex-col items-center justify-center text-center p-4">
+            <div className="flex flex-wrap justify-center items-center gap-x-2 text-[clamp(3rem,16vw,6rem)] font-bold tracking-wider max-w-5xl mx-auto">
+              {words.map((word, index) => {
+                const cleanedWord = word.toLowerCase().replace('.', '');
+                const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
+                return (
+                  <span 
+                    key={index} 
+                    className={`${isNoun ? 'text-blue-500 cursor-pointer' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isNoun) {
+                        handleNounTap(cleanedWord);
+                      } else {
+                        playSoundAndAnimate();
+                      }
+                    }}
+                  >
+                    {word}
+                  </span>
+                );
+              })}
+            </div>
+          </main>
+        </div>
 
-      <div className="flex items-center justify-center gap-x-4 py-4 h-80">
-        <AnimatePresence>
-          {!showCombined && canShowIndividualImages && nounsInSentence.map((noun, index) => (
-            <motion.div
-              key={noun}
-              className="w-44 h-44 md:w-72 md:h-72 flex items-center justify-center relative"
-              initial={{ opacity: 1, scale: 1, x: 0 }}
-              animate={{
-                opacity: isAnimating ? 0 : 1,
-                scale: isAnimating ? 0.5 : 1,
-                x: isAnimating ? (nounsInSentence.length > 1 ? (index === 0 ? 100 : -100) : 0) : 0,
-                boxShadow: isAnimating ? '0 0 30px 20px rgba(255, 255, 255, 1)' : 'none'
-              }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              onAnimationComplete={() => {
-                if (isAnimating) {
-                  setShowCombined(true);
-                  setCanShowIndividualImages(false);
-                }
-              }}
-            >
-              {(showImages || tappedNouns.includes(noun)) && (
+        <div className="flex items-center justify-center gap-x-4 py-4 h-[40vh]">
+          <AnimatePresence>
+            {!showCombined && canShowIndividualImages && nounsInSentence.map((noun, index) => (
+              <motion.div
+                key={noun}
+                className="w-1/2 md:w-1/3 h-full max-w-xs flex items-center justify-center relative"
+                initial={{ opacity: 1, scale: 1, x: 0 }}
+                animate={{
+                  opacity: isAnimating ? 0 : 1,
+                  scale: isAnimating ? 0.5 : 1,
+                  x: isAnimating ? (nounsInSentence.length > 1 ? (index === 0 ? 100 : -100) : 0) : 0,
+                  boxShadow: isAnimating ? '0 0 30px 20px rgba(255, 255, 255, 1)' : 'none'
+                }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                onAnimationComplete={() => {
+                  if (isAnimating) {
+                    setShowCombined(true);
+                    setCanShowIndividualImages(false);
+                  }
+                }}
+              >
+                {(showImages || tappedNouns.includes(noun)) && (
+                  <img
+                    src={wordImageMap[noun]}
+                    alt={noun}
+                    className="w-full h-full object-contain rounded-lg"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      speak(noun, { voice: femaleVoice ?? null });
+                    }}
+                  />
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <AnimatePresence onExitComplete={() => setCanShowIndividualImages(true)}>
+            {showCombined && combinedImage && (
+              <motion.div
+                key="combined"
+                className="w-2/3 h-full max-w-lg flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
+                transition={{ duration: 0.3, ease: "easeIn" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playSoundAndAnimate();
+                }}
+              >
                 <img
-                  src={wordImageMap[noun]}
-                  alt={noun}
-                  className="w-40 h-40 md:w-64 md:h-64 object-contain rounded-lg"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    speak(noun, { voice: femaleVoice ?? null });
-                  }}
+                  src={combinedImage}
+                  alt="Combined"
+                  className="max-w-full max-h-full object-contain rounded-lg"
                 />
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        <AnimatePresence onExitComplete={() => setCanShowIndividualImages(true)}>
-          {showCombined && combinedImage && (
-            <motion.div
-              key="combined"
-              className="w-44 h-44 md:w-72 md:h-72 flex items-center justify-center"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
-              transition={{ duration: 0.3, ease: "easeIn" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                playSoundAndAnimate();
-              }}
-            >
-              <img
-                src={combinedImage}
-                alt="Combined"
-                className="max-w-full max-h-full object-contain rounded-lg"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="h-24">
+      <div className="h-32 flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
         >
           <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
         </button>

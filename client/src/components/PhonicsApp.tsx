@@ -312,11 +312,11 @@ export default function PhonicsApp() {
           </div>
         </main>
       </div>
-      <div className="h-24">
+      <div className="h-32">
         <button
           onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-colors bg-secondary hover:bg-border text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}        >
+          className={`w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}        >
           <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
         </button>
       </div>
