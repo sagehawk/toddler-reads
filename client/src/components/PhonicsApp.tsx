@@ -68,7 +68,7 @@ export default function PhonicsApp() {
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const loopShouldContinue = useRef(false);
+
   const isSoundPlayingRef = useRef(false);
 
   const selectedModule = learningModules[0];
@@ -79,7 +79,6 @@ export default function PhonicsApp() {
   }, []);
 
   const stopAllSounds = useCallback(() => {
-    loopShouldContinue.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -152,7 +151,6 @@ export default function PhonicsApp() {
 
   useEffect(() => {
     if (currentIndex === null || !isPlaying) {
-      loopShouldContinue.current = false;
       return;
     }
 
@@ -160,12 +158,7 @@ export default function PhonicsApp() {
     if (!letterInfo) return;
 
     const runAsync = async () => {
-        loopShouldContinue.current = true;
-        while (loopShouldContinue.current) {
-            await playSoundOnce(letterInfo.sound);
-            if (!loopShouldContinue.current) break;
-            await new Promise(res => setTimeout(res, 4000));
-        }
+        await playSoundOnce(letterInfo.sound);
     }
 
     if (isAutoplayEnabled) {
@@ -173,10 +166,9 @@ export default function PhonicsApp() {
     }
 
     return () => {
-        loopShouldContinue.current = false;
         stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled]);
 
 
   const handleShuffle = useCallback(() => {
@@ -222,16 +214,7 @@ export default function PhonicsApp() {
 
     stopAllSounds();
     
-    if (isAutoplayEnabled) {
-      loopShouldContinue.current = true;
-      while (loopShouldContinue.current) {
-          await playSoundOnce(letterInfo.sound);
-          if (!loopShouldContinue.current) break;
-          await new Promise(res => setTimeout(res, 4000));
-      }
-    } else {
-      await playSoundOnce(letterInfo.sound);
-    }
+    await playSoundOnce(letterInfo.sound);
   };
 
   useEffect(() => {
@@ -250,7 +233,7 @@ export default function PhonicsApp() {
         handleNext();
       } else if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        replaySound();
+        handleShuffle();
       } else if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
         const letterIndex = selectedModule.letters?.findIndex(l => l.letter.toLowerCase() === e.key.toLowerCase());
         if (letterIndex !== undefined && letterIndex !== -1) {

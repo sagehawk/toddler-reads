@@ -276,6 +276,12 @@ const SentencesApp = () => {
     }
   }, [currentSentence]);
 
+  useEffect(() => {
+    if (showCombined) {
+        speak(currentSentence, { voice: femaleVoice ?? null });
+    }
+  }, [showCombined, currentSentence, femaleVoice, speak]);
+
   const shuffleSentences = useCallback(() => {
     const indices = filteredSentences.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
@@ -380,13 +386,13 @@ const SentencesApp = () => {
         handleNext();
       } else if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        playSoundAndAnimate();
+        handleShuffle();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrevious, handleNext, playSoundAndAnimate]);
+  }, [handlePrevious, handleNext, handleShuffle]);
 
   useEffect(() => {
     return () => {
@@ -425,7 +431,7 @@ const SentencesApp = () => {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-hidden">
+      <div className="flex-1 overflow-y-hidden relative z-20">
         <div className="bg-background flex flex-col justify-center">
           <main className="flex flex-col items-center justify-center text-center p-4">
             <div ref={sentenceContainerRef} className="flex flex-wrap justify-center items-center gap-x-2 text-[clamp(3rem,16vw,6rem)] font-bold tracking-wider max-w-5xl mx-auto">
@@ -498,11 +504,7 @@ const SentencesApp = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
                 transition={{ duration: 0.3, ease: "easeIn" }}
-                onAnimationComplete={() => {
-                  if (showCombined) {
-                    speak(currentSentence, { voice: femaleVoice ?? null });
-                  }
-                }}
+
                 onClick={(e) => {
                   e.stopPropagation();
                   playSoundAndAnimate();
@@ -519,7 +521,7 @@ const SentencesApp = () => {
         </div>
       </div>
 
-      <div className="h-32 flex-shrink-0">
+      <div className="h-32 flex-shrink-0 relative z-0">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"

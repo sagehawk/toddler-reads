@@ -121,7 +121,7 @@ const VocabApp = () => {
         handleNext();
       } else if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        replaySound();
+        handleShuffle();
       }
     };
 
@@ -130,7 +130,7 @@ const VocabApp = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePrevious, handleNext, filteredVocab, replaySound]);
+  }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
   useEffect(() => {
     if (currentItem) {
