@@ -89,6 +89,7 @@ export default function PhonicsApp() {
   }, [stop, stopAllTimers]);
 
   const handleLetterClick = useCallback((index: number) => {
+    console.log(`handleLetterClick called with index: ${index}`);
     stopAllSounds();
     
     const letterInfo = selectedModule.letters?.[index];

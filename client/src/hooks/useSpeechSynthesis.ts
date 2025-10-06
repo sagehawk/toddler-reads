@@ -21,7 +21,7 @@ export const useSpeechSynthesis = () => {
     };
   }, []);
 
-  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null }) => {
+  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null; onEnd?: () => void }) => {
     return new Promise<void>(resolve => {
       if (!('speechSynthesis' in window)) {
         console.warn('Speech synthesis not supported');
@@ -40,8 +40,18 @@ export const useSpeechSynthesis = () => {
         utterance.voice = options.voice;
       }
       
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve(); // Also resolve on error to not block the sequence
+      utterance.onend = () => {
+        if (options?.onEnd) {
+          options.onEnd();
+        }
+        resolve();
+      };
+      utterance.onerror = () => {
+        if (options?.onEnd) {
+          options.onEnd();
+        }
+        resolve(); // Also resolve on error to not block the sequence
+      };
 
       window.speechSynthesis.speak(utterance);
     });
