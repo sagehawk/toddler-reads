@@ -304,8 +304,13 @@ const SentencesApp = () => {
 
   const playSoundAndAnimate = () => {
     if (showCombined) {
-      setShowCombined(false);
-      setCanShowIndividualImages(false);
+      speak(currentSentence, {
+        voice: femaleVoice ?? null,
+        onEnd: () => {
+          setShowCombined(false);
+          setIsAnimating(false);
+        },
+      });
     } else if (currentSentence) {
       speak(currentSentence, {
         voice: femaleVoice ?? null,
@@ -428,6 +433,7 @@ const SentencesApp = () => {
               onAnimationComplete={() => {
                 if (isAnimating) {
                   setShowCombined(true);
+                  setCanShowIndividualImages(false);
                 }
               }}
             >
@@ -457,7 +463,7 @@ const SentencesApp = () => {
               transition={{ duration: 0.3, ease: "easeIn" }}
               onClick={(e) => {
                 e.stopPropagation();
-                replaySentence();
+                playSoundAndAnimate();
               }}
             >
               <img
