@@ -3,6 +3,7 @@ import { Link, useRoute } from 'wouter';
 import { Shuffle, ImageIcon, ImageOff } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Import images
 import appleImage from '../assets/animals/apple.png';
@@ -245,7 +246,9 @@ const SentencesApp = () => {
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [tappedNouns, setTappedNouns] = useState<string[]>([]);
   const [showImages, setShowImages] = useLocalStorage('sentenceShowImages', true);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [showCombined, setShowCombined] = useState(false);
+  const [canShowIndividualImages, setCanShowIndividualImages] = useState(true);
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
 
@@ -271,13 +274,17 @@ const SentencesApp = () => {
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
     setTappedNouns([]);
+    setIsAnimating(false);
     setShowCombined(false);
+    setCanShowIndividualImages(true);
   }, [filteredSentences.length]);
 
   const handlePrevious = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
     setTappedNouns([]);
+    setIsAnimating(false);
     setShowCombined(false);
+    setCanShowIndividualImages(true);
   }, [filteredSentences.length]);
 
   const handleShuffle = () => {
@@ -290,19 +297,30 @@ const SentencesApp = () => {
       setShuffledIndex(shuffledIndex + 1);
     }
     setTappedNouns([]);
+    setIsAnimating(false);
     setShowCombined(false);
+    setCanShowIndividualImages(true);
   };
 
-  const playSoundAndShowCombined = () => {
-    if (currentSentence) {
+  const playSoundAndAnimate = () => {
+    if (showCombined) {
+      setShowCombined(false);
+      setCanShowIndividualImages(false);
+    } else if (currentSentence) {
       speak(currentSentence, {
         voice: femaleVoice ?? null,
         onEnd: () => {
-          if (showImages) {
-            setShowCombined(true);
+          if (showImages || tappedNouns.length === nounsInSentence.length) {
+            setIsAnimating(true);
           }
         },
       });
+    }
+  };
+
+  const replaySentence = () => {
+    if (currentSentence) {
+      speak(currentSentence, { voice: femaleVoice ?? null });
     }
   };
 
@@ -310,9 +328,6 @@ const SentencesApp = () => {
     if (!tappedNouns.includes(noun)) {
       const newTappedNouns = [...tappedNouns, noun];
       setTappedNouns(newTappedNouns);
-      if (!showImages && newTappedNouns.length === nounsInSentence.length) {
-        setShowCombined(true);
-      }
     }
     speak(noun, { voice: femaleVoice ?? null });
   };
@@ -325,15 +340,13 @@ const SentencesApp = () => {
         handleNext();
       } else if (e.key === ' ' || e.key === 'Spacebar') {
         e.preventDefault();
-        playSoundAndShowCombined();
+        playSoundAndAnimate();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrevious, handleNext, playSoundAndShowCombined]);
-
-
+  }, [handlePrevious, handleNext, playSoundAndAnimate]);
 
   useEffect(() => {
     return () => {
@@ -350,7 +363,7 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      playSoundAndShowCombined();
+      playSoundAndAnimate();
     }
   };
 
@@ -386,7 +399,7 @@ const SentencesApp = () => {
                     if (isNoun) {
                       handleNounTap(cleanedWord);
                     } else {
-                      playSoundAndShowCombined();
+                      playSoundAndAnimate();
                     }
                   }}
                 >
@@ -399,22 +412,30 @@ const SentencesApp = () => {
       </div>
 
       <div className="flex items-center justify-center gap-x-4 py-4 h-80">
-        {showCombined && combinedImage ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <img
-              src={combinedImage}
-              alt="Combined"
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-          </div>
-        ) : (
-          nounsInSentence.map((noun, index) => (
-            <div key={index} className="w-44 h-44 md:w-72 md:h-72 flex items-center justify-center">
+        <AnimatePresence>
+          {!showCombined && canShowIndividualImages && nounsInSentence.map((noun, index) => (
+            <motion.div
+              key={noun}
+              className="w-44 h-44 md:w-72 md:h-72 flex items-center justify-center relative"
+              initial={{ opacity: 1, scale: 1, x: 0 }}
+              animate={{
+                opacity: isAnimating ? 0 : 1,
+                scale: isAnimating ? 0.5 : 1,
+                x: isAnimating ? (nounsInSentence.length > 1 ? (index === 0 ? 100 : -100) : 0) : 0,
+                boxShadow: isAnimating ? '0 0 30px 20px rgba(255, 255, 255, 1)' : 'none'
+              }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              onAnimationComplete={() => {
+                if (isAnimating) {
+                  setShowCombined(true);
+                }
+              }}
+            >
               {(showImages || tappedNouns.includes(noun)) && (
                 <img
                   src={wordImageMap[noun]}
                   alt={noun}
-                  className="w-40 h-40 md:w-64 md:h-64 object-contain rounded-lg animate-fade-in"
+                  className="w-40 h-40 md:w-64 md:h-64 object-contain rounded-lg"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -422,9 +443,31 @@ const SentencesApp = () => {
                   }}
                 />
               )}
-            </div>
-          ))
-        )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <AnimatePresence onExitComplete={() => setCanShowIndividualImages(true)}>
+          {showCombined && combinedImage && (
+            <motion.div
+              key="combined"
+              className="w-44 h-44 md:w-72 md:h-72 flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
+              transition={{ duration: 0.3, ease: "easeIn" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                replaySentence();
+              }}
+            >
+              <img
+                src={combinedImage}
+                alt="Combined"
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="h-24">
