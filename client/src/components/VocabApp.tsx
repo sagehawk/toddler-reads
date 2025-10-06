@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Shuffle, ImageIcon, ImageOff } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { getLetterColors } from '../lib/colorUtils';
 import { vocabData, VocabItem } from '../data/vocabData';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -28,7 +28,8 @@ const VocabApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [showImage, setShowImage] = useLocalStorage('vocabShowImage', true);
+  const [isQuietMode, setIsQuietMode] = useLocalStorage('vocabQuietMode', false);
+  const [isImageVisible, setIsImageVisible] = useState(false);
   const [wordTapped, setWordTapped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
@@ -109,6 +110,19 @@ const VocabApp = () => {
   };
 
   useEffect(() => {
+    // Always hide image initially on new word
+    setIsImageVisible(false);
+    setWordTapped(false); // Also reset wordTapped
+
+    if (!isQuietMode) {
+        const timer = setTimeout(() => {
+            setIsImageVisible(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [currentItem, isQuietMode]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= 'a' && e.key <= 'z') {
         const newIndex = filteredVocab.findIndex(item => item.name.toLowerCase().startsWith(e.key));
@@ -133,10 +147,10 @@ const VocabApp = () => {
   }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
   useEffect(() => {
-    if (currentItem) {
+    if (currentItem && !isQuietMode) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
     }
-  }, [currentIndex, femaleVoice, speak, currentItem]);
+  }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
@@ -150,8 +164,8 @@ const VocabApp = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={() => setShowImage(!showImage)} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {showImage ? <ImageIcon className="w-12 h-12" /> : <ImageOff className="w-12 h-12" />}
+        <button onClick={() => setIsQuietMode(!isQuietMode)} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
         </button>
       </header>
 
@@ -174,7 +188,7 @@ const VocabApp = () => {
                 <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                 <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
               </h2>
-              {(showImage || wordTapped) && (
+              {(isImageVisible || wordTapped) && (
                 <img
                   src={currentItem.image}
                   alt={currentItem.name}
