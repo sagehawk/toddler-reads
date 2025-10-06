@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { Link, useRoute } from 'wouter';
 import { Shuffle, ImageIcon, ImageOff } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
@@ -251,11 +251,30 @@ const SentencesApp = () => {
   const [canShowIndividualImages, setCanShowIndividualImages] = useState(true);
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
+  const sentenceContainerRef = useRef<HTMLDivElement>(null);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentSentence = filteredSentences[currentIndex]?.text;
   const words = currentSentence ? currentSentence.split(' ') : [];
   const nounsInSentence = words.map(word => word.toLowerCase().replace('.', '')).filter(word => Object.keys(wordImageMap).includes(word));
   const combinedImage = combinedImageMap[currentSentence];
+
+  useLayoutEffect(() => {
+    if (!sentenceContainerRef.current) return;
+
+    const container = sentenceContainerRef.current;
+    container.style.fontSize = ''; // Reset to default clamp value
+
+    const lineHeight = parseFloat(getComputedStyle(container).lineHeight);
+    const scrollHeight = container.scrollHeight;
+    const numLines = Math.round(scrollHeight / lineHeight);
+
+    if (numLines > 2) {
+        const currentFontSize = parseFloat(getComputedStyle(container).fontSize);
+        const newFontSize = currentFontSize * (2 / numLines);
+        container.style.fontSize = `${newFontSize}px`;
+    }
+  }, [currentSentence]);
 
   const shuffleSentences = useCallback(() => {
     const indices = filteredSentences.map((_, i) => i);
@@ -272,22 +291,28 @@ const SentencesApp = () => {
   }, [category]);
 
   const handleNext = useCallback(() => {
+    stop();
+    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
     setTappedNouns([]);
     setIsAnimating(false);
     setShowCombined(false);
     setCanShowIndividualImages(true);
-  }, [filteredSentences.length]);
+  }, [filteredSentences.length, stop]);
 
   const handlePrevious = useCallback(() => {
+    stop();
+    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
     setTappedNouns([]);
     setIsAnimating(false);
     setShowCombined(false);
     setCanShowIndividualImages(true);
-  }, [filteredSentences.length]);
+  }, [filteredSentences.length, stop]);
 
   const handleShuffle = () => {
+    stop();
+    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     if (shuffledIndex >= shuffledIndices.length) {
       shuffleSentences();
       setCurrentIndex(shuffledIndices[0]);
@@ -312,14 +337,14 @@ const SentencesApp = () => {
         },
       });
     } else if (currentSentence) {
-      speak(currentSentence, {
-        voice: femaleVoice ?? null,
-        onEnd: () => {
-          if (showImages || tappedNouns.length === nounsInSentence.length) {
+      if (showImages || tappedNouns.length === nounsInSentence.length) {
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = setTimeout(() => {
             setIsAnimating(true);
-          }
-        },
-      });
+        }, 1000);
+      } else {
+        speak(currentSentence, { voice: femaleVoice ?? null });
+      }
     }
   };
 
@@ -330,11 +355,21 @@ const SentencesApp = () => {
   };
 
   const handleNounTap = (noun: string) => {
+    let newTappedNouns = tappedNouns;
     if (!tappedNouns.includes(noun)) {
-      const newTappedNouns = [...tappedNouns, noun];
+      newTappedNouns = [...tappedNouns, noun];
       setTappedNouns(newTappedNouns);
     }
+
     speak(noun, { voice: femaleVoice ?? null });
+
+    const allNounsTapped = nounsInSentence.every(n => newTappedNouns.includes(n));
+    if (allNounsTapped) {
+        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
+        animationTimeoutRef.current = setTimeout(() => {
+            setIsAnimating(true);
+        }, 1000);
+    }
   };
 
   useEffect(() => {
@@ -356,6 +391,7 @@ const SentencesApp = () => {
   useEffect(() => {
     return () => {
       stop();
+      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     };
   }, [currentSentence]);
 
@@ -379,12 +415,12 @@ const SentencesApp = () => {
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full z-10">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={() => setShowImages(!showImages)} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors">
+        <button onClick={() => setShowImages(!showImages)} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
           {showImages ? <ImageIcon className="w-12 h-12" /> : <ImageOff className="w-12 h-12" />}
         </button>
       </header>
@@ -392,7 +428,7 @@ const SentencesApp = () => {
       <div className="flex-1 overflow-y-hidden">
         <div className="bg-background flex flex-col justify-center">
           <main className="flex flex-col items-center justify-center text-center p-4">
-            <div className="flex flex-wrap justify-center items-center gap-x-2 text-[clamp(3rem,16vw,6rem)] font-bold tracking-wider max-w-5xl mx-auto">
+            <div ref={sentenceContainerRef} className="flex flex-wrap justify-center items-center gap-x-2 text-[clamp(3rem,16vw,6rem)] font-bold tracking-wider max-w-5xl mx-auto">
               {words.map((word, index) => {
                 const cleanedWord = word.toLowerCase().replace('.', '');
                 const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
@@ -462,6 +498,11 @@ const SentencesApp = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
                 transition={{ duration: 0.3, ease: "easeIn" }}
+                onAnimationComplete={() => {
+                  if (showCombined) {
+                    speak(currentSentence, { voice: femaleVoice ?? null });
+                  }
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   playSoundAndAnimate();
