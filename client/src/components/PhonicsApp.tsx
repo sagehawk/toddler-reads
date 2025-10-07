@@ -264,7 +264,7 @@ export default function PhonicsApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
           {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
         </button>
       </header>

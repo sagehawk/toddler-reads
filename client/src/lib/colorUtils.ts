@@ -34,6 +34,16 @@ const colorPalette: { [key: string]: Omit<LetterColors, 'darkText'> } = {
   X: { text: 'text-pink-500', background: 'bg-pink-400', hoverBackground: 'hover:bg-pink-500' },
   Y: { text: 'text-green-500', background: 'bg-green-400', hoverBackground: 'hover:bg-green-500' },
   Z: { text: 'text-violet-500', background: 'bg-violet-400', hoverBackground: 'hover:bg-violet-500' },
+  '1': { text: 'text-red-500', background: 'bg-red-400', hoverBackground: 'hover:bg-red-500' },
+  '2': { text: 'text-blue-500', background: 'bg-blue-400', hoverBackground: 'hover:bg-blue-500' },
+  '3': { text: 'text-yellow-500', background: 'bg-yellow-400', hoverBackground: 'hover:bg-yellow-500' },
+  '4': { text: 'text-cyan-500', background: 'bg-cyan-400', hoverBackground: 'hover:bg-cyan-500' },
+  '5': { text: 'text-purple-500', background: 'bg-purple-400', hoverBackground: 'hover:bg-purple-500' },
+  '6': { text: 'text-lime-500', background: 'bg-lime-400', hoverBackground: 'hover:bg-lime-500' },
+  '7': { text: 'text-sky-500', background: 'bg-sky-400', hoverBackground: 'hover:bg-sky-500' },
+  '8': { text: 'text-pink-500', background: 'bg-pink-400', hoverBackground: 'hover:bg-pink-500' },
+  '9': { text: 'text-green-500', background: 'bg-green-400', hoverBackground: 'hover:bg-green-500' },
+  '0': { text: 'text-violet-500', background: 'bg-violet-400', hoverBackground: 'hover:bg-violet-500' },
 };
 
 const defaultColors: Omit<LetterColors, 'darkText'> = {

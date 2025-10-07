@@ -1,0 +1,10 @@
+I see a cat. -> see_cat.png
+We see a cow. -> we_see_cow.png
+I see a fish. -> see_fish.png
+I see a jet. -> see_jet.png
+I see a man. -> see_man.png
+The kid can hop. -> kid_hop.png
+I run to a box. -> i_run_box.png
+The cat can hop. -> cat_hop.png
+The kid can nap. -> kid_nap.png
+I see the dog run. -> i_see_dog_run.png

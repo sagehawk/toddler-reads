@@ -8,22 +8,23 @@ const menuItems = [
   { title: "Phonics", href: "/phonics", color: "bg-red-500" },
   { title: "Vocab", href: "/vocab", color: "bg-blue-500" },
   { title: "Sentences", href: "/sentences", color: "bg-green-500" },
+  { title: "Numbers", href: "/numbers", color: "bg-yellow-500" },
 ];
 
 const DigitalPlayshelf = () => {
   const { isDarkMode } = useTheme();
 
   return (
-    <div className="min-h-dvh w-full bg-background flex flex-col items-center justify-evenly p-4 sm:p-6 md:p-8 relative">
+    <div className="min-h-dvh w-full bg-background flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative gap-y-8">
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>
       <div className="flex-shrink-0">
-        <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-20 sm:h-24 select-none" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-16 sm:h-20 select-none" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
       </div>
-      <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-6">
+      <div className="w-full max-w-md mx-auto flex flex-col gap-y-2 sm:gap-y-4">
         {menuItems.map((item) => (
-          <Link key={item.title} href={item.href} className={`w-full p-6 sm:p-6 md:p-8 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-lg transition-transform transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
+          <Link key={item.title} href={item.href} className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-lg transition-transform transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
               {item.title}
           </Link>
         ))}

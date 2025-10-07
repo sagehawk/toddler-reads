@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
-import { Shuffle, ImageIcon, ImageOff } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { motion, AnimatePresence } from 'framer-motion';
+import { getLetterColors } from '../lib/colorUtils';
 
 // Import images
 import appleImage from '../assets/animals/apple.png';
@@ -208,15 +209,12 @@ export const sentences: Sentence[] = [
   { text: 'We go on a boat.', category: 'Vehicles' },
   { text: 'The kid is on a bike.', category: 'Vehicles' },
   { text: 'The train can go.', category: 'Vehicles' },
-
   { text: 'Mom and Dad hug.', category: 'People' },
   { text: 'I see a man.', category: 'People' },
   { text: 'The kid can hop.', category: 'People' },
   { text: 'I run to a box.', category: 'Actions' },
   { text: 'We sit on a log.', category: 'Actions' },
   { text: 'The cat can hop.', category: 'Actions' },
-  { text: 'I eat an apple.', category: 'Actions' },
-  { text: 'Mom and Dad hug.', category: 'Actions' },
   { text: 'The kid can nap.', category: 'Actions' },
   { text: 'We go to a tree.', category: 'Actions' },
   { text: 'I see the dog run.', category: 'Actions' },
@@ -230,7 +228,7 @@ const sortedSentences = [...sentences].sort((a, b) => {
   if (categoryA !== categoryB) {
     return categoryA - categoryB;
   }
-  return a.text.localeCompare(b.text);
+  return 0;
 });
 
 const SentencesApp = () => {
@@ -244,45 +242,27 @@ const SentencesApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [tappedNouns, setTappedNouns] = useState<string[]>([]);
-  const [showImages, setShowImages] = useLocalStorage('sentenceShowImages', true);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [showCombined, setShowCombined] = useState(false);
-  const [canShowIndividualImages, setCanShowIndividualImages] = useState(true);
-  const { speak, stop, voices } = useSpeechSynthesis();
+  const [isQuietMode, setIsQuietMode] = useLocalStorage('sentencesQuietMode', false);
+  const [isImageVisible, setIsImageVisible] = useState(false);
+  const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const sentenceContainerRef = useRef<HTMLDivElement>(null);
-  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sentenceRef = useRef<HTMLHeadingElement>(null);
 
-  const currentSentence = filteredSentences[currentIndex]?.text;
-  const words = currentSentence ? currentSentence.split(' ') : [];
-  const nounsInSentence = words.map(word => word.toLowerCase().replace('.', '')).filter(word => Object.keys(wordImageMap).includes(word));
-  const combinedImage = combinedImageMap[currentSentence];
+  const currentItem = filteredSentences[currentIndex];
+  let imageToDisplay = combinedImageMap[currentItem?.text];
 
-  useLayoutEffect(() => {
-    if (!sentenceContainerRef.current) return;
-
-    const container = sentenceContainerRef.current;
-    container.style.fontSize = ''; // Reset to default clamp value
-
-    const lineHeight = parseFloat(getComputedStyle(container).lineHeight);
-    const scrollHeight = container.scrollHeight;
-    const numLines = Math.round(scrollHeight / lineHeight);
-
-    if (numLines > 2) {
-        const currentFontSize = parseFloat(getComputedStyle(container).fontSize);
-        const newFontSize = currentFontSize * (2 / numLines);
-        container.style.fontSize = `${newFontSize}px`;
+  if (!imageToDisplay) {
+    const words = currentItem.text.toLowerCase().replace('.', '').split(' ');
+    for (const word of words) {
+      if (wordImageMap[word]) {
+        imageToDisplay = wordImageMap[word];
+        break;
+      }
     }
-  }, [currentSentence]);
+  }
 
-  useEffect(() => {
-    if (showCombined) {
-        speak(currentSentence, { voice: femaleVoice ?? null });
-    }
-  }, [showCombined, currentSentence, femaleVoice, speak]);
-
-  const shuffleSentences = useCallback(() => {
+  const shuffleItems = useCallback(() => {
     const indices = filteredSentences.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -293,113 +273,49 @@ const SentencesApp = () => {
   }, [filteredSentences]);
 
   useEffect(() => {
-    shuffleSentences();
+    shuffleItems();
   }, [category]);
 
+  useEffect(() => {
+    if (sentenceContainerRef.current && sentenceRef.current) {
+      const containerWidth = sentenceContainerRef.current.offsetWidth;
+      const sentenceWidth = sentenceRef.current.scrollWidth;
+
+      if (sentenceWidth > containerWidth) {
+        const scale = containerWidth / sentenceWidth;
+        sentenceRef.current.style.transform = `scale(${scale})`;
+        sentenceRef.current.style.transformOrigin = 'center';
+      } else {
+        sentenceRef.current.style.transform = 'scale(1)';
+        sentenceRef.current.style.transformOrigin = 'center';
+      }
+    }
+  }, [currentItem]);
+
   const handleNext = useCallback(() => {
-    stop();
-    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
-    setTappedNouns([]);
-    setIsAnimating(false);
-    setShowCombined(false);
-    setCanShowIndividualImages(true);
-  }, [filteredSentences.length, stop]);
+  }, [filteredSentences.length]);
 
   const handlePrevious = useCallback(() => {
-    stop();
-    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
-    setTappedNouns([]);
-    setIsAnimating(false);
-    setShowCombined(false);
-    setCanShowIndividualImages(true);
-  }, [filteredSentences.length, stop]);
+  }, [filteredSentences.length]);
 
   const handleShuffle = () => {
-    stop();
-    if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
     if (shuffledIndex >= shuffledIndices.length) {
-      shuffleSentences();
+      shuffleItems();
       setCurrentIndex(shuffledIndices[0]);
       setShuffledIndex(1);
     } else {
       setCurrentIndex(shuffledIndices[shuffledIndex]);
       setShuffledIndex(shuffledIndex + 1);
     }
-    setTappedNouns([]);
-    setIsAnimating(false);
-    setShowCombined(false);
-    setCanShowIndividualImages(true);
   };
 
-  const playSoundAndAnimate = () => {
-    if (showCombined) {
-      speak(currentSentence, {
-        voice: femaleVoice ?? null,
-        onEnd: () => {
-          setShowCombined(false);
-          setIsAnimating(false);
-        },
-      });
-    } else if (currentSentence) {
-      if (showImages || tappedNouns.length === nounsInSentence.length) {
-        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
-        animationTimeoutRef.current = setTimeout(() => {
-            setIsAnimating(true);
-        }, 1000);
-      } else {
-        speak(currentSentence, { voice: femaleVoice ?? null });
-      }
+  const replaySound = () => {
+    if (currentItem) {
+      speak(currentItem.text, { voice: femaleVoice ?? null });
     }
   };
-
-  const replaySentence = () => {
-    if (currentSentence) {
-      speak(currentSentence, { voice: femaleVoice ?? null });
-    }
-  };
-
-  const handleNounTap = (noun: string) => {
-    let newTappedNouns = tappedNouns;
-    if (!tappedNouns.includes(noun)) {
-      newTappedNouns = [...tappedNouns, noun];
-      setTappedNouns(newTappedNouns);
-    }
-
-    speak(noun, { voice: femaleVoice ?? null });
-
-    const allNounsTapped = nounsInSentence.every(n => newTappedNouns.includes(n));
-    if (allNounsTapped) {
-        if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
-        animationTimeoutRef.current = setTimeout(() => {
-            setIsAnimating(true);
-        }, 1000);
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        handlePrevious();
-      } else if (e.key === 'ArrowRight') {
-        handleNext();
-      } else if (e.key === ' ' || e.key === 'Spacebar') {
-        e.preventDefault();
-        handleShuffle();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrevious, handleNext, handleShuffle]);
-
-  useEffect(() => {
-    return () => {
-      stop();
-      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current);
-    };
-  }, [currentSentence]);
 
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const screenWidth = window.innerWidth;
@@ -410,118 +326,110 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      playSoundAndAnimate();
+      replaySound();
     }
   };
 
-  if (!currentSentence) {
+  useEffect(() => {
+    setIsImageVisible(false);
+
+    if (!isQuietMode && currentItem) {
+        speak(currentItem.text, { voice: femaleVoice ?? null, onEnd: () => {
+            setTimeout(() => {
+                setIsImageVisible(true);
+            }, 3000);
+        }});
+    }
+  }, [currentItem, isQuietMode, speak, femaleVoice]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= 'a' && e.key <= 'z') {
+        const newIndex = filteredSentences.findIndex(item => item.text.toLowerCase().startsWith(e.key));
+        if (newIndex !== -1) {
+          setCurrentIndex(newIndex);
+        }
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevious();
+      } else if (e.key === 'ArrowRight') {
+        handleNext();
+      } else if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        handleShuffle();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handlePrevious, handleNext, filteredSentences, handleShuffle]);
+
+  if (!currentItem) {
     return <div>Loading...</div>;
   }
 
+  const words = currentItem.text.split(' ');
+
   return (
     <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
-      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full z-10">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={() => setShowImages(!showImages)} className="flex items-center justify-center w-20 h-20 rounded-full hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {showImages ? <ImageIcon className="w-12 h-12" /> : <ImageOff className="w-12 h-12" />}
+        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-hidden relative z-20">
-        <div className="bg-background flex flex-col justify-center">
-          <main className="flex flex-col items-center justify-center text-center p-4">
-            <div ref={sentenceContainerRef} className="flex flex-wrap justify-center items-center gap-x-2 text-[clamp(3rem,16vw,6rem)] font-bold tracking-wider max-w-5xl mx-auto">
+      <div className="flex-1 flex flex-col justify-center">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
+            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
+            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+
+          <div ref={sentenceContainerRef} className="w-full flex justify-center">
+            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
+              <h2 ref={sentenceRef} className="text-6xl md:text-8xl font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
               {words.map((word, index) => {
                 const cleanedWord = word.toLowerCase().replace('.', '');
                 const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-                return (
-                  <span 
-                    key={index} 
-                    className={`${isNoun ? 'text-blue-500 cursor-pointer' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isNoun) {
-                        handleNounTap(cleanedWord);
-                      } else {
-                        playSoundAndAnimate();
-                      }
-                    }}
-                  >
-                    {word}
-                  </span>
-                );
+                if (isNoun) {
+                    return (
+                        <span key={index}>
+                            <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
+                            <span>{word.slice(1)}</span>
+                            {' '}
+                        </span>
+                    );
+                }
+                return <span key={index}>{word} </span>;
               })}
-            </div>
-          </main>
-        </div>
-
-        <div className="flex items-center justify-center gap-x-4 py-4 h-[40vh]">
-          <AnimatePresence>
-            {!showCombined && canShowIndividualImages && nounsInSentence.map((noun, index) => (
-              <motion.div
-                key={noun}
-                className="w-1/2 md:w-1/3 h-full max-w-xs flex items-center justify-center relative"
-                initial={{ opacity: 1, scale: 1, x: 0 }}
-                animate={{
-                  opacity: isAnimating ? 0 : 1,
-                  scale: isAnimating ? 0.5 : 1,
-                  x: isAnimating ? (nounsInSentence.length > 1 ? (index === 0 ? 100 : -100) : 0) : 0,
-                  boxShadow: isAnimating ? '0 0 30px 20px rgba(255, 255, 255, 1)' : 'none'
-                }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-                onAnimationComplete={() => {
-                  if (isAnimating) {
-                    setShowCombined(true);
-                    setCanShowIndividualImages(false);
-                  }
-                }}
-              >
-                {(showImages || tappedNouns.includes(noun)) && (
-                  <img
-                    src={wordImageMap[noun]}
-                    alt={noun}
-                    className="w-full h-full object-contain rounded-lg"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      speak(noun, { voice: femaleVoice ?? null });
-                    }}
-                  />
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          <AnimatePresence onExitComplete={() => setCanShowIndividualImages(true)}>
-            {showCombined && combinedImage && (
-              <motion.div
-                key="combined"
-                className="w-2/3 h-full max-w-lg flex items-center justify-center"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
-                transition={{ duration: 0.3, ease: "easeIn" }}
-
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playSoundAndAnimate();
-                }}
-              >
+              </h2>
+              {isImageVisible && imageToDisplay && (
                 <img
-                  src={combinedImage}
-                  alt="Combined"
-                  className="max-w-full max-h-full object-contain rounded-lg"
+                  src={imageToDisplay}
+                  alt={currentItem.text}
+                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
 
-      <div className="h-32 flex-shrink-0 relative z-0">
+      <div className="h-32">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
@@ -530,7 +438,7 @@ const SentencesApp = () => {
         </button>
       </div>
     </div>
-  );
+  )
 };
 
 export default SentencesApp;

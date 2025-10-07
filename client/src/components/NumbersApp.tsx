@@ -1,82 +1,42 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useRoute } from 'wouter';
+import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
-import { vocabData, VocabItem } from '../data/vocabData';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
-const categoryOrder = ['Animals', 'Things', 'Nature', 'Vehicles', 'People'];
-
-const sortedVocabData = [...vocabData].sort((a, b) => {
-  const categoryA = categoryOrder.indexOf(a.category);
-  const categoryB = categoryOrder.indexOf(b.category);
-  if (categoryA !== categoryB) {
-    return categoryA - categoryB;
-  }
-  return a.name.localeCompare(b.name);
-});
-
-const VocabApp = () => {
-  const [match, params] = useRoute("/vocab/:category?");
-  const category = params?.category;
-
-  const filteredVocab = (category && category !== 'all')
-    ? sortedVocabData.filter(item => item.category.toLowerCase().replace(/[\s/]+/g, '-') === category)
-    : sortedVocabData;
-
+const NumbersApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isQuietMode, setIsQuietMode] = useLocalStorage('vocabQuietMode', false);
-  const [isImageVisible, setIsImageVisible] = useState(false);
-  const [wordTapped, setWordTapped] = useState(false);
+  const [isQuietMode, setIsQuietMode] = useLocalStorage('numbersQuietMode', false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const wordContainerRef = useRef<HTMLDivElement>(null);
-  const wordRef = useRef<HTMLHeadingElement>(null);
 
-  const currentItem = filteredVocab[currentIndex];
+  const currentNumber = numbersData[currentIndex];
 
   const shuffleItems = useCallback(() => {
-    const indices = filteredVocab.map((_, i) => i);
+    const indices = numbersData.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     setShuffledIndices(indices);
     setShuffledIndex(0);
-  }, [filteredVocab]);
+  }, []);
 
   useEffect(() => {
     shuffleItems();
-  }, [category]);
-
-  useEffect(() => {
-    if (wordContainerRef.current && wordRef.current) {
-      const containerWidth = wordContainerRef.current.offsetWidth;
-      const wordWidth = wordRef.current.scrollWidth;
-
-      if (wordWidth > containerWidth) {
-        const scale = containerWidth / wordWidth;
-        wordRef.current.style.transform = `scale(${scale})`;
-        wordRef.current.style.transformOrigin = 'center';
-      } else {
-        wordRef.current.style.transform = 'scale(1)';
-        wordRef.current.style.transformOrigin = 'center';
-      }
-    }
-  }, [currentItem]);
+  }, [shuffleItems]);
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
-    setWordTapped(false);
-  }, [filteredVocab.length]);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
+  }, []);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredVocab.length) % filteredVocab.length);
-    setWordTapped(false);
-  }, [filteredVocab.length]);
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
+  }, []);
 
   const handleShuffle = () => {
     if (shuffledIndex >= shuffledIndices.length) {
@@ -87,12 +47,11 @@ const VocabApp = () => {
       setCurrentIndex(shuffledIndices[shuffledIndex]);
       setShuffledIndex(shuffledIndex + 1);
     }
-    setWordTapped(false);
   };
 
   const replaySound = () => {
-    if (currentItem) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
+    if (currentNumber) {
+      speak(String(currentNumber), { voice: femaleVoice ?? null });
     }
   };
 
@@ -110,24 +69,12 @@ const VocabApp = () => {
   };
 
   useEffect(() => {
-    // Always hide image initially on new word
-    setIsImageVisible(false);
-    setWordTapped(false); // Also reset wordTapped
-
-    if (!isQuietMode) {
-        const timer = setTimeout(() => {
-            setIsImageVisible(true);
-        }, 3000);
-        return () => clearTimeout(timer);
-    }
-  }, [currentItem, isQuietMode]);
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= 'a' && e.key <= 'z') {
-        const newIndex = filteredVocab.findIndex(item => item.name.toLowerCase().startsWith(e.key));
-        if (newIndex !== -1) {
-          setCurrentIndex(newIndex);
+      if (e.key >= '0' && e.key <= '9') {
+        const number = parseInt(e.key, 10);
+        const index = numbersData.indexOf(number === 0 ? 10 : number);
+        if (index !== -1) {
+          setCurrentIndex(index);
         }
       } else if (e.key === 'ArrowLeft') {
         handlePrevious();
@@ -144,15 +91,15 @@ const VocabApp = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
+  }, [handlePrevious, handleNext, handleShuffle]);
 
   useEffect(() => {
-    if (currentItem && !isQuietMode) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
+    if (currentNumber && !isQuietMode) {
+      speak(String(currentNumber), { voice: femaleVoice ?? null });
     }
-  }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
+  }, [currentIndex, femaleVoice, speak, currentNumber, isQuietMode]);
 
-  if (!currentItem) {
+  if (currentNumber === undefined) {
     return <div>Loading...</div>;
   }
 
@@ -182,20 +129,11 @@ const VocabApp = () => {
             </svg>
           </div>
 
-          <div ref={wordContainerRef} className="w-full flex justify-center">
+          <div className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} className="text-8xl md:text-9xl font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
-                <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
+              <h2 className={`text-9xl md:text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
+                {currentNumber}
               </h2>
-              {(isImageVisible || wordTapped) && (
-                <img
-                  src={currentItem.image}
-                  alt={currentItem.name}
-                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
             </div>
           </div>
         </main>
@@ -213,4 +151,4 @@ const VocabApp = () => {
   )
 };
 
-export default VocabApp;
+export default NumbersApp;
