@@ -52,21 +52,7 @@ const VocabApp = () => {
     shuffleItems();
   }, [category]);
 
-  useEffect(() => {
-    if (wordContainerRef.current && wordRef.current) {
-      const containerWidth = wordContainerRef.current.offsetWidth;
-      const wordWidth = wordRef.current.scrollWidth;
 
-      if (wordWidth > containerWidth) {
-        const scale = containerWidth / wordWidth;
-        wordRef.current.style.transform = `scale(${scale})`;
-        wordRef.current.style.transformOrigin = 'center';
-      } else {
-        wordRef.current.style.transform = 'scale(1)';
-        wordRef.current.style.transformOrigin = 'center';
-      }
-    }
-  }, [currentItem]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
@@ -184,7 +170,7 @@ const VocabApp = () => {
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} className="text-8xl md:text-9xl font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
+              <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
                 <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                 <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
               </h2>

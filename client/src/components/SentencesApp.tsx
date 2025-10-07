@@ -276,21 +276,7 @@ const SentencesApp = () => {
     shuffleItems();
   }, [category]);
 
-  useEffect(() => {
-    if (sentenceContainerRef.current && sentenceRef.current) {
-      const containerWidth = sentenceContainerRef.current.offsetWidth;
-      const sentenceWidth = sentenceRef.current.scrollWidth;
 
-      if (sentenceWidth > containerWidth) {
-        const scale = containerWidth / sentenceWidth;
-        sentenceRef.current.style.transform = `scale(${scale})`;
-        sentenceRef.current.style.transformOrigin = 'center';
-      } else {
-        sentenceRef.current.style.transform = 'scale(1)';
-        sentenceRef.current.style.transformOrigin = 'center';
-      }
-    }
-  }, [currentItem]);
 
   const handleNext = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
@@ -400,7 +386,7 @@ const SentencesApp = () => {
 
           <div ref={sentenceContainerRef} className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={sentenceRef} className="text-6xl md:text-8xl font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
+              <h2 ref={sentenceRef} style={{ fontSize: 'clamp(2rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
               {words.map((word, index) => {
                 const cleanedWord = word.toLowerCase().replace('.', '');
                 const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
