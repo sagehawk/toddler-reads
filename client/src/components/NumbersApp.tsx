@@ -131,7 +131,7 @@ const NumbersApp = () => {
 
           <div className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 className={`text-9xl md:text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
+              <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
                 {currentNumber}
               </h2>
             </div>
