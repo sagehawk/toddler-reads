@@ -170,7 +170,7 @@ const VocabApp = () => {
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
+              <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
                 <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                 <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
               </h2>

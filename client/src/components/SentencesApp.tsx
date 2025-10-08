@@ -312,7 +312,11 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      replaySound();
+      if (isQuietMode) {
+        setIsImageVisible(true);
+      } else {
+        replaySound();
+      }
     }
   };
 
@@ -321,9 +325,7 @@ const SentencesApp = () => {
 
     if (!isQuietMode && currentItem) {
         speak(currentItem.text, { voice: femaleVoice ?? null, onEnd: () => {
-            setTimeout(() => {
-                setIsImageVisible(true);
-            }, 3000);
+            setIsImageVisible(true);
         }});
     }
   }, [currentItem, isQuietMode, speak, femaleVoice]);
@@ -386,7 +388,7 @@ const SentencesApp = () => {
 
           <div ref={sentenceContainerRef} className="w-full flex justify-center">
             <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={sentenceRef} style={{ fontSize: 'clamp(2rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
+              <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
               {words.map((word, index) => {
                 const cleanedWord = word.toLowerCase().replace('.', '');
                 const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
@@ -402,6 +404,7 @@ const SentencesApp = () => {
                 return <span key={index}>{word} </span>;
               })}
               </h2>
+              <div className="h-52 md:h-48">
               {isImageVisible && imageToDisplay && (
                 <img
                   src={imageToDisplay}
@@ -410,6 +413,7 @@ const SentencesApp = () => {
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
               )}
+              </div>
             </div>
           </div>
         </main>
