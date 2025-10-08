@@ -95,18 +95,7 @@ const VocabApp = () => {
     }
   };
 
-  useEffect(() => {
-    // Always hide image initially on new word
-    setIsImageVisible(false);
-    setWordTapped(false); // Also reset wordTapped
 
-    if (!isQuietMode) {
-        const timer = setTimeout(() => {
-            setIsImageVisible(true);
-        }, 3000);
-        return () => clearTimeout(timer);
-    }
-  }, [currentItem, isQuietMode]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -133,8 +122,12 @@ const VocabApp = () => {
   }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
   useEffect(() => {
+    setIsImageVisible(false);
+    setWordTapped(false);
     if (currentItem && !isQuietMode) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
+      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null, onEnd: () => {
+        setIsImageVisible(true);
+      }});
     }
   }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
 
@@ -155,7 +148,7 @@ const VocabApp = () => {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center">
+      <div className="flex-1 flex flex-col justify-evenly">
         <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -174,6 +167,7 @@ const VocabApp = () => {
                 <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                 <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
               </h2>
+              <div className="h-52 md:h-48">
               {(isImageVisible || wordTapped) && (
                 <img
                   src={currentItem.image}
@@ -182,6 +176,7 @@ const VocabApp = () => {
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
               )}
+              </div>
             </div>
           </div>
         </main>

@@ -9,7 +9,7 @@ interface LetterColors {
 
 const colorPalette: { [key: string]: Omit<LetterColors, 'darkText'> } = {
   A: { text: 'text-red-500', background: 'bg-red-400', hoverBackground: 'hover:bg-red-500' },
-  B: { text: 'text-rose-500', background: 'bg-rose-400', hoverBackground: 'hover:bg-rose-500' },
+  B: { text: 'text-indigo-500', background: 'bg-indigo-400', hoverBackground: 'hover:bg-indigo-500' },
   C: { text: 'text-yellow-500', background: 'bg-yellow-400', hoverBackground: 'hover:bg-yellow-500' },
   D: { text: 'text-cyan-500', background: 'bg-cyan-400', hoverBackground: 'hover:bg-cyan-500' },
   E: { text: 'text-purple-500', background: 'bg-purple-400', hoverBackground: 'hover:bg-purple-500' },
@@ -23,7 +23,7 @@ const colorPalette: { [key: string]: Omit<LetterColors, 'darkText'> } = {
   M: { text: 'text-blue-500', background: 'bg-blue-400', hoverBackground: 'hover:bg-blue-500' },
   N: { text: 'text-teal-500', background: 'bg-teal-400', hoverBackground: 'hover:bg-teal-500' },
   O: { text: 'text-orange-500', background: 'bg-orange-400', hoverBackground: 'hover:bg-orange-500' },
-  P: { text: 'text-indigo-500', background: 'bg-indigo-400', hoverBackground: 'hover:bg-indigo-500' },
+  P: { text: 'text-rose-500', background: 'bg-rose-400', hoverBackground: 'hover:bg-rose-500' },
   Q: { text: 'text-emerald-500', background: 'bg-emerald-400', hoverBackground: 'hover:bg-emerald-500' },
   R: { text: 'text-rose-500', background: 'bg-rose-400', hoverBackground: 'hover:bg-rose-500' },
   S: { text: 'text-yellow-500', background: 'bg-yellow-400', hoverBackground: 'hover:bg-yellow-500' },

@@ -5,10 +5,10 @@ import whiteLogoUrl from '../assets/toddler-reads-logo-white.png';
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
-  { title: "Phonics", href: "/phonics", color: "bg-red-500" },
-  { title: "Vocab", href: "/vocab", color: "bg-blue-500" },
-  { title: "Sentences", href: "/sentences", color: "bg-green-500" },
-  { title: "Numbers", href: "/numbers", color: "bg-yellow-500" },
+  { title: "Phonics", href: "/phonics", color: "bg-primary" },
+  { title: "Vocab", href: "/vocab", color: "bg-accent" },
+  { title: "Sentences", href: "/sentences", color: "bg-destructive" },
+  { title: "Numbers", href: "/numbers", color: "bg-numbers" },
 ];
 
 const DigitalPlayshelf = () => {
@@ -24,7 +24,7 @@ const DigitalPlayshelf = () => {
       </div>
       <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4">
         {menuItems.map((item) => (
-          <Link key={item.title} href={item.href} className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-lg transition-transform transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
+          <Link key={item.title} href={item.href} className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-button-strong hover:shadow-button-stronger transition-all transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
               {item.title}
           </Link>
         ))}

@@ -104,7 +104,7 @@ const NumbersApp = () => {
   }
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="h-screen bg-background select-none flex flex-col justify-between overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -116,28 +116,26 @@ const NumbersApp = () => {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+      <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+          <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </div>
+        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+          <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
 
-          <div className="w-full flex justify-center">
-            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
-                {currentNumber}
-              </h2>
-            </div>
+        <div className="w-full flex justify-center">
+          <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
+            <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
+              {currentNumber}
+            </h2>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       <div className="h-32">
         <button

@@ -13,6 +13,8 @@ export default {
       boxShadow: {
         gentle: '0 4px 20px -4px hsla(210, 21%, 21%, 0.1)',
         button: '0 2px 8px -2px hsla(178, 67%, 55%, 0.3)',
+        'button-strong': '0 4px 12px -2px hsla(178, 67%, 55%, 0.4)',
+        'button-stronger': '0 6px 16px -2px hsla(178, 67%, 55%, 0.5)',
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -45,9 +47,10 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        numbers: 'hsl(var(--numbers))',
       },
       fontFamily: {
-        sans: ["'Nunito'", "sans-serif"],
+        sans: ["'Lato'", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
