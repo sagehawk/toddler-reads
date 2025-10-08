@@ -119,7 +119,7 @@ export default function PhonicsApp() {
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
   useEffect(() => {
-    shuffleLetters();
+    handleLetterClick(0);
     return () => {
       stopAllSounds();
     };
@@ -217,17 +217,13 @@ export default function PhonicsApp() {
     await playSoundOnce(letterInfo.sound);
   };
 
-  useEffect(() => {
-    // Start with the first shuffled letter
-    if (shuffledIndices.length > 0) {
-      handleLetterClick(shuffledIndices[0]);
-      setShuffledIndex(1);
-    }
-  }, [shuffledIndices, handleLetterClick]);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
+      if (e.key === 'Escape') {
+        navigate('/');
+      } else if (e.key === 'ArrowLeft') {
         handlePrevious();
       } else if (e.key === 'ArrowRight') {
         handleNext();
@@ -247,7 +243,7 @@ export default function PhonicsApp() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentIndex, handlePrevious, handleNext, handleShuffle, handleLetterClick, selectedModule.letters]);
+  }, [currentIndex, handlePrevious, handleNext, handleShuffle, handleLetterClick, selectedModule.letters, navigate]);
 
 
   if (!selectedModule) {
