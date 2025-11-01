@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
-import { Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { Shuffle, Play, Pause } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { getLetterColors } from '../lib/colorUtils';
@@ -242,8 +242,9 @@ const SentencesApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isQuietMode, setIsQuietMode] = useLocalStorage('sentencesQuietMode', false);
+  const [isAutoplay, setIsAutoplay] = useLocalStorage('sentencesAutoplay', true);
   const [isImageVisible, setIsImageVisible] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const sentenceContainerRef = useRef<HTMLDivElement>(null);
@@ -303,6 +304,16 @@ const SentencesApp = () => {
     }
   };
 
+  const handleCardClick = () => {
+    if (isFlipped) {
+      setIsFlipped(false);
+      setTimeout(() => setIsFlipped(true), 10);
+    } else {
+      setIsFlipped(true);
+    }
+    replaySound();
+  };
+
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
@@ -312,23 +323,27 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      if (isQuietMode) {
+      if (!isAutoplay) {
         setIsImageVisible(true);
-      } else {
-        replaySound();
       }
+      replaySound();
     }
   };
 
   useEffect(() => {
     setIsImageVisible(false);
+    setIsFlipped(false);
 
-    if (!isQuietMode && currentItem) {
+    if (isAutoplay && currentItem) {
         speak(currentItem.text, { voice: femaleVoice ?? null, onEnd: () => {
-            setIsImageVisible(true);
+            setTimeout(() => setIsImageVisible(true), 4000);
         }});
     }
-  }, [currentItem, isQuietMode, speak, femaleVoice]);
+  }, [currentItem, isAutoplay, speak, femaleVoice]);
+
+  if (!currentItem) {
+    return <div>Loading...</div>;
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -368,8 +383,8 @@ const SentencesApp = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
+        <button onClick={(e) => { e.stopPropagation(); setIsAutoplay(!isAutoplay); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isAutoplay ? <Pause className="w-12 h-12" /> : <Play className="w-12 h-12" />}
         </button>
       </header>
 
@@ -387,32 +402,39 @@ const SentencesApp = () => {
           </div>
 
           <div ref={sentenceContainerRef} className="w-full flex justify-center">
-            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); replaySound(); }}>
-              {words.map((word, index) => {
-                const cleanedWord = word.toLowerCase().replace('.', '');
-                const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-                if (isNoun) {
-                    return (
-                        <span key={index}>
-                            <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
-                            <span>{word.slice(1)}</span>
-                            {' '}
-                        </span>
-                    );
-                }
-                return <span key={index}>{word} </span>;
-              })}
-              </h2>
-              <div className="h-52 md:h-48">
-              {isImageVisible && imageToDisplay && (
-                <img
-                  src={imageToDisplay}
-                  alt={currentItem.text}
-                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
+            <div
+              className={`card w-full h-72 md:h-64 ${isImageVisible || isFlipped ? 'flipped' : ''}`}
+              onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
+            >
+              <div className="card-inner">
+                <div className="card-front">
+                  {imageToDisplay && (
+                    <img
+                      src={imageToDisplay}
+                      alt={currentItem.text}
+                      className="w-64 h-64 md:w-72 md:h-72 object-contain"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  )}
+                </div>
+                <div className="card-back">
+                  <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer">
+                    {words.map((word, index) => {
+                      const cleanedWord = word.toLowerCase().replace('.', '');
+                      const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
+                      if (isNoun) {
+                          return (
+                              <span key={index}>
+                                  <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
+                                  <span>{word.slice(1)}</span>
+                                  {' '}
+                              </span>
+                          );
+                      }
+                      return <span key={index}>{word} </span>;
+                    })}
+                  </h2>
+                </div>
               </div>
             </div>
           </div>
