@@ -162,20 +162,25 @@ const VocabApp = () => {
           </div>
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
-            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
-                <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
-              </h2>
-              <div className="h-52 md:h-48">
-              {(isImageVisible || wordTapped) && (
-                <img
-                  src={currentItem.image}
-                  alt={currentItem.name}
-                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
+            <div
+              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped ? 'flipped' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}
+            >
+              <div className="card-inner">
+                <div className="card-front">
+                  <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer">
+                    <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
+                  </h2>
+                </div>
+                <div className="card-back">
+                  <img
+                    src={currentItem.image}
+                    alt={currentItem.name}
+                    className="w-64 h-64 md:w-72 md:h-72 object-contain"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
               </div>
             </div>
           </div>
