@@ -136,7 +136,7 @@ const VocabApp = () => {
   }
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -162,20 +162,25 @@ const VocabApp = () => {
           </div>
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
-            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
-                <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
-              </h2>
-              <div className="h-52 md:h-48">
-              {(isImageVisible || wordTapped) && (
-                <img
-                  src={currentItem.image}
-                  alt={currentItem.name}
-                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
+            <div
+              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped ? 'flipped' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}
+            >
+              <div className="card-inner">
+                <div className="card-front">
+                  <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer">
+                    <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
+                  </h2>
+                </div>
+                <div className="card-back">
+                  <img
+                    src={currentItem.image}
+                    alt={currentItem.name}
+                    className="w-64 h-64 md:w-72 md:h-72 object-contain"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
               </div>
             </div>
           </div>
