@@ -82,6 +82,9 @@ export default {
           '50%': { transform: 'translateY(-20px)' },
         },
       },
+      height: {
+        'screen-svh': '100svh',
+      },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
