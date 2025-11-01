@@ -323,11 +323,10 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      if (isQuietMode) {
+      if (!isAutoplay) {
         setIsImageVisible(true);
-      } else {
-        replaySound();
       }
+      replaySound();
     }
   };
 
