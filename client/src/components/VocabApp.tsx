@@ -174,8 +174,8 @@ const VocabApp = () => {
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
             <div
-              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped || isFlipped ? 'flipped' : ''}`}
-              onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
+              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped ? 'flipped' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}
             >
               <div className="card-inner">
                 <div className="card-front">
