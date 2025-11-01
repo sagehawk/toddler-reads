@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { Shuffle, Play, Pause } from 'lucide-react';
 import { getLetterColors } from '../lib/colorUtils';
 import { vocabData, VocabItem } from '../data/vocabData';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -28,9 +28,10 @@ const VocabApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isQuietMode, setIsQuietMode] = useLocalStorage('vocabQuietMode', false);
+  const [isAutoplay, setIsAutoplay] = useLocalStorage('vocabAutoplay', true);
   const [isImageVisible, setIsImageVisible] = useState(false);
   const [wordTapped, setWordTapped] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const wordContainerRef = useRef<HTMLDivElement>(null);
@@ -82,6 +83,16 @@ const VocabApp = () => {
     }
   };
 
+  const handleCardClick = () => {
+    if (isFlipped) {
+      setIsFlipped(false);
+      setTimeout(() => setIsFlipped(true), 10);
+    } else {
+      setIsFlipped(true);
+    }
+    replaySound();
+  };
+
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
@@ -124,27 +135,27 @@ const VocabApp = () => {
   useEffect(() => {
     setIsImageVisible(false);
     setWordTapped(false);
-    if (currentItem && !isQuietMode) {
+    if (currentItem && isAutoplay) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null, onEnd: () => {
-        setIsImageVisible(true);
+        setTimeout(() => setIsImageVisible(true), 2000);
       }});
     }
-  }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
+  }, [currentIndex, femaleVoice, speak, currentItem, isAutoplay]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
+        <button onClick={(e) => { e.stopPropagation(); setIsAutoplay(!isAutoplay); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isAutoplay ? <Pause className="w-12 h-12" /> : <Play className="w-12 h-12" />}
         </button>
       </header>
 
@@ -162,20 +173,25 @@ const VocabApp = () => {
           </div>
 
           <div ref={wordContainerRef} className="w-full flex justify-center">
-            <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-              <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer" onClick={(e) => { e.stopPropagation(); setWordTapped(true); replaySound(); }}>
-                <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
-              </h2>
-              <div className="h-52 md:h-48">
-              {(isImageVisible || wordTapped) && (
-                <img
-                  src={currentItem.image}
-                  alt={currentItem.name}
-                  className="w-52 h-52 md:w-48 md:h-48 object-contain"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              )}
+            <div
+              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped || isFlipped ? 'flipped' : ''}`}
+              onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
+            >
+              <div className="card-inner">
+                <div className="card-front">
+                  <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer">
+                    <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
+                  </h2>
+                </div>
+                <div className="card-back">
+                  <img
+                    src={currentItem.image}
+                    alt={currentItem.name}
+                    className="w-64 h-64 md:w-72 md:h-72 object-contain"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
               </div>
             </div>
           </div>
