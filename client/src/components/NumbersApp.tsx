@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
@@ -11,8 +11,9 @@ const NumbersApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isQuietMode, setIsQuietMode] = useLocalStorage('numbersQuietMode', false);
-  const { speak, voices } = useSpeechSynthesis();
+  const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
+  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentNumber = numbersData[currentIndex];
 
@@ -30,28 +31,57 @@ const NumbersApp = () => {
     shuffleItems();
   }, [shuffleItems]);
 
+  const [isFlipped, setIsFlipped] = useState(false);
+
   const handleNext = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
-  }, []);
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+    stop();
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
+    }, 150);
+  }, [numbersData.length, stop]);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
-  }, []);
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+    stop();
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
+    }, 150);
+  }, [numbersData.length, stop]);
 
   const handleShuffle = () => {
-    if (shuffledIndex >= shuffledIndices.length) {
-      shuffleItems();
-      setCurrentIndex(shuffledIndices[0]);
-      setShuffledIndex(1);
-    } else {
-      setCurrentIndex(shuffledIndices[shuffledIndex]);
-      setShuffledIndex(shuffledIndex + 1);
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
     }
+    stop();
+    setIsFlipped(false);
+    setTimeout(() => {
+      if (shuffledIndex >= shuffledIndices.length) {
+        shuffleItems();
+        setCurrentIndex(shuffledIndices[0]);
+        setShuffledIndex(1);
+      } else {
+        setCurrentIndex(shuffledIndices[shuffledIndex]);
+        setShuffledIndex(shuffledIndex + 1);
+      }
+    }, 150);
   };
 
   const replaySound = () => {
     if (currentNumber) {
-      speak(String(currentNumber), { voice: femaleVoice ?? null });
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current);
+      }
+      stop();
+      audioTimeoutRef.current = setTimeout(() => {
+        speak(String(currentNumber), { voice: femaleVoice ?? null });
+      }, 1000); // 1 second delay
     }
   };
 
@@ -65,6 +95,7 @@ const NumbersApp = () => {
       handleNext();
     } else {
       replaySound();
+      setIsFlipped(!isFlipped);
     }
   };
 
@@ -103,8 +134,34 @@ const NumbersApp = () => {
     return <div>Loading...</div>;
   }
 
+  const Dot = ({ color }: { color: string }) => (
+    <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 ${color} rounded-full`} />
+  );
+  
+  const DieFace = ({ count, color }: { count: number, color: string }) => {
+    const patterns: { [key: number]: React.ReactNode } = {
+        1: <div className="flex justify-center items-center w-full h-full"><Dot color={color} /></div>,
+        2: <div className="grid grid-cols-2 gap-4 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start"><Dot color={color} /></div><div className="self-end justify-self-end"><Dot color={color} /></div></div>,
+        3: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start"><Dot color={color} /></div><div><Dot color={color} /></div><div className="self-end justify-self-end"><Dot color={color} /></div></div>,
+        4: <div className="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+        5: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div></div>,
+        6: <div className="grid grid-cols-2 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+        7: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div><div className="col-start-2 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-3"><Dot color={color} /></div></div>,
+        8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+        9: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+        10: <div className="grid grid-cols-2 grid-rows-5 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+    };
+    return <div className="w-64 h-64 flex justify-center items-center">{patterns[count]}</div>;
+  };
+
+  const DotsDisplay = ({ count, color }: { count: number, color: string }) => {
+    return <DieFace count={count} color={color} />;
+  };
+
+  const numberColor = getLetterColors(String(currentNumber === 10 ? 0 : currentNumber));
+
   return (
-    <div className="h-screen bg-background select-none flex flex-col justify-between overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -117,32 +174,32 @@ const NumbersApp = () => {
       </header>
 
       <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-          <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handlePrevious();}}>
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
-          <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
+        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handleNext();}}>
         </div>
 
-        <div className="w-full flex justify-center">
-          <div className="flex flex-col items-center justify-center gap-y-4 animate-fade-in">
-            <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${getLetterColors(String(currentNumber === 10 ? 0 : currentNumber)).text}`} onClick={(e) => { e.stopPropagation(); replaySound(); }}>
-              {currentNumber}
-            </h2>
+        <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 800px)', height: 'clamp(300px, 80vw, 600px)' }}>
+              <div className="card-face card-face-front">
+                <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${numberColor.text}`}>
+                  {currentNumber}
+                </h2>
+              </div>
+              <div className="card-face card-face-back">
+                <DotsDisplay count={currentNumber} color={numberColor.background} />
+              </div>
+            </div>
           </div>
-        </div>
       </main>
 
-      <div className="h-32">
+      <div className="h-48 flex-shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 h-48 z-50 border-t-2 border-primary bg-background">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
         >
-          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+          <Shuffle className="w-16 h-16" />
         </button>
       </div>
     </div>

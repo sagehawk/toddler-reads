@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
@@ -243,9 +242,10 @@ const SentencesApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const { speak, voices } = useSpeechSynthesis();
+  const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const sentenceRef = useRef<HTMLHeadingElement>(null);
+  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentItem = filteredSentences[currentIndex];
   let imageToDisplay = combinedImageMap[currentItem?.text];
@@ -277,20 +277,32 @@ const SentencesApp = () => {
 
 
   const handleNext = useCallback(() => {
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+    stop();
     setIsFlipped(false);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
     }, 150);
-  }, [filteredSentences.length]);
+  }, [filteredSentences.length, stop]);
 
   const handlePrevious = useCallback(() => {
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+    stop();
     setIsFlipped(false);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
     }, 150);
-  }, [filteredSentences.length]);
+  }, [filteredSentences.length, stop]);
 
   const handleShuffle = () => {
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
+    }
+    stop();
     setIsFlipped(false);
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length) {
@@ -316,7 +328,13 @@ const SentencesApp = () => {
         handleNext();
       }
     } else {
-      speak(currentItem.text, { voice: femaleVoice ?? null });
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current);
+      }
+      stop();
+      audioTimeoutRef.current = setTimeout(() => {
+        speak(currentItem.text, { voice: femaleVoice ?? null });
+      }, 1000);
       setIsFlipped(!isFlipped);
     }
   };
@@ -324,9 +342,7 @@ const SentencesApp = () => {
   useEffect(() => {
     if (currentItem) {
       speak(currentItem.text, {
-        voice: femaleVoice ?? null, onEnd: () => {
-          setTimeout(() => setIsFlipped(true), 500);
-        }
+        voice: femaleVoice ?? null
       });
     }
   }, [currentItem, speak, femaleVoice]);
@@ -362,7 +378,7 @@ const SentencesApp = () => {
   const words = currentItem.text.split(' ');
 
   return (
-    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleTap}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden" onClick={handleTap}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -419,12 +435,13 @@ const SentencesApp = () => {
         </main>
       </div>
 
-      <div className="h-24 pb-safe">
+      <div className="h-48 flex-shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 h-48 z-50 border-t-2 border-primary bg-background">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
         >
-          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+          <Shuffle className="w-16 h-16" />
         </button>
       </div>
     </div>

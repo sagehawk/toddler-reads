@@ -212,8 +212,6 @@ export default function PhonicsApp() {
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
 
-    stopAllSounds();
-    
     await playSoundOnce(letterInfo.sound);
   };
 
@@ -253,7 +251,7 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -291,12 +289,14 @@ export default function PhonicsApp() {
           </div>
         </main>
       </div>
-      <div className="h-32">
+      <div className="h-48 flex-shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 h-48 z-50 border-t-2 border-primary bg-background">
         <button
           onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}        >
-          <Shuffle className="w-10 h-10 md:w-12 md:h-12" />
+          className={`w-full h-full flex items-center justify-center transition-colors text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+        >
+          <Shuffle className="w-16 h-16" />
         </button>
       </div>
     </div>
