@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Shuffle, Play, Pause } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { getLetterColors } from '../lib/colorUtils';
 import { vocabData, VocabItem } from '../data/vocabData';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -28,13 +28,10 @@ const VocabApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isAutoplay, setIsAutoplay] = useLocalStorage('vocabAutoplay', true);
-  const [isImageVisible, setIsImageVisible] = useState(false);
-  const [wordTapped, setWordTapped] = useState(false);
+  const [isQuietMode, setIsQuietMode] = useLocalStorage('vocabQuietMode', false);
   const [isFlipped, setIsFlipped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const wordContainerRef = useRef<HTMLDivElement>(null);
   const wordRef = useRef<HTMLHeadingElement>(null);
 
   const currentItem = filteredVocab[currentIndex];
@@ -56,53 +53,46 @@ const VocabApp = () => {
 
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
-    setWordTapped(false);
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
+    }, 150);
   }, [filteredVocab.length]);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredVocab.length) % filteredVocab.length);
-    setWordTapped(false);
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredVocab.length) % filteredVocab.length);
+    }, 150);
   }, [filteredVocab.length]);
 
   const handleShuffle = () => {
-    if (shuffledIndex >= shuffledIndices.length) {
-      shuffleItems();
-      setCurrentIndex(shuffledIndices[0]);
-      setShuffledIndex(1);
-    } else {
-      setCurrentIndex(shuffledIndices[shuffledIndex]);
-      setShuffledIndex(shuffledIndex + 1);
-    }
-    setWordTapped(false);
+    setIsFlipped(false);
+    setTimeout(() => {
+      if (shuffledIndex >= shuffledIndices.length) {
+        shuffleItems();
+        setCurrentIndex(shuffledIndices[0]);
+        setShuffledIndex(1);
+      } else {
+        setCurrentIndex(shuffledIndices[shuffledIndex]);
+        setShuffledIndex(shuffledIndex + 1);
+      }
+    }, 150);
   };
 
-  const replaySound = () => {
-    if (currentItem) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
-    }
-  };
-
-  const handleCardClick = () => {
-    if (isFlipped) {
-      setIsFlipped(false);
-      setTimeout(() => setIsFlipped(true), 10);
-    } else {
-      setIsFlipped(true);
-    }
-    replaySound();
-  };
-
-  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
+    const isEdgeClick = clickX < screenWidth / 4 || clickX > screenWidth * 3 / 4;
 
-    if (clickX < screenWidth / 4) {
-      handlePrevious();
-    } else if (clickX > screenWidth * 3 / 4) {
-      handleNext();
+    if (isEdgeClick) {
+      if (clickX < screenWidth / 4) {
+        handlePrevious();
+      } else if (clickX > screenWidth * 3 / 4) {
+        handleNext();
+      }
     } else {
-      handleCardClick();
+      setIsFlipped(!isFlipped);
     }
   };
 
@@ -133,65 +123,58 @@ const VocabApp = () => {
   }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
   useEffect(() => {
-    setIsImageVisible(false);
-    setWordTapped(false);
-    if (currentItem && isAutoplay) {
+    if (currentItem && !isQuietMode) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null, onEnd: () => {
-        setTimeout(() => setIsImageVisible(true), 2000);
+        setTimeout(() => setIsFlipped(true), 500);
       }});
     }
-  }, [currentIndex, femaleVoice, speak, currentItem, isAutoplay]);
+  }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleTap}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsAutoplay(!isAutoplay); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {isAutoplay ? <Pause className="w-12 h-12" /> : <Play className="w-12 h-12" />}
+        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
         </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-evenly">
         <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handlePrevious(); }}>
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
 
-          <div ref={wordContainerRef} className="w-full flex justify-center">
-            <div
-              className={`card w-full h-72 md:h-64 ${isImageVisible || wordTapped || isFlipped ? 'flipped' : ''}`}
-              onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
-            >
-              <div className="card-inner">
-                <div className="card-front">
-                  <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest cursor-pointer">
-                    <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                    <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
-                  </h2>
-                </div>
-                <div className="card-back">
-                  <img
-                    src={currentItem.image}
-                    alt={currentItem.name}
-                    className="w-64 h-64 md:w-72 md:h-72 object-contain"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
-                  />
-                </div>
+          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
+              <div className="card-face card-face-front">
+                <h2 ref={wordRef} style={{ fontSize: 'clamp(5rem, 15vw, 8rem)' }} className="font-bold tracking-widest">
+                  <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
+                </h2>
+              </div>
+              <div className="card-face card-face-back">
+                <img
+                  src={currentItem.image}
+                  alt={currentItem.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
               </div>
             </div>
           </div>

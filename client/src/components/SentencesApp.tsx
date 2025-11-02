@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useRoute } from 'wouter';
-import { Shuffle, Play, Pause } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { getLetterColors } from '../lib/colorUtils';
@@ -242,12 +242,10 @@ const SentencesApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isAutoplay, setIsAutoplay] = useLocalStorage('sentencesAutoplay', true);
-  const [isImageVisible, setIsImageVisible] = useState(false);
+  const [isQuietMode, setIsQuietMode] = useLocalStorage('sentencesQuietMode', false);
   const [isFlipped, setIsFlipped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const sentenceContainerRef = useRef<HTMLDivElement>(null);
   const sentenceRef = useRef<HTMLHeadingElement>(null);
 
   const currentItem = filteredSentences[currentIndex];
@@ -280,67 +278,58 @@ const SentencesApp = () => {
 
 
   const handleNext = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
+    }, 150);
   }, [filteredSentences.length]);
 
   const handlePrevious = useCallback(() => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
+    setIsFlipped(false);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
+    }, 150);
   }, [filteredSentences.length]);
 
   const handleShuffle = () => {
-    if (shuffledIndex >= shuffledIndices.length) {
-      shuffleItems();
-      setCurrentIndex(shuffledIndices[0]);
-      setShuffledIndex(1);
-    } else {
-      setCurrentIndex(shuffledIndices[shuffledIndex]);
-      setShuffledIndex(shuffledIndex + 1);
-    }
+    setIsFlipped(false);
+    setTimeout(() => {
+      if (shuffledIndex >= shuffledIndices.length) {
+        shuffleItems();
+        setCurrentIndex(shuffledIndices[0]);
+        setShuffledIndex(1);
+      } else {
+        setCurrentIndex(shuffledIndices[shuffledIndex]);
+        setShuffledIndex(shuffledIndex + 1);
+      }
+    }, 150);
   };
 
-  const replaySound = () => {
-    if (currentItem) {
-      speak(currentItem.text, { voice: femaleVoice ?? null });
-    }
-  };
-
-  const handleCardClick = () => {
-    if (isFlipped) {
-      setIsFlipped(false);
-      setTimeout(() => setIsFlipped(true), 10);
-    } else {
-      setIsFlipped(true);
-    }
-    replaySound();
-  };
-
-  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
+    const isEdgeClick = clickX < screenWidth / 4 || clickX > screenWidth * 3 / 4;
 
-    if (clickX < screenWidth / 4) {
-      handlePrevious();
-    } else if (clickX > screenWidth * 3 / 4) {
-      handleNext();
+    if (isEdgeClick) {
+      if (clickX < screenWidth / 4) {
+        handlePrevious();
+      } else if (clickX > screenWidth * 3 / 4) {
+        handleNext();
+      }
     } else {
-      handleCardClick();
+      setIsFlipped(!isFlipped);
     }
   };
 
   useEffect(() => {
-    setIsImageVisible(false);
-    setIsFlipped(false);
-
-    if (isAutoplay && currentItem) {
-        speak(currentItem.text, { voice: femaleVoice ?? null, onEnd: () => {
-            setTimeout(() => setIsImageVisible(true), 4000);
-        }});
+    if (!isQuietMode && currentItem) {
+      speak(currentItem.text, {
+        voice: femaleVoice ?? null, onEnd: () => {
+          setTimeout(() => setIsFlipped(true), 500);
+        }
+      });
     }
-  }, [currentItem, isAutoplay, speak, femaleVoice]);
-
-  if (!currentItem) {
-    return <div>Loading...</div>;
-  }
+  }, [currentItem, isQuietMode, speak, femaleVoice]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -373,65 +362,60 @@ const SentencesApp = () => {
   const words = currentItem.text.split(' ');
 
   return (
-    <div className="h-screen bg-background select-none flex flex-col overflow-hidden relative" onClick={handleScreenClick}>
+    <div className="h-screen-svh bg-background select-none flex flex-col overflow-hidden relative" onClick={handleTap}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsAutoplay(!isAutoplay); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {isAutoplay ? <Pause className="w-12 h-12" /> : <Play className="w-12 h-12" />}
+        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
         </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-evenly">
         <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handlePrevious(); }}>
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
 
-          <div ref={sentenceContainerRef} className="w-full flex justify-center">
-            <div
-              className={`card w-full h-72 md:h-64 ${isImageVisible || isFlipped ? 'flipped' : ''}`}
-              onClick={(e) => { e.stopPropagation(); handleCardClick(); }}
-            >
-              <div className="card-inner">
-                <div className="card-front">
-                  {imageToDisplay && (
-                    <img
-                      src={imageToDisplay}
-                      alt={currentItem.text}
-                      className="w-64 h-64 md:w-72 md:h-72 object-contain"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
-                  )}
-                </div>
-                <div className="card-back">
-                  <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest cursor-pointer">
-                    {words.map((word, index) => {
-                      const cleanedWord = word.toLowerCase().replace('.', '');
-                      const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-                      if (isNoun) {
-                          return (
-                              <span key={index}>
-                                  <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
-                                  <span>{word.slice(1)}</span>
-                                  {' '}
-                              </span>
-                          );
-                      }
-                      return <span key={index}>{word} </span>;
-                    })}
-                  </h2>
-                </div>
+          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 800px)', height: 'clamp(300px, 80vw, 600px)' }}>
+              <div className="card-face card-face-front">
+                <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest">
+                  {words.map((word, index) => {
+                    const cleanedWord = word.toLowerCase().replace('.', '');
+                    const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
+                    if (isNoun) {
+                      return (
+                        <span key={index}>
+                          <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
+                          <span>{word.slice(1)}</span>
+                          {' '}
+                        </span>
+                      );
+                    }
+                    return <span key={index}>{word} </span>;
+                  })}
+                </h2>
+              </div>
+              <div className="card-face card-face-back">
+                {imageToDisplay && (
+                  <img
+                    src={imageToDisplay}
+                    alt={currentItem.text}
+                    className="w-full h-full object-contain"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                )}
               </div>
             </div>
           </div>
