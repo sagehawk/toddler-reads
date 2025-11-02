@@ -289,8 +289,8 @@ export default function PhonicsApp() {
           </div>
         </main>
       </div>
-      <div className="h-48 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 z-50 border-t-2 border-primary bg-background">
+      <div className="h-48 md:h-24 flex-shrink-0" />
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 border-t-2 border-primary bg-background">
         <button
           onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
