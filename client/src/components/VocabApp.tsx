@@ -28,7 +28,6 @@ const VocabApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isQuietMode, setIsQuietMode] = useLocalStorage('vocabQuietMode', false);
   const [isFlipped, setIsFlipped] = useState(false);
   const { speak, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
@@ -92,6 +91,7 @@ const VocabApp = () => {
         handleNext();
       }
     } else {
+      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
       setIsFlipped(!isFlipped);
     }
   };
@@ -123,12 +123,12 @@ const VocabApp = () => {
   }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
   useEffect(() => {
-    if (currentItem && !isQuietMode) {
+    if (currentItem) {
       speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null, onEnd: () => {
         setTimeout(() => setIsFlipped(true), 500);
       }});
     }
-  }, [currentIndex, femaleVoice, speak, currentItem, isQuietMode]);
+  }, [currentIndex, femaleVoice, speak, currentItem]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
@@ -142,9 +142,6 @@ const VocabApp = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
-        </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-evenly">
@@ -181,7 +178,7 @@ const VocabApp = () => {
         </main>
       </div>
 
-      <div className="h-32">
+      <div className="h-24 pb-safe">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent text-secondary-foreground"
