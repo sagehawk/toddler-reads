@@ -323,10 +323,7 @@ const SentencesApp = () => {
     } else if (clickX > screenWidth * 3 / 4) {
       handleNext();
     } else {
-      if (!isAutoplay) {
-        setIsImageVisible(true);
-      }
-      replaySound();
+      handleCardClick();
     }
   };
 
@@ -390,12 +387,12 @@ const SentencesApp = () => {
 
       <div className="flex-1 flex flex-col justify-evenly">
         <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
+          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handlePrevious(); }}>
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity">
+          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
