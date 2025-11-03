@@ -159,6 +159,13 @@ const NumbersApp = () => {
   };
 
   const numberColor = getLetterColors(String(currentNumber === 10 ? 0 : currentNumber));
+  const [dots, setDots] = useState<React.ReactNode>(null);
+
+  useEffect(() => {
+    if (currentNumber) {
+      setDots(<DotsDisplay count={currentNumber} color={numberColor.background} />);
+    }
+  }, [currentNumber, numberColor.background]);
 
   return (
     <div className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" onClick={handleScreenClick}>
@@ -187,7 +194,7 @@ const NumbersApp = () => {
                 </h2>
               </div>
               <div className="card-face card-face-back">
-                <DotsDisplay count={currentNumber} color={numberColor.background} />
+                {dots}
               </div>
             </div>
           </div>
