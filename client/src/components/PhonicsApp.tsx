@@ -263,7 +263,7 @@ export default function PhonicsApp() {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
+      <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
         <div onClick={(e) => { e.stopPropagation(); handlePrevious(); }} className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

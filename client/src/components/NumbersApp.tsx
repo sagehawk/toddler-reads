@@ -173,7 +173,7 @@ const NumbersApp = () => {
         </button>
       </header>
 
-      <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+      <main className="relative flex flex-1 flex-col items-center justify-center text-center px-4 overflow-hidden pb-48 md:pb-24">
         <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handlePrevious();}}>
         </div>
         <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handleNext();}}>
