@@ -152,7 +152,7 @@ const VocabApp = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden" onClick={handleTap}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24" onClick={handleTap}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -161,8 +161,8 @@ const VocabApp = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center pb-48 md:pb-24">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-30">
+      <div className="flex-1 flex flex-col justify-center">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity hidden">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -177,7 +177,7 @@ const VocabApp = () => {
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 15vw, 6rem)' }} className="font-bold tracking-widest">
+                <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 20vw, 6rem)' }} className="font-bold tracking-widest">
                   <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                   <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
                 </h2>
