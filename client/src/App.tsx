@@ -6,6 +6,7 @@ import SentencesApp from "./components/SentencesApp";
 import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
+import StoryPage from "./pages/StoryPage";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Route path="/sentences/:category?" component={SentencesApp} />
       <Route path="/numbers" component={NumbersApp} />
       <Route path="/my-story" component={MyStory} />
+      <Route path="/story/:id" component={StoryPage} />
       <Route component={NotFound} />
     </Switch>
   );

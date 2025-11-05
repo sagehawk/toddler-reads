@@ -9,6 +9,8 @@ const menuItems = [
   { title: "Vocab", href: "/vocab", color: "bg-accent" },
   { title: "Sentences", href: "/sentences", color: "bg-destructive" },
   { title: "Numbers", href: "/numbers", color: "bg-numbers" },
+  { title: "Story 1", href: "/story/1", color: "bg-storybook-1" },
+  { title: "Story 2", href: "/story/2", color: "bg-storybook-2" },
 ];
 
 const DigitalPlayshelf = () => {

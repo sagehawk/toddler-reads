@@ -23,7 +23,7 @@
   --muted: 220 13% 85%;
   --muted-foreground: 220 13% 40%;
 
-  --accent: 170 70% 45%;
+  --accent: 210 80% 60%;
   --accent-foreground: 220 13% 10%;
 
   --destructive: 0 72% 51%; /* soft red */
@@ -33,6 +33,8 @@
   --input: 220 13% 90%;
   --ring: 170 70% 45%;
   --numbers: 30 90% 60%; /* soft orange */
+  --storybook-1: 260 80% 60%;
+  --storybook-2: 140 70% 45%;
 
   --radius: 16px;
 }
@@ -108,7 +110,7 @@
   --muted: 220 13% 25%;
   --muted-foreground: 220 13% 60%;
 
-  --accent: 170 70% 45%;
+  --accent: 210 80% 50%;
   --accent-foreground: 0 0% 98%;
 
   --destructive: 0 72% 51%; /* soft red */
@@ -118,6 +120,8 @@
   --input: 220 13% 25%;
   --ring: 170 70% 45%;
   --numbers: 30 90% 50%;
+  --storybook-1: 260 80% 50%;
+  --storybook-2: 140 70% 35%;
 }
 
 .card {
@@ -146,4 +150,12 @@
 
 .card-face-back {
   transform: rotateY(180deg);
+}
+
+@media (orientation: portrait) {
+  .story-image-portrait {
+    transform: rotate(90deg);
+    max-width: 100vh;
+    max-height: 100vw;
+  }
 }
