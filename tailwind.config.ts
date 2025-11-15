@@ -51,8 +51,6 @@ export default {
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         numbers: 'hsl(var(--numbers))',
-        'storybook-1': 'hsl(var(--storybook-1))',
-        'storybook-2': 'hsl(var(--storybook-2))',
       },
       fontFamily: {
         sans: ["'Lato'", "sans-serif"],
