@@ -174,7 +174,7 @@ const VocabApp = () => {
             </svg>
           </div>
 
-          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px', transform: 'translateY(-20%)' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
                 <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 20vw, 6rem)' }} className="font-bold tracking-widest">
@@ -187,6 +187,7 @@ const VocabApp = () => {
                   src={currentItem.image}
                   alt={currentItem.name}
                   className="w-full h-full object-contain"
+                  style={{ transform: 'scale(0.8)' }}
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
               </div>
