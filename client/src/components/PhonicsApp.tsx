@@ -3,9 +3,8 @@ import { useLocation, Link } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { useVoiceActivation } from '@/hooks/useVoiceActivation';
 
-import { Shuffle, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
+import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 
 export interface PhonicsLetter {
   letter: string;
@@ -65,9 +64,7 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
-  const [isVoiceActivationEnabled, setIsVoiceActivationEnabled] = useLocalStorage('phonicsVoiceActivation', false);
-  const [userInteracted, setUserInteracted] = useState(false);
-
+  
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -121,31 +118,6 @@ export default function PhonicsApp() {
     }
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
-  const handleShuffle = useCallback(() => {
-    if (shuffledIndex >= shuffledIndices.length - 1) {
-      shuffleLetters();
-    } else {
-      const nextShuffledIndex = shuffledIndex + 1;
-      setShuffledIndex(nextShuffledIndex);
-      handleLetterClick(shuffledIndices[nextShuffledIndex]);
-    }
-  }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick]);
-
-  const { startListening, stopListening, isListening } = useVoiceActivation({
-    onSoundDetected: handleShuffle,
-  });
-
-  useEffect(() => {
-    if (isVoiceActivationEnabled) {
-      startListening();
-    } else {
-      stopListening();
-    }
-    return () => {
-      stopListening();
-    };
-  }, [isVoiceActivationEnabled, startListening, stopListening]);
-
   useEffect(() => {
     handleLetterClick(0);
     return () => {
@@ -178,7 +150,7 @@ export default function PhonicsApp() {
   }, []);
 
   useEffect(() => {
-    if (currentIndex === null || !isPlaying || !userInteracted) {
+    if (currentIndex === null || !isPlaying) {
       return;
     }
 
@@ -196,7 +168,18 @@ export default function PhonicsApp() {
     return () => {
         stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled, userInteracted]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled]);
+
+
+  const handleShuffle = useCallback(() => {
+    if (shuffledIndex >= shuffledIndices.length - 1) {
+      shuffleLetters();
+    } else {
+      const nextShuffledIndex = shuffledIndex + 1;
+      setShuffledIndex(nextShuffledIndex);
+      handleLetterClick(shuffledIndices[nextShuffledIndex]);
+    }
+  }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick]);
 
   const handleNext = useCallback(() => {
     if (currentIndex === null) return;
@@ -211,9 +194,6 @@ export default function PhonicsApp() {
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
   const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!userInteracted) {
-      setUserInteracted(true);
-    }
     if (!isPlaying) return;
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
@@ -278,14 +258,9 @@ export default function PhonicsApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <div className="flex gap-2">
-          <button onClick={(e) => { e.stopPropagation(); setIsVoiceActivationEnabled(!isVoiceActivationEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-            {isVoiceActivationEnabled ? <Mic className="w-12 h-12" /> : <MicOff className="w-12 h-12" />}
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
-            {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
-          </button>
-        </div>
+        <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+          {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
+        </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
