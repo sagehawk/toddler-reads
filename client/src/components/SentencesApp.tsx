@@ -400,7 +400,7 @@ const SentencesApp = () => {
             </svg>
           </div>
 
-          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px', transform: 'translateY(-20%)' }}>
+          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 800px)', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
                 <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest">
@@ -426,7 +426,6 @@ const SentencesApp = () => {
                     src={imageToDisplay}
                     alt={currentItem.text}
                     className="w-full h-full object-contain"
-                    style={{ transform: 'scale(0.8)' }}
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
