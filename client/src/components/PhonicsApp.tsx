@@ -64,6 +64,7 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
+  const [isFlipped, setIsFlipped] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,6 +91,7 @@ export default function PhonicsApp() {
   const handleLetterClick = useCallback((index: number) => {
     console.log(`handleLetterClick called with index: ${index}`);
     stopAllSounds();
+    setIsFlipped(false);
     
     const letterInfo = selectedModule.letters?.[index];
     if (!letterInfo) return;
@@ -193,18 +195,27 @@ export default function PhonicsApp() {
     handleLetterClick(prevIndex);
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
-  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleInteraction = (clientX: number) => {
     if (!isPlaying) return;
     const screenWidth = window.innerWidth;
-    const clickX = e.clientX;
 
-    if (clickX < screenWidth / 4) {
+    if (clientX < screenWidth / 4) {
       handlePrevious();
-    } else if (clickX > screenWidth * 3 / 4) {
+    } else if (clientX > screenWidth * 3 / 4) {
       handleNext();
     } else {
+      setIsFlipped(prev => !prev);
       replaySound();
     }
+  };
+
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    handleInteraction(e.clientX);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    handleInteraction(e.touches[0].clientX);
   };
   
   const replaySound = async () => {
@@ -251,9 +262,9 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden" onClick={handleScreenClick}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" onClick={handleTap} onTouchStart={handleTouchStart}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-75">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
@@ -264,33 +275,37 @@ export default function PhonicsApp() {
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
-        <div onClick={(e) => { e.stopPropagation(); handlePrevious(); }} className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+        <div onClick={(e) => { e.stopPropagation(); handlePrevious(); }} className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-0 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
         </div>
-        <div onClick={(e) => { e.stopPropagation(); handleNext(); }} className="absolute right-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity">
+        <div onClick={(e) => { e.stopPropagation(); handleNext(); }} className="absolute right-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-0 md:opacity-20 md:hover:opacity-80 transition-opacity">
             <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
         </div>
-        <main className="flex flex-col items-center justify-center">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <div className="relative">
-              <div className="text-center">
-                {currentIndex !== null && currentDisplayData && (
-                  <span className={`font-semibold ${getLetterColors(currentDisplayData.letter).text} text-[15rem] sm:text-[11rem] md:text-[20rem] lg:text-[17rem] xl:text-[19rem]`}>
-                    <span>{currentDisplayData.letter}</span>
-                    <span className="text-8xl sm:text-[6rem] md:text-[10rem] lg:text-[9rem] xl:text-[10rem] align-baseline">{currentDisplayData.letter.toLowerCase()}</span>
-                  </span>
-                )}
+        <main className="flex flex-col items-center justify-center mt-[20vh] md:mt-0">
+          {currentIndex !== null && currentDisplayData && (
+            <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+              <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
+                <div className="card-face card-face-front">
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(8rem, 50vw, 20rem)' }}>
+                    {currentDisplayData.letter}
+                  </h2>
+                </div>
+                <div className="card-face card-face-back">
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(8rem, 50vw, 20rem)' }}>
+                    {currentDisplayData.letter.toLowerCase()}
+                  </h2>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 border-t-2 border-primary bg-background">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-75">
         <button
           onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}

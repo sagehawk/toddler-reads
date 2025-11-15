@@ -89,6 +89,10 @@
       opacity: 1;
     }
   }
+
+  .touchable-area {
+    touch-action: none;
+  }
 }
 
 .dark {

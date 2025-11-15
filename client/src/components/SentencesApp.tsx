@@ -316,15 +316,14 @@ const SentencesApp = () => {
     }, 150);
   };
 
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleInteraction = (clientX: number) => {
     const screenWidth = window.innerWidth;
-    const clickX = e.clientX;
-    const isEdgeClick = clickX < screenWidth / 4 || clickX > screenWidth * 3 / 4;
+    const isEdgeClick = clientX < screenWidth / 4 || clientX > screenWidth * 3 / 4;
 
     if (isEdgeClick) {
-      if (clickX < screenWidth / 4) {
+      if (clientX < screenWidth / 4) {
         handlePrevious();
-      } else if (clickX > screenWidth * 3 / 4) {
+      } else if (clientX > screenWidth * 3 / 4) {
         handleNext();
       }
     } else {
@@ -337,6 +336,15 @@ const SentencesApp = () => {
       }, 1000);
       setIsFlipped(!isFlipped);
     }
+  };
+
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    handleInteraction(e.clientX);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    handleInteraction(e.touches[0].clientX);
   };
 
   useEffect(() => {
@@ -378,7 +386,7 @@ const SentencesApp = () => {
   const words = currentItem.text.split(' ');
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24" onClick={handleTap}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onClick={handleTap} onTouchStart={handleTouchStart}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -388,7 +396,7 @@ const SentencesApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-24">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity hidden">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -401,9 +409,9 @@ const SentencesApp = () => {
           </div>
 
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 800px)', height: 'clamp(300px, 80vw, 600px)' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 ref={sentenceRef} style={{ fontSize: 'clamp(4rem, 10vw, 6rem)' }} className="font-bold tracking-widest">
+                <h2 ref={sentenceRef} style={{ fontSize: 'clamp(2rem, 12vw, 8rem)' }} className="font-bold tracking-widest break-words">
                   {words.map((word, index) => {
                     const cleanedWord = word.toLowerCase().replace('.', '');
                     const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
@@ -420,12 +428,12 @@ const SentencesApp = () => {
                   })}
                 </h2>
               </div>
-              <div className="card-face card-face-back">
+              <div className="card-face card-face-back flex items-center justify-center">
                 {imageToDisplay && (
                   <img
                     src={imageToDisplay}
                     alt={currentItem.text}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain md:w-3/5 md:h-3/5"
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
@@ -436,7 +444,7 @@ const SentencesApp = () => {
       </div>
 
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 border-t-2 border-primary bg-background">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
