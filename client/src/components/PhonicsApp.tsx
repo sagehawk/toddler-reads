@@ -209,13 +209,8 @@ export default function PhonicsApp() {
     }
   };
 
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     handleInteraction(e.clientX);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    handleInteraction(e.touches[0].clientX);
   };
   
   const replaySound = async () => {
@@ -262,14 +257,14 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" onClick={handleTap} onTouchStart={handleTouchStart}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" onPointerDown={handlePointerDown}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-75">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
           {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
         </button>
       </header>
@@ -290,7 +285,7 @@ export default function PhonicsApp() {
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
               <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
                 <div className="card-face card-face-front">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(8rem, 50vw, 20rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(9.2rem, 57.5vw, 23rem)' }}>
                     {currentDisplayData.letter}
                   </h2>
                 </div>
@@ -305,7 +300,7 @@ export default function PhonicsApp() {
         </main>
       </div>
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-75">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
           onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}

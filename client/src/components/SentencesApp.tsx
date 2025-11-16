@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { Link, useRoute } from 'wouter';
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
@@ -246,6 +246,7 @@ const SentencesApp = () => {
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const sentenceRef = useRef<HTMLHeadingElement>(null);
   const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTextVisible, setIsTextVisible] = useState(false);
 
   const currentItem = filteredSentences[currentIndex];
   let imageToDisplay = combinedImageMap[currentItem?.text];
@@ -338,13 +339,9 @@ const SentencesApp = () => {
     }
   };
 
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    handleInteraction(e.clientX);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
-    handleInteraction(e.touches[0].clientX);
+    handleInteraction(e.clientX);
   };
 
   useEffect(() => {
@@ -379,6 +376,32 @@ const SentencesApp = () => {
     };
   }, [handlePrevious, handleNext, filteredSentences, handleShuffle]);
 
+  useLayoutEffect(() => {
+    setIsTextVisible(false);
+    if (sentenceRef.current) {
+      const container = sentenceRef.current.parentElement;
+      if (container) {
+        const containerWidth = container.clientWidth;
+        
+        // Reset font size for measurement
+        sentenceRef.current.style.fontSize = '100px';
+        const textWidth = sentenceRef.current.scrollWidth;
+        
+        const targetWidth = containerWidth * 0.9; // Use 90% of container width
+        
+        let newFontSize = (targetWidth / textWidth) * 100;
+        
+        // Set max and min font size
+        const maxFontSize = 8 * 16; // 8rem
+        const minFontSize = 2 * 16; // 2rem
+        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+
+        sentenceRef.current.style.fontSize = `${newFontSize}px`;
+        setIsTextVisible(true);
+      }
+    }
+  }, [currentItem]);
+
   if (!currentItem) {
     return <div>Loading...</div>;
   }
@@ -386,9 +409,9 @@ const SentencesApp = () => {
   const words = currentItem.text.split(' ');
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onClick={handleTap} onTouchStart={handleTouchStart}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onPointerDown={handlePointerDown}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
@@ -396,7 +419,7 @@ const SentencesApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-24">
+        <main className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden mt-[10vh] md:-mt-[25vh]">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-0 md:opacity-0 md:hover:opacity-80 transition-opacity hidden">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -411,7 +434,11 @@ const SentencesApp = () => {
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 ref={sentenceRef} style={{ fontSize: 'clamp(2rem, 12vw, 8rem)' }} className="font-bold tracking-widest break-words">
+                <h2 
+                  ref={sentenceRef} 
+                  style={{ visibility: isTextVisible ? 'visible' : 'hidden' }} 
+                  className="font-bold break-words"
+                >
                   {words.map((word, index) => {
                     const cleanedWord = word.toLowerCase().replace('.', '');
                     const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
@@ -433,7 +460,8 @@ const SentencesApp = () => {
                   <img
                     src={imageToDisplay}
                     alt={currentItem.text}
-                    className="w-full h-full object-contain md:w-3/5 md:h-3/5"
+                    className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
+                    draggable="false"
                     onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
@@ -444,7 +472,7 @@ const SentencesApp = () => {
       </div>
 
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"

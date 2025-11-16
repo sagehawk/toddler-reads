@@ -85,7 +85,8 @@ const NumbersApp = () => {
     }
   };
 
-  const handleScreenClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
     const screenWidth = window.innerWidth;
     const clickX = e.clientX;
 
@@ -168,19 +169,19 @@ const NumbersApp = () => {
   }, [currentNumber, numberColor.background]);
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" onClick={handleScreenClick}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" onPointerDown={handlePointerDown}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
           {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
         </button>
       </header>
 
-      <main className="relative flex flex-1 flex-col items-center justify-center text-center px-4 overflow-hidden pb-48 md:pb-24">
+      <main className="relative flex flex-1 flex-col items-center justify-start text-center px-4 overflow-hidden pb-48 md:pb-24 mt-[10vh] md:-mt-[25vh]">
         <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handlePrevious();}}>
         </div>
         <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handleNext();}}>
@@ -201,7 +202,7 @@ const NumbersApp = () => {
       </main>
 
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 border-t-2 border-primary bg-background">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"

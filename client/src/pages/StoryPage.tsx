@@ -114,7 +114,8 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
       <img
         src={imageUrl}
         alt={`Story ${storyId} - Page ${currentPage}`}
-        className={`max-w-full max-h-full object-contain ${isPortrait ? 'story-image-portrait' : ''}`}
+        className={`max-w-full max-h-full object-contain ${isPortrait ? 'story-image-portrait' : ''} noselect`}
+        draggable="false"
       />
     </div>
   );

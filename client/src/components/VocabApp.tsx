@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
@@ -33,6 +33,7 @@ const VocabApp = () => {
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const wordRef = useRef<HTMLHeadingElement>(null);
   const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isTextVisible, setIsTextVisible] = useState(false);
 
   const currentItem = filteredVocab[currentIndex];
 
@@ -114,13 +115,9 @@ const VocabApp = () => {
     }
   };
 
-  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
-    handleInteraction(e.clientX);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
-    handleInteraction(e.touches[0].clientX);
+    handleInteraction(e.clientX);
   };
 
 
@@ -155,14 +152,40 @@ const VocabApp = () => {
     }
   }, [currentIndex, femaleVoice, speak, currentItem]);
 
+  useLayoutEffect(() => {
+    setIsTextVisible(false);
+    if (wordRef.current) {
+      const container = wordRef.current.parentElement;
+      if (container) {
+        const containerWidth = container.clientWidth;
+        
+        // Reset font size for measurement
+        wordRef.current.style.fontSize = '100px';
+        const wordWidth = wordRef.current.scrollWidth;
+        
+        const targetWidth = containerWidth * 0.9; // Use 90% of container width
+        
+        let newFontSize = (targetWidth / wordWidth) * 100;
+        
+        // Set max and min font size
+        const maxFontSize = 12 * 16; // 12rem
+        const minFontSize = 3 * 16; // 3rem
+        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+
+        wordRef.current.style.fontSize = `${newFontSize}px`;
+        setIsTextVisible(true);
+      }
+    }
+  }, [currentItem]);
+
   if (!currentItem) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onClick={handleTap} onTouchStart={handleTouchStart}>
+    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onPointerDown={handlePointerDown}>
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0">
+        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
@@ -170,7 +193,7 @@ const VocabApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-24">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-32">
           <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity hidden">
             <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -185,7 +208,11 @@ const VocabApp = () => {
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 ref={wordRef} style={{ fontSize: 'clamp(3rem, 25vw, 12rem)' }} className="font-bold tracking-widest break-words">
+                <h2 
+                  ref={wordRef} 
+                  style={{ visibility: isTextVisible ? 'visible' : 'hidden' }} 
+                  className="font-bold break-words"
+                >
                   <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
                   <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
                 </h2>
@@ -194,7 +221,8 @@ const VocabApp = () => {
                 <img
                   src={currentItem.image}
                   alt={currentItem.name}
-                  className="w-full h-full object-contain md:w-3/5 md:h-3/5"
+                  className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
+                  draggable="false"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
               </div>
@@ -204,7 +232,7 @@ const VocabApp = () => {
       </div>
 
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
           onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
