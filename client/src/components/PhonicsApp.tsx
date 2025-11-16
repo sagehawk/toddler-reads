@@ -302,7 +302,7 @@ export default function PhonicsApp() {
       <div className="h-48 md:h-24 flex-shrink-0" />
       <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
-          onClick={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
+          onPointerDown={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
           className={`w-full h-full flex items-center justify-center transition-colors text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
         >

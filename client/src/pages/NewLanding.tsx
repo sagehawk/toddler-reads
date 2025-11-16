@@ -19,12 +19,12 @@ const DigitalPlayshelf = () => {
       <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
         <ThemeToggle />
       </div>
-      <div className="flex-shrink-0">
-        <Link href="/story/all">
+      <div className="flex-shrink-0 mt-[-7vh] mb-4">
+        <Link href="/story/all" className="pb-[3vh]">
           <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-24 sm:h-28 select-none cursor-pointer" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
         </Link>
       </div>
-      <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4">
+      <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4 md:-mt-16">
         {menuItems.map((item) => (
           <Link 
             key={item.title} 

@@ -139,6 +139,7 @@ const wordImageMap: { [key: string]: string } = {
   
   const combinedImageMap: { [key: string]: string } = {
     'The dog can run.': dogRunImage,
+    'I see the dog run.': dogRunImage,
     'The hen is on a log.': henLogImage,
     'The rat is in a box.': ratBoxImage,
     'A bat is on a rock.': batRockImage,
@@ -474,7 +475,7 @@ const SentencesApp = () => {
       <div className="h-48 md:h-24 flex-shrink-0" />
       <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
         <button
-          onClick={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
+          onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
           className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
         >
           <Shuffle className="w-16 h-16" />
