@@ -6,35 +6,41 @@
 
 :root {
   --background: 220 13% 95%; /* light gray */
-  --foreground: 220 13% 10%; /* dark blue */
+  --foreground: 220 10% 30%; /* dark blue */
 
   --card: 220 13% 100%;
-  --card-foreground: 220 13% 10%;
+  --card-foreground: 220 10% 30%;
 
   --popover: 220 13% 100%;
-  --popover-foreground: 220 13% 10%;
+  --popover-foreground: 220 10% 30%;
 
-  --primary: 170 70% 45%; /* teal */
+  --primary: 170 50% 65%; /* teal */
+  --primary-darker: 170 50% 55%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 13% 85%; /* light gray */
-  --secondary-foreground: 220 13% 10%;
+  --secondary: 220 15% 90%; /* light gray */
+  --secondary-foreground: 220 10% 30%;
 
-  --muted: 220 13% 85%;
-  --muted-foreground: 220 13% 40%;
+  --muted: 220 15% 90%;
+  --muted-foreground: 220 10% 50%;
 
-  --accent: 210 80% 60%;
-  --accent-foreground: 220 13% 10%;
+  --accent: 210 60% 75%;
+  --accent-darker: 210 60% 65%;
+  --accent-foreground: 220 10% 30%;
 
-  --destructive: 0 72% 51%; /* soft red */
+  --destructive: 0 60% 70%; /* soft red */
+  --destructive-darker: 0 60% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 13% 80%;
-  --input: 220 13% 90%;
-  --ring: 170 70% 45%;
-  --numbers: 30 90% 60%; /* soft orange */
-  --storybook-1: 260 80% 60%;
-  --storybook-2: 140 70% 45%;
+  --border: 220 15% 85%;
+  --input: 220 15% 95%;
+  --ring: 170 50% 65%;
+  --numbers: 30 70% 75%; /* soft orange */
+  --numbers-darker: 30 70% 65%;
+  --storybook-1: 260 60% 75%;
+  --storybook-1-darker: 260 60% 65%;
+  --storybook-2: 140 50% 65%;
+  --storybook-2-darker: 140 50% 55%;
 
   --radius: 16px;
 }
@@ -106,36 +112,42 @@
 }
 
 .dark {
-  --background: 220 13% 15%; /* dark blue */
-  --foreground: 220 13% 95%; /* light gray */
+  --background: 220 10% 20%; /* dark blue */
+  --foreground: 220 10% 85%; /* light gray */
 
-  --card: 220 13% 20%;
-  --card-foreground: 220 13% 95%;
+  --card: 220 10% 25%;
+  --card-foreground: 220 10% 85%;
 
-  --popover: 220 13% 20%;
-  --popover-foreground: 220 13% 95%;
+  --popover: 220 10% 25%;
+  --popover-foreground: 220 10% 85%;
 
-  --primary: 170 70% 45%; /* teal */
+  --primary: 170 50% 55%; /* teal */
+  --primary-darker: 170 50% 45%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 220 13% 25%;
+  --secondary: 220 10% 30%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 220 13% 25%;
-  --muted-foreground: 220 13% 60%;
+  --muted: 220 10% 30%;
+  --muted-foreground: 220 10% 65%;
 
-  --accent: 210 80% 50%;
+  --accent: 210 60% 60%;
+  --accent-darker: 210 60% 50%;
   --accent-foreground: 0 0% 98%;
 
-  --destructive: 0 72% 51%; /* soft red */
+  --destructive: 0 60% 60%; /* soft red */
+  --destructive-darker: 0 60% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --border: 220 13% 30%;
-  --input: 220 13% 25%;
-  --ring: 170 70% 45%;
-  --numbers: 30 90% 50%;
-  --storybook-1: 260 80% 50%;
-  --storybook-2: 140 70% 35%;
+  --border: 220 10% 35%;
+  --input: 220 10% 30%;
+  --ring: 170 50% 55%;
+  --numbers: 30 70% 60%;
+  --numbers-darker: 30 70% 50%;
+  --storybook-1: 260 60% 60%;
+  --storybook-1-darker: 260 60% 50%;
+  --storybook-2: 140 50% 45%;
+  --storybook-2-darker: 140 50% 35%;
 }
 
 .card {

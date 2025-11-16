@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 
 const STORY_LENGTH = 11; // Both stories have 11 pages
+const TOTAL_STORY_LENGTH = STORY_LENGTH * 2;
 
 const StoryPage = ({ params }: { params: { id: string } }) => {
   const storyId = params?.id;
+  const isCombinedStory = storyId === 'all';
+  const storyLength = isCombinedStory ? TOTAL_STORY_LENGTH : STORY_LENGTH;
+
   const [currentPage, setCurrentPage] = useState(1);
   const [isPortrait, setIsPortrait] = useState(window.matchMedia("(orientation: portrait)").matches);
 
   const nextPage = () => {
-    setCurrentPage((prev) => (prev === STORY_LENGTH ? 1 : prev + 1));
+    setCurrentPage((prev) => (prev === storyLength ? 1 : prev + 1));
   };
 
   const prevPage = () => {
-    setCurrentPage((prev) => (prev === 1 ? STORY_LENGTH : prev - 1));
+    setCurrentPage((prev) => (prev === 1 ? storyLength : prev - 1));
   };
 
   const handleInteraction = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -53,7 +57,7 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [nextPage, prevPage]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(orientation: portrait)");
@@ -86,7 +90,16 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
     return <div>Story not found</div>;
   }
 
-  const imageUrl = `/stories/Story ${storyId}/${currentPage}.png`;
+  let imageUrl = '';
+  if (isCombinedStory) {
+    if (currentPage <= STORY_LENGTH) {
+      imageUrl = `/stories/Story 1/${currentPage}.png`;
+    } else {
+      imageUrl = `/stories/Story 2/${currentPage - STORY_LENGTH}.png`;
+    }
+  } else {
+    imageUrl = `/stories/Story ${storyId}/${currentPage}.png`;
+  }
 
   return (
     <div

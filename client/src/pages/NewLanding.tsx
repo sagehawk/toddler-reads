@@ -9,8 +9,6 @@ const menuItems = [
   { title: "Vocab", href: "/vocab", color: "bg-accent" },
   { title: "Sentences", href: "/sentences", color: "bg-destructive" },
   { title: "Numbers", href: "/numbers", color: "bg-numbers" },
-  { title: "Story 1", href: "/story/1", color: "bg-storybook-1" },
-  { title: "Story 2", href: "/story/2", color: "bg-storybook-2" },
 ];
 
 const DigitalPlayshelf = () => {
@@ -22,11 +20,18 @@ const DigitalPlayshelf = () => {
         <ThemeToggle />
       </div>
       <div className="flex-shrink-0">
-        <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-16 sm:h-20 select-none" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <Link href="/story/all">
+          <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-16 sm:h-20 select-none cursor-pointer" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        </Link>
       </div>
       <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4">
         {menuItems.map((item) => (
-          <Link key={item.title} href={item.href} className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-button-strong hover:shadow-button-stronger transition-all transform hover:-translate-y-1 active:scale-95 ${item.color}`}>
+          <Link 
+            key={item.title} 
+            href={item.href} 
+            className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-button-strong hover:shadow-button-stronger transition-all transform hover:-translate-y-1 active:scale-95 ${item.color}`}
+            style={{ textShadow: `-3px -3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), 3px -3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), -3px 3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), 3px 3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker))` }}
+          >
               {item.title}
           </Link>
         ))}
