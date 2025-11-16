@@ -21,7 +21,7 @@ const DigitalPlayshelf = () => {
       </div>
       <div className="flex-shrink-0">
         <Link href="/story/all">
-          <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-16 sm:h-20 select-none cursor-pointer" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
+          <img src={isDarkMode ? whiteLogoUrl : logoUrl} alt="ToddlerReads Logo" className="h-24 sm:h-28 select-none cursor-pointer" draggable="false" onError={(e) => (e.currentTarget.style.display = 'none')} />
         </Link>
       </div>
       <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4">
@@ -29,7 +29,7 @@ const DigitalPlayshelf = () => {
           <Link 
             key={item.title} 
             href={item.href} 
-            className={`w-full p-4 sm:p-4 md:p-6 rounded-2xl text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center shadow-button-strong hover:shadow-button-stronger transition-all transform hover:-translate-y-1 active:scale-95 ${item.color}`}
+            className={`w-full p-8 sm:p-4 md:p-6 rounded-2xl text-white text-5xl sm:text-4xl md:text-5xl font-bold text-center shadow-button-strong hover:shadow-button-stronger transition-all transform hover:-translate-y-1 active:scale-95 ${item.color}`}
             style={{ textShadow: `-3px -3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), 3px -3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), -3px 3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker)), 3px 3px 0 hsl(var(--${item.color.replace('bg-', '')}-darker))` }}
           >
               {item.title}
