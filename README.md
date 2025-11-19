@@ -8,7 +8,7 @@
   </p>
 
   <!-- Live Demo Badge / Link -->
-  <a href="https://toddler-reads.vercel.app" target="_blank">
+  <a href="https://toddler-reads.vercel.app">
     <img src="https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white" alt="Deploy with Vercel"/>
   </a>
 </div>
