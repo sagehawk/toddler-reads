@@ -1,6 +1,7 @@
 # Toddler Reads
 
 An interactive and fun web application designed to help toddlers and young children learn the fundamentals of reading, including phonics, vocabulary, and sentence structure.
+<img width="1419" height="2796" alt="toddlerreads" src="https://github.com/user-attachments/assets/49b32ea7-397a-417e-96f5-9c43b4bdf8c7" />
 
 ## ✨ Features
 
