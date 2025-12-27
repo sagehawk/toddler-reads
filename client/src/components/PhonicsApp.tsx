@@ -3,6 +3,8 @@ import { useLocation, Link } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import confetti from 'canvas-confetti';
+import { useSwipe } from '@/hooks/useSwipe';
 
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 
@@ -121,7 +123,7 @@ export default function PhonicsApp() {
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
   useEffect(() => {
-    handleLetterClick(0);
+    shuffleLetters();
     return () => {
       stopAllSounds();
     };
@@ -174,6 +176,16 @@ export default function PhonicsApp() {
 
 
   const handleShuffle = useCallback(() => {
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(10);
+    
+    // Confetti!
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { y: 0.6 }
+    });
+
     if (shuffledIndex >= shuffledIndices.length - 1) {
       shuffleLetters();
     } else {
@@ -184,35 +196,62 @@ export default function PhonicsApp() {
   }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick]);
 
   const handleNext = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (currentIndex === null) return;
     const nextIndex = (currentIndex + 1) % (selectedModule.letters?.length || 1);
     handleLetterClick(nextIndex);
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
   const handlePrevious = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (currentIndex === null) return;
     const prevIndex = (currentIndex - 1 + (selectedModule.letters?.length || 1)) % (selectedModule.letters?.length || 1);
     handleLetterClick(prevIndex);
   }, [currentIndex, selectedModule.letters, handleLetterClick]);
 
-  const handleInteraction = (clientX: number) => {
-    if (!isPlaying) return;
-    const screenWidth = window.innerWidth;
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrevious,
+  });
 
-    if (clientX < screenWidth / 4) {
-      handlePrevious();
-    } else if (clientX > screenWidth * 3 / 4) {
-      handleNext();
-    } else {
-      setIsFlipped(prev => !prev);
-      replaySound();
-    }
+  const handleInteraction = () => {
+    if (!isPlaying) return;
+    if (navigator.vibrate) navigator.vibrate(5);
+    setIsFlipped(prev => !prev);
+    replaySound();
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    handleInteraction(e.clientX);
+      // If the user taps (not swipes), we treat it as an interaction (flip)
+      // The swipe hook handles the start/move/end logic.
+      // We need to integrate tap detection safely.
+      // For simplicity in this hybrid approach:
+      // 1. Pass events to swipe handler
+      // 2. If it's a click (short duration, small movement), trigger interaction.
+      swipeHandlers.onTouchStart(e as unknown as React.TouchEvent);
   };
   
+  // Custom wrapper to handle both swipe and tap
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
+      swipeHandlers.onTouchEnd();
+      // Simple tap detection fallback if needed, but let's rely on the swipe hook's handlers.
+      // If no swipe triggered, we can assume it's a tap if it was short?
+      // Actually, for React, onClick is better for "Tap" if we ensure swipe doesn't trigger it.
+      // But we have a full screen touch area.
+  };
+
+  // Improved interaction handler that distinguishes tap from swipe
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const onPointerUp = (e: React.PointerEvent) => {
+       // We can use a simple ref to track if a swipe happened
+       // But let's simplify: 
+       // We'll use the useSwipe hook for swipes.
+       // We'll use a simple onClick for the flip, but we need to ensure swipe doesn't trigger click.
+       // A common pattern is to check distance in onPointerUp
+       swipeHandlers.onTouchEnd();
+  }
+
   const replaySound = async () => {
     if (currentIndex === null) return;
     const letterInfo = selectedModule.letters?.[currentIndex];
@@ -257,30 +296,37 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" onPointerDown={handlePointerDown}>
+    <div 
+        className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" 
+        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+        // We use onClick for the tap-to-flip, relying on the fact that a swipe usually drags the pointer enough to void a clean "click" on many devices, 
+        // or we can implement a cleaner tap detector. For now, let's keep the click zones or just full screen click = flip?
+        // The user complained about click zones.
+        // Let's make the center area flip, and swipes nav.
+    >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
+        <Link href="/" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
           {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
         </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
-        <div onClick={(e) => { e.stopPropagation(); handlePrevious(); }} className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-0 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+        {/* Swipe Indicators (Visual Only) */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/6 flex items-center justify-center opacity-0 pointer-events-none">
+             {/* Removed click handlers, just visual now if we wanted, or kept hidden */}
         </div>
-        <div onClick={(e) => { e.stopPropagation(); handleNext(); }} className="absolute right-0 top-1/2 -translate-y-1/2 h-full w-1/5 flex items-center justify-center opacity-0 md:opacity-20 md:hover:opacity-80 transition-opacity">
-            <svg className="w-32 h-32 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-        </div>
-        <main className="flex flex-col items-center justify-center mt-[20vh] md:mt-0">
+        
+        <main 
+            className="flex flex-col items-center justify-center mt-[20vh] md:mt-0 w-full h-full"
+            onClick={handleInteraction} // Simple tap to flip
+        >
           {currentIndex !== null && currentDisplayData && (
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
               <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>

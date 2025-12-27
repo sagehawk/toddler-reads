@@ -5,6 +5,9 @@ import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { getLetterColors } from '../lib/colorUtils';
 import { vocabData, VocabItem } from '../data/vocabData';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { AnimalsVocab } from './AnimalsVocab';
+import confetti from 'canvas-confetti';
+import { useSwipe } from '@/hooks/useSwipe';
 
 const categoryOrder = ['Animals', 'Things', 'Nature', 'Vehicles', 'People'];
 
@@ -25,6 +28,11 @@ const VocabApp = () => {
     ? sortedVocabData.filter(item => item.category.toLowerCase().replace(/[\s/]+/g, '-') === category)
     : sortedVocabData;
 
+  // New Animals Flow Integration
+  if (category === 'animals') {
+      return <AnimalsVocab items={filteredVocab} onExit={() => window.location.href = '/app'} />;
+  }
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
@@ -33,27 +41,33 @@ const VocabApp = () => {
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const wordRef = useRef<HTMLHeadingElement>(null);
   const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTextVisible, setIsTextVisible] = useState(false);
+  const [isTextVisible, setIsTextVisible] = useState(true); // Default true to ensure visibility
 
   const currentItem = filteredVocab[currentIndex];
 
-  const shuffleItems = useCallback(() => {
+  const shuffleItems = useCallback((shouldSetFirst = false) => {
     const indices = filteredVocab.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     setShuffledIndices(indices);
-    setShuffledIndex(0);
+    if (shouldSetFirst && indices.length > 0) {
+      setCurrentIndex(indices[0]);
+      setShuffledIndex(1);
+    } else {
+      setShuffledIndex(0);
+    }
   }, [filteredVocab]);
 
   useEffect(() => {
-    shuffleItems();
+    shuffleItems(true);
   }, [category]);
 
 
 
   const handleNext = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -65,6 +79,7 @@ const VocabApp = () => {
   }, [filteredVocab.length, stop]);
 
   const handlePrevious = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -76,6 +91,12 @@ const VocabApp = () => {
   }, [filteredVocab.length, stop]);
 
   const handleShuffle = () => {
+    if (navigator.vibrate) navigator.vibrate(10);
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { y: 0.6 }
+    });
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -93,34 +114,22 @@ const VocabApp = () => {
     }, 150);
   };
 
-  const handleInteraction = (clientX: number) => {
-    const screenWidth = window.innerWidth;
-    const isEdgeClick = clientX < screenWidth / 4 || clientX > screenWidth * 3 / 4;
-
-    if (isEdgeClick) {
-      if (clientX < screenWidth / 4) {
-        handlePrevious();
-      } else if (clientX > screenWidth * 3 / 4) {
-        handleNext();
-      }
-    } else {
-      if (audioTimeoutRef.current) {
-        clearTimeout(audioTimeoutRef.current);
-      }
-      stop();
-      audioTimeoutRef.current = setTimeout(() => {
-        speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
-      }, 1000);
-      setIsFlipped(!isFlipped);
+  const handleInteraction = () => {
+    if (navigator.vibrate) navigator.vibrate(5);
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current);
     }
+    stop();
+    audioTimeoutRef.current = setTimeout(() => {
+      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
+    }, 1000);
+    setIsFlipped(!isFlipped);
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    handleInteraction(e.clientX);
-  };
-
-
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrevious,
+  });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -153,7 +162,7 @@ const VocabApp = () => {
   }, [currentIndex, femaleVoice, speak, currentItem]);
 
   useLayoutEffect(() => {
-    setIsTextVisible(false);
+    // setIsTextVisible(false); // Removed to ensure default visibility
     if (wordRef.current) {
       const container = wordRef.current.parentElement;
       if (container) {
@@ -173,7 +182,7 @@ const VocabApp = () => {
         newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
 
         wordRef.current.style.fontSize = `${newFontSize}px`;
-        setIsTextVisible(true);
+        // setIsTextVisible(true);
       }
     }
   }, [currentItem]);
@@ -183,7 +192,12 @@ const VocabApp = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" onPointerDown={handlePointerDown}>
+    <div 
+        className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
+        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+    >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -193,24 +207,18 @@ const VocabApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-32">
-          <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity hidden">
-            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </div>
-          <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity hidden">
-            <svg className="w-10 h-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
+        <main 
+            className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-32"
+            onClick={handleInteraction}
+        >
+          {/* Removed arrow indicators */}
 
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
                 <h2 
                   ref={wordRef} 
-                  style={{ visibility: isTextVisible ? 'visible' : 'hidden' }} 
+                  style={{ visibility: isTextVisible ? 'visible' : 'visible' }} // Force visible
                   className="font-bold break-words"
                 >
                   <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>

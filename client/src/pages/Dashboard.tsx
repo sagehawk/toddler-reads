@@ -5,10 +5,10 @@ import whiteLogoUrl from '../assets/toddler-reads-logo-white.png';
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
-  { title: "Phonics", href: "/phonics", color: "bg-primary" },
-  { title: "Vocab", href: "/vocab", color: "bg-accent" },
-  { title: "Sentences", href: "/sentences", color: "bg-destructive" },
-  { title: "Numbers", href: "/numbers", color: "bg-numbers" },
+  { title: "ABC", href: "/phonics", color: "bg-primary" },
+  { title: "123", href: "/numbers", color: "bg-numbers" },
+  { title: "Words", href: "/vocab", color: "bg-accent" },
+  { title: "Read", href: "/sentences", color: "bg-destructive" },
 ];
 
 const DigitalPlayshelf = () => {

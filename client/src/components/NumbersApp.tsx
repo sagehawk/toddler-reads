@@ -5,6 +5,8 @@ import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import confetti from 'canvas-confetti';
+import { useSwipe } from '@/hooks/useSwipe';
 
 const NumbersApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -17,23 +19,29 @@ const NumbersApp = () => {
 
   const currentNumber = numbersData[currentIndex];
 
-  const shuffleItems = useCallback(() => {
+  const shuffleItems = useCallback((shouldSetFirst = false) => {
     const indices = numbersData.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
     setShuffledIndices(indices);
-    setShuffledIndex(0);
+    if (shouldSetFirst && indices.length > 0) {
+      setCurrentIndex(indices[0]);
+      setShuffledIndex(1);
+    } else {
+      setShuffledIndex(0);
+    }
   }, []);
 
   useEffect(() => {
-    shuffleItems();
+    shuffleItems(true);
   }, [shuffleItems]);
 
   const [isFlipped, setIsFlipped] = useState(false);
 
   const handleNext = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -45,6 +53,7 @@ const NumbersApp = () => {
   }, [numbersData.length, stop]);
 
   const handlePrevious = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -56,6 +65,15 @@ const NumbersApp = () => {
   }, [numbersData.length, stop]);
 
   const handleShuffle = () => {
+    // Haptic
+    if (navigator.vibrate) navigator.vibrate(10);
+    // Confetti
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { y: 0.6 }
+    });
+
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
@@ -85,19 +103,15 @@ const NumbersApp = () => {
     }
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const screenWidth = window.innerWidth;
-    const clickX = e.clientX;
+  const swipeHandlers = useSwipe({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrevious,
+  });
 
-    if (clickX < screenWidth / 4) {
-      handlePrevious();
-    } else if (clickX > screenWidth * 3 / 4) {
-      handleNext();
-    } else {
+  const handleInteraction = () => {
+      if (navigator.vibrate) navigator.vibrate(5);
       replaySound();
       setIsFlipped(!isFlipped);
-    }
   };
 
   useEffect(() => {
@@ -148,7 +162,7 @@ const NumbersApp = () => {
         5: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div></div>,
         6: <div className="grid grid-cols-2 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
         7: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div><div className="col-start-2 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-3"><Dot color={color} /></div></div>,
-        8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
+        8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
         9: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
         10: <div className="grid grid-cols-2 grid-rows-5 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
     };
@@ -169,7 +183,12 @@ const NumbersApp = () => {
   }, [currentNumber, numberColor.background]);
 
   return (
-    <div className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" onPointerDown={handlePointerDown}>
+    <div 
+        className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" 
+        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+    >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
@@ -181,10 +200,15 @@ const NumbersApp = () => {
         </button>
       </header>
 
-      <main className="relative flex flex-1 flex-col items-center justify-start text-center px-4 overflow-hidden pb-48 md:pb-24 mt-[10vh] md:-mt-[25vh]">
-        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handlePrevious();}}>
+      <main 
+          className="relative flex flex-1 flex-col items-center justify-start text-center px-4 overflow-hidden pb-48 md:pb-24 mt-[10vh] md:-mt-[25vh]"
+          onClick={handleInteraction}
+      >
+        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
+             {/* Removed click handlers */}
         </div>
-        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity" onClick={(e) => {e.stopPropagation(); handleNext();}}>
+        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
+             {/* Removed click handlers */}
         </div>
 
         <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>

@@ -56,6 +56,7 @@ export default {
       },
       fontFamily: {
         sans: ["'Lato'", "sans-serif"],
+        nunito: ["'Nunito'", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

@@ -1,5 +1,6 @@
 import { Route, Switch } from "wouter";
-import NewLanding from "./pages/NewLanding";
+import LandingPage from "./pages/LandingPage";
+import Dashboard from "./pages/Dashboard";
 import PhonicsApp from "./components/PhonicsApp";
 import VocabApp from "./components/VocabApp";
 import SentencesApp from "./components/SentencesApp";
@@ -11,7 +12,8 @@ import StoryPage from "./pages/StoryPage";
 function App() {
   return (
     <Switch>
-      <Route path="/" component={NewLanding} />
+      <Route path="/" component={LandingPage} />
+      <Route path="/app" component={Dashboard} />
       <Route path="/phonics" component={PhonicsApp} />
       <Route path="/vocab/:category?" component={VocabApp} />
       <Route path="/sentences/:category?" component={SentencesApp} />
