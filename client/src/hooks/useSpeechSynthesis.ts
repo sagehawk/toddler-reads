@@ -21,7 +21,7 @@ export const useSpeechSynthesis = () => {
     };
   }, []);
 
-  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null; onEnd?: () => void }) => {
+  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null; rate?: number; onEnd?: () => void }) => {
     return new Promise<void>(resolve => {
       if (!('speechSynthesis' in window)) {
         console.warn('Speech synthesis not supported');
@@ -32,7 +32,7 @@ export const useSpeechSynthesis = () => {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.8;
+      utterance.rate = options?.rate ?? 0.8;
       utterance.pitch = 1.2;
       utterance.volume = 1;
 

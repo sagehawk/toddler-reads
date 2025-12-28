@@ -1,178 +1,185 @@
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
-import { Link, useRoute } from 'wouter';
-import { Shuffle, Volume2, VolumeX } from 'lucide-react';
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { getLetterColors } from '../lib/colorUtils';
-import confetti from 'canvas-confetti';
-import { useSwipe } from '@/hooks/useSwipe';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+} from "react";
+import { Link, useRoute } from "wouter";
+import { Shuffle, Volume2, VolumeX } from "lucide-react";
+import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import { getLetterColors } from "../lib/colorUtils";
+import confetti from "canvas-confetti";
+import { useSwipe } from "@/hooks/useSwipe";
 
 // Import images
-import appleImage from '../assets/animals/apple.png';
-import ballImage from '../assets/animals/ball.png';
-import hatImage from '../assets/animals/hat.png';
-import keyImage from '../assets/animals/key.png';
-import boxImage from '../assets/animals/box.png';
-import cupImage from '../assets/animals/cup.png';
-import bedImage from '../assets/animals/bed.png';
-import toyImage from '../assets/animals/toy.png';
-import penImage from '../assets/animals/pen.png';
-import bagImage from '../assets/animals/bag.png';
-import juiceImage from '../assets/animals/juice.png';
-import pizzaImage from '../assets/animals/pizza.png';
-import yogurtImage from '../assets/animals/yogurt.png';
-import orangeImage from '../assets/animals/orange.png';
-import watermelonImage from '../assets/animals/watermelon.png';
-import sunImage from '../assets/animals/sun.png';
-import moonImage from '../assets/animals/moon.png';
-import nestImage from '../assets/animals/nest.png';
-import treeImage from '../assets/animals/tree.png';
-import rockImage from '../assets/animals/rock.png';
-import logImage from '../assets/animals/log.png';
-import carImage from '../assets/animals/car.png';
-import busImage from '../assets/animals/bus.png';
-import vanImage from '../assets/animals/van.png';
-import jetImage from '../assets/animals/jet.png';
-import boatImage from '../assets/animals/boat.png';
-import bikeImage from '../assets/animals/bike.png';
-import trainImage from '../assets/animals/train.png';
+import appleImage from "../assets/animals/apple.png";
+import ballImage from "../assets/animals/ball.png";
+import hatImage from "../assets/animals/hat.png";
+import keyImage from "../assets/animals/key.png";
+import boxImage from "../assets/animals/box.png";
+import cupImage from "../assets/animals/cup.png";
+import bedImage from "../assets/animals/bed.png";
+import toyImage from "../assets/animals/toy.png";
+import penImage from "../assets/animals/pen.png";
+import bagImage from "../assets/animals/bag.png";
+import juiceImage from "../assets/animals/juice.png";
+import pizzaImage from "../assets/animals/pizza.png";
+import yogurtImage from "../assets/animals/yogurt.png";
+import orangeImage from "../assets/animals/orange.png";
+import watermelonImage from "../assets/animals/watermelon.png";
+import sunImage from "../assets/animals/sun.png";
+import moonImage from "../assets/animals/moon.png";
+import nestImage from "../assets/animals/nest.png";
+import treeImage from "../assets/animals/tree.png";
+import rockImage from "../assets/animals/rock.png";
+import logImage from "../assets/animals/log.png";
+import carImage from "../assets/animals/car.png";
+import busImage from "../assets/animals/bus.png";
+import vanImage from "../assets/animals/van.png";
+import jetImage from "../assets/animals/jet.png";
+import boatImage from "../assets/animals/boat.png";
+import bikeImage from "../assets/animals/bike.png";
+import trainImage from "../assets/animals/train.png";
 
-import momImage from '../assets/animals/mom.png';
-import dadImage from '../assets/animals/dad.png';
-import kidImage from '../assets/animals/kid.png';
-import manImage from '../assets/animals/man.png';
-import catImage from '../assets/animals/cat.png';
-import dogImage from '../assets/animals/dog.png';
-import fishImage from '../assets/animals/fish.png';
-import goatImage from '../assets/animals/goat.png';
-import lionImage from '../assets/animals/lion.png';
-import rabbitImage from '../assets/animals/rabbit.png';
-import turtleImage from '../assets/animals/turtle.png';
-import zebraImage from '../assets/animals/zebra.png';
-import pandaImage from '../assets/animals/panda.png';
-import henImage from '../assets/animals/hen.png';
-import cowImage from '../assets/animals/cow.png';
-import duckImage from '../assets/animals/duck.png';
-import ratImage from '../assets/animals/rat.png';
-import batImage from '../assets/animals/bat.png';
+import momImage from "../assets/animals/mom.png";
+import dadImage from "../assets/animals/dad.png";
+import kidImage from "../assets/animals/kid.png";
+import manImage from "../assets/animals/man.png";
+import catImage from "../assets/animals/cat.png";
+import dogImage from "../assets/animals/dog.png";
+import fishImage from "../assets/animals/fish.png";
+import goatImage from "../assets/animals/goat.png";
+import lionImage from "../assets/animals/lion.png";
+import rabbitImage from "../assets/animals/rabbit.png";
+import turtleImage from "../assets/animals/turtle.png";
+import zebraImage from "../assets/animals/zebra.png";
+import pandaImage from "../assets/animals/panda.png";
+import henImage from "../assets/animals/hen.png";
+import cowImage from "../assets/animals/cow.png";
+import duckImage from "../assets/animals/duck.png";
+import ratImage from "../assets/animals/rat.png";
+import batImage from "../assets/animals/bat.png";
 
 // Import combined images
-import momDadHugImage from '../assets/animals/mom_dad_hug.png';
-import dogRunImage from '../assets/animals/dog_run.png';
-import henLogImage from '../assets/animals/hen_log.png';
-import ratBoxImage from '../assets/animals/rat_box.png';
-import batRockImage from '../assets/animals/bat_rock.png';
-import bigLionImage from '../assets/animals/big_lion.png';
-import ballBagImage from '../assets/animals/bag_ball.png';
-import cupBedImage from '../assets/animals/cup_bed.png';
-import keyBedImage from '../assets/animals/key_bed.png';
-import kidPenImage from '../assets/animals/kid_pen.png';
-import manOrangeImage from '../assets/animals/man_orange.png';
-import moonUpImage from '../assets/animals/moon_up.png';
-import nestTreeImage from '../assets/animals/nest_tree.png';
-import iSitOnRockImage from '../assets/animals/i_sit_on_rock.png';
-import logBigImage from '../assets/animals/log_big.png';
-import bigBusImage from '../assets/animals/big_bus.png';
-import jetGoImage from '../assets/animals/jet_go.png';
-import kidBikeImage from '../assets/animals/kid_bike.png';
-import eatAppleImage from '../assets/animals/eat_apple.png';
-import seeCarImage from '../assets/animals/see_car.png';
-import seeHatImage from '../assets/animals/see_hat.png';
-import seePizzaImage from '../assets/animals/see_pizza.png';
-import seeYogurtImage from '../assets/animals/see_yogurt.png';
-import toyBoxImage from '../assets/animals/toy_box.png';
-import trainGoImage from '../assets/animals/train_go.png';
-import turtleNapImage from '../assets/animals/turtle_nap.png';
-import vanSunImage from '../assets/animals/van_sun.png';
-import weGoOnBoatImage from '../assets/animals/we_go_on_boat.png';
-import weGoTreeImage from '../assets/animals/we_go_tree.png';
-import weSeeSunImage from '../assets/animals/we_see_sun.png';
-import weSitLogImage from '../assets/animals/we_sit_log.png';
+import momDadHugImage from "../assets/animals/mom_dad_hug.png";
+import dogRunImage from "../assets/animals/dog_run.png";
+import henLogImage from "../assets/animals/hen_log.png";
+import ratBoxImage from "../assets/animals/rat_box.png";
+import batRockImage from "../assets/animals/bat_rock.png";
+import bigLionImage from "../assets/animals/big_lion.png";
+import ballBagImage from "../assets/animals/bag_ball.png";
+import cupBedImage from "../assets/animals/cup_bed.png";
+import keyBedImage from "../assets/animals/key_bed.png";
+import kidPenImage from "../assets/animals/kid_pen.png";
+import manOrangeImage from "../assets/animals/man_orange.png";
+import moonUpImage from "../assets/animals/moon_up.png";
+import nestTreeImage from "../assets/animals/nest_tree.png";
+import iSitOnRockImage from "../assets/animals/i_sit_on_rock.png";
+import logBigImage from "../assets/animals/log_big.png";
+import bigBusImage from "../assets/animals/big_bus.png";
+import jetGoImage from "../assets/animals/jet_go.png";
+import kidBikeImage from "../assets/animals/kid_bike.png";
+import eatAppleImage from "../assets/animals/eat_apple.png";
+import seeCarImage from "../assets/animals/see_car.png";
+import seeHatImage from "../assets/animals/see_hat.png";
+import seePizzaImage from "../assets/animals/see_pizza.png";
+import seeYogurtImage from "../assets/animals/see_yogurt.png";
+import toyBoxImage from "../assets/animals/toy_box.png";
+import trainGoImage from "../assets/animals/train_go.png";
+import turtleNapImage from "../assets/animals/turtle_nap.png";
+import vanSunImage from "../assets/animals/van_sun.png";
+import weGoOnBoatImage from "../assets/animals/we_go_on_boat.png";
+import weGoTreeImage from "../assets/animals/we_go_tree.png";
+import weSeeSunImage from "../assets/animals/we_see_sun.png";
+import weSitLogImage from "../assets/animals/we_sit_log.png";
 
 const wordImageMap: { [key: string]: string } = {
-    'apple': appleImage,
-    'ball': ballImage,
-    'hat': hatImage,
-    'key': keyImage,
-    'box': boxImage,
-    'cup': cupImage,
-    'bed': bedImage,
-    'toy': toyImage,
-    'pen': penImage,
-    'bag': bagImage,
-    'juice': juiceImage,
-    'pizza': pizzaImage,
-    'yogurt': yogurtImage,
-    'orange': orangeImage,
-    'watermelon': watermelonImage,
-    'sun': sunImage,
-    'moon': moonImage,
-    'nest': nestImage,
-    'tree': treeImage,
-    'rock': rockImage,
-    'log': logImage,
-    'car': carImage,
-    'bus': busImage,
-    'van': vanImage,
-    'jet': jetImage,
-    'boat': boatImage,
-    'bike': bikeImage,
-    'train': trainImage,
-  
-    'mom': momImage,
-    'dad': dadImage,
-    'kid': kidImage,
-    'man': manImage,
-    'cat': catImage,
-    'dog': dogImage,
-    'fish': fishImage,
-    'goat': goatImage,
-    'lion': lionImage,
-    'rabbit': rabbitImage,
-    'turtle': turtleImage,
-    'zebra': zebraImage,
-    'panda': pandaImage,
-    'hen': henImage,
-    'cow': cowImage,
-    'duck': duckImage,
-    'rat': ratImage,
-    'bat': batImage,
-  };
-  
-  const combinedImageMap: { [key: string]: string } = {
-    'The dog can run.': dogRunImage,
-    'I see the dog run.': dogRunImage,
-    'The hen is on a log.': henLogImage,
-    'The rat is in a box.': ratBoxImage,
-    'A bat is on a rock.': batRockImage,
-    'The lion is big.': bigLionImage,
-    'The ball is in a bag.': ballBagImage,
-    'The cup is on a bed.': cupBedImage,
-    'The key is on the bed.': keyBedImage,
-    'The kid has a pen.': kidPenImage,
-    'The man has an orange.': manOrangeImage,
-    'The moon is up.': moonUpImage,
-    'A nest is in a tree.': nestTreeImage,
-    'I sit on a rock.': iSitOnRockImage,
-    'A log is big.': logBigImage,
-    'The bus is big.': bigBusImage,
-    'The jet can go.': jetGoImage,
-    'The kid is on a bike.': kidBikeImage,
-    'I eat an apple.': eatAppleImage,
-    'Mom and Dad hug.': momDadHugImage,
-    'I see a car.': seeCarImage,
-    'I see a hat.': seeHatImage,
-    'We see a pizza.': seePizzaImage,
-    'I see yogurt.': seeYogurtImage,
-    'A toy is in the box.': toyBoxImage,
-    'The train can go.': trainGoImage,
-    'The turtle can nap.': turtleNapImage,
-    'A van is in the sun.': vanSunImage,
-    'We go on a boat.': weGoOnBoatImage,
-    'We go to a tree.': weGoTreeImage,
-    'We see the sun.': weSeeSunImage,
-    'We sit on a log.': weSitLogImage,
-  };
+  apple: appleImage,
+  ball: ballImage,
+  hat: hatImage,
+  key: keyImage,
+  box: boxImage,
+  cup: cupImage,
+  bed: bedImage,
+  toy: toyImage,
+  pen: penImage,
+  bag: bagImage,
+  juice: juiceImage,
+  pizza: pizzaImage,
+  yogurt: yogurtImage,
+  orange: orangeImage,
+  watermelon: watermelonImage,
+  sun: sunImage,
+  moon: moonImage,
+  nest: nestImage,
+  tree: treeImage,
+  rock: rockImage,
+  log: logImage,
+  car: carImage,
+  bus: busImage,
+  van: vanImage,
+  jet: jetImage,
+  boat: boatImage,
+  bike: bikeImage,
+  train: trainImage,
+
+  mom: momImage,
+  dad: dadImage,
+  kid: kidImage,
+  man: manImage,
+  cat: catImage,
+  dog: dogImage,
+  fish: fishImage,
+  goat: goatImage,
+  lion: lionImage,
+  rabbit: rabbitImage,
+  turtle: turtleImage,
+  zebra: zebraImage,
+  panda: pandaImage,
+  hen: henImage,
+  cow: cowImage,
+  duck: duckImage,
+  rat: ratImage,
+  bat: batImage,
+};
+
+const combinedImageMap: { [key: string]: string } = {
+  "The dog can run.": dogRunImage,
+  "I see the dog run.": dogRunImage,
+  "The hen is on a log.": henLogImage,
+  "The rat is in a box.": ratBoxImage,
+  "A bat is on a rock.": batRockImage,
+  "The lion is big.": bigLionImage,
+  "The ball is in a bag.": ballBagImage,
+  "The cup is on a bed.": cupBedImage,
+  "The key is on a bed.": keyBedImage,
+  "The key is on the bed.": keyBedImage,
+  "The kid has a pen.": kidPenImage,
+  "The man has an orange.": manOrangeImage,
+  "The moon is up.": moonUpImage,
+  "A nest is in a tree.": nestTreeImage,
+  "I sit on a rock.": iSitOnRockImage,
+  "A log is big.": logBigImage,
+  "The bus is big.": bigBusImage,
+  "The jet can go.": jetGoImage,
+  "The kid is on a bike.": kidBikeImage,
+  "I eat an apple.": eatAppleImage,
+  "Mom and Dad hug.": momDadHugImage,
+  "I see a car.": seeCarImage,
+  "I see a hat.": seeHatImage,
+  "We see a pizza.": seePizzaImage,
+  "I see yogurt.": seeYogurtImage,
+  "A toy is in the box.": toyBoxImage,
+  "The train can go.": trainGoImage,
+  "The turtle can nap.": turtleNapImage,
+  "A van is in the sun.": vanSunImage,
+  "We go on a boat.": weGoOnBoatImage,
+  "We go to a tree.": weGoTreeImage,
+  "We see the sun.": weSeeSunImage,
+  "We sit on a log.": weSitLogImage,
+};
 
 interface Sentence {
   text: string;
@@ -180,49 +187,56 @@ interface Sentence {
 }
 
 export const sentences: Sentence[] = [
-  { text: 'I see a cat.', category: 'Animals' },
-  { text: 'The dog can run.', category: 'Animals' },
-  { text: 'The hen is on a log.', category: 'Animals' },
-  { text: 'We see a cow.', category: 'Animals' },
-  { text: 'The rat is in a box.', category: 'Animals' },
-  { text: 'A bat is on a rock.', category: 'Animals' },
-  { text: 'The lion is big.', category: 'Animals' },
-  { text: 'I see a fish.', category: 'Animals' },
-  { text: 'The turtle can nap.', category: 'Animals' },
-  { text: 'The ball is in a bag.', category: 'Things' },
-  { text: 'I see a hat.', category: 'Things' },
-  { text: 'The cup is on a bed.', category: 'Things' },
-  { text: 'A toy is in the box.', category: 'Things' },
-  { text: 'I eat an apple.', category: 'Things' },
-  { text: 'We see a pizza.', category: 'Things' },
-  { text: 'The key is on the bed.', category: 'Things' },
-  { text: 'The kid has a pen.', category: 'Things' },
-  { text: 'I see yogurt.', category: 'Things' },
-  { text: 'The man has an orange.', category: 'Things' },
-  { text: 'We see the sun.', category: 'Nature' },
-  { text: 'The moon is up.', category: 'Nature' },
-  { text: 'A nest is in a tree.', category: 'Nature' },
-  { text: 'I sit on a rock.', category: 'Nature' },
-  { text: 'A log is big.', category: 'Nature' },
-  { text: 'I see a car.', category: 'Vehicles' },
-  { text: 'The bus is big.', category: 'Vehicles' },
-  { text: 'A van is in the sun.', category: 'Vehicles' },
-  { text: 'I see a jet.', category: 'Vehicles' },
-  { text: 'We go on a boat.', category: 'Vehicles' },
-  { text: 'The kid is on a bike.', category: 'Vehicles' },
-  { text: 'The train can go.', category: 'Vehicles' },
-  { text: 'Mom and Dad hug.', category: 'People' },
-  { text: 'I see a man.', category: 'People' },
-  { text: 'The kid can hop.', category: 'People' },
-  { text: 'I run to a box.', category: 'Actions' },
-  { text: 'We sit on a log.', category: 'Actions' },
-  { text: 'The cat can hop.', category: 'Actions' },
-  { text: 'The kid can nap.', category: 'Actions' },
-  { text: 'We go to a tree.', category: 'Actions' },
-  { text: 'I see the dog run.', category: 'Actions' },
+  { text: "I see a cat.", category: "Animals" },
+  { text: "The dog can run.", category: "Animals" },
+  { text: "The hen is on a log.", category: "Animals" },
+  { text: "We see a cow.", category: "Animals" },
+  { text: "The rat is in a box.", category: "Animals" },
+  { text: "A bat is on a rock.", category: "Animals" },
+  { text: "The lion is big.", category: "Animals" },
+  { text: "I see a fish.", category: "Animals" },
+  { text: "The turtle can nap.", category: "Animals" },
+  { text: "The ball is in a bag.", category: "Things" },
+  { text: "I see a hat.", category: "Things" },
+  { text: "The cup is on a bed.", category: "Things" },
+  { text: "A toy is in the box.", category: "Things" },
+  { text: "I eat an apple.", category: "Things" },
+  { text: "We see a pizza.", category: "Things" },
+  { text: "The key is on the bed.", category: "Things" },
+  { text: "The kid has a pen.", category: "Things" },
+  { text: "I see yogurt.", category: "Things" },
+  { text: "The man has an orange.", category: "Things" },
+  { text: "We see the sun.", category: "Nature" },
+  { text: "The moon is up.", category: "Nature" },
+  { text: "A nest is in a tree.", category: "Nature" },
+  { text: "I sit on a rock.", category: "Nature" },
+  { text: "A log is big.", category: "Nature" },
+  { text: "I see a car.", category: "Vehicles" },
+  { text: "The bus is big.", category: "Vehicles" },
+  { text: "A van is in the sun.", category: "Vehicles" },
+  { text: "I see a jet.", category: "Vehicles" },
+  { text: "We go on a boat.", category: "Vehicles" },
+  { text: "The kid is on a bike.", category: "Vehicles" },
+  { text: "The train can go.", category: "Vehicles" },
+  { text: "Mom and Dad hug.", category: "People" },
+  { text: "I see a man.", category: "People" },
+  { text: "The kid can hop.", category: "People" },
+  { text: "I run to a box.", category: "Actions" },
+  { text: "We sit on a log.", category: "Actions" },
+  { text: "The cat can hop.", category: "Actions" },
+  { text: "The kid can nap.", category: "Actions" },
+  { text: "We go to a tree.", category: "Actions" },
+  { text: "I see the dog run.", category: "Actions" },
 ];
 
-const categoryOrder = ['Animals', 'Things', 'Nature', 'Vehicles', 'People', 'Actions'];
+const categoryOrder = [
+  "Animals",
+  "Things",
+  "Nature",
+  "Vehicles",
+  "People",
+  "Actions",
+];
 
 const sortedSentences = [...sentences].sort((a, b) => {
   const categoryA = categoryOrder.indexOf(a.category);
@@ -233,29 +247,153 @@ const sortedSentences = [...sentences].sort((a, b) => {
   return 0;
 });
 
+// Extracted Component
+const AnimatedSentence = ({
+  text,
+  voice,
+  onComplete,
+}: {
+  text: string;
+  voice: SpeechSynthesisVoice | null;
+  onComplete: () => void;
+}) => {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const { speak, stop } = useSpeechSynthesis();
+  const sentenceRef = useRef<HTMLHeadingElement>(null);
+  const words = text.split(" ");
+
+  useEffect(() => {
+    let isCancelled = false;
+    let animationInterval: NodeJS.Timeout;
+
+    const runSequence = async () => {
+      setVisibleCount(0);
+
+      // 1. Start Animate words IMMEDIATELY
+      const totalWords = words.length;
+      let current = 0;
+      const wordDelay = 500;
+
+      animationInterval = setInterval(() => {
+        if (isCancelled) return;
+        current++;
+        setVisibleCount(current);
+        if (current >= totalWords) {
+          clearInterval(animationInterval);
+        }
+      }, wordDelay);
+
+      // 2. Delay speech start
+      await new Promise((r) => setTimeout(r, 800));
+      if (isCancelled) return;
+
+      // 3. Slow TTS
+      const slowSpeechPromise = speak(text, {
+        voice: voice,
+        rate: 0.4, // Further slowed down
+      });
+
+      await slowSpeechPromise;
+      if (isCancelled) return;
+
+      clearInterval(animationInterval);
+      setVisibleCount(totalWords);
+
+      await new Promise((r) => setTimeout(r, 0));
+      if (isCancelled) return;
+
+      // 4. Normal TTS
+      await speak(text, {
+        voice: voice,
+        rate: 0.8,
+      });
+
+      if (!isCancelled) {
+        onComplete();
+      }
+    };
+
+    runSequence();
+
+    return () => {
+      isCancelled = true;
+      stop();
+      clearInterval(animationInterval);
+    };
+  }, [text, voice, speak, stop, onComplete, words.length]);
+
+  useLayoutEffect(() => {
+    if (sentenceRef.current) {
+      const container = sentenceRef.current.parentElement;
+      if (container) {
+        const containerWidth = container.clientWidth;
+        sentenceRef.current.style.fontSize = "100px";
+        const textWidth = sentenceRef.current.scrollWidth;
+        const targetWidth = containerWidth * 0.9;
+        let newFontSize = (targetWidth / textWidth) * 100;
+        const maxFontSize = 8 * 16;
+        const minFontSize = 2 * 16;
+        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+        sentenceRef.current.style.fontSize = `${newFontSize}px`;
+      }
+    }
+  }, [text]);
+
+  return (
+    <h2 ref={sentenceRef} className="font-bold break-words">
+      {words.map((word, index) => {
+        const cleanedWord = word.toLowerCase().replace(".", "");
+        const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
+        const isVisible = index < visibleCount;
+
+        return (
+          <span
+            key={index}
+            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
+          >
+            {isNoun ? (
+              <span>
+                <span className={getLetterColors(word.charAt(0)).text}>
+                  {word.charAt(0)}
+                </span>
+                <span>{word.slice(1)}</span>
+              </span>
+            ) : (
+              word
+            )}{" "}
+          </span>
+        );
+      })}
+    </h2>
+  );
+};
+
 const SentencesApp = () => {
   const [match, params] = useRoute("/sentences/:category?");
   const category = params?.category;
 
-  const filteredSentences = (category && category !== 'all')
-    ? sortedSentences.filter(item => item.category.toLowerCase().replace(/[\s/]+/g, '-') === category)
-    : sortedSentences;
+  const filteredSentences =
+    category && category !== "all"
+      ? sortedSentences.filter(
+          (item) =>
+            item.category.toLowerCase().replace(/[\s/]+/g, "-") === category,
+        )
+      : sortedSentences;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const { speak, stop, voices } = useSpeechSynthesis();
-  const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const sentenceRef = useRef<HTMLHeadingElement>(null);
-  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTextVisible, setIsTextVisible] = useState(true);
+  const femaleVoice =
+    voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
+    voices?.find((v) => v.lang.startsWith("en"));
 
   const currentItem = filteredSentences[currentIndex];
   let imageToDisplay = combinedImageMap[currentItem?.text];
 
   if (!imageToDisplay) {
-    const words = currentItem.text.toLowerCase().replace('.', '').split(' ');
+    const words = currentItem.text.toLowerCase().replace(".", "").split(" ");
     for (const word of words) {
       if (wordImageMap[word]) {
         imageToDisplay = wordImageMap[word];
@@ -264,48 +402,48 @@ const SentencesApp = () => {
     }
   }
 
-  const shuffleItems = useCallback((shouldSetFirst = false) => {
-    const indices = filteredSentences.map((_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-    setShuffledIndices(indices);
-    if (shouldSetFirst && indices.length > 0) {
-      setCurrentIndex(indices[0]);
-      setShuffledIndex(1);
-    } else {
-      setShuffledIndex(0);
-    }
-  }, [filteredSentences]);
+  const shuffleItems = useCallback(
+    (shouldSetFirst = false) => {
+      const indices = filteredSentences.map((_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      setShuffledIndices(indices);
+      if (shouldSetFirst && indices.length > 0) {
+        setCurrentIndex(indices[0]);
+        setShuffledIndex(1);
+      } else {
+        setShuffledIndex(0);
+      }
+    },
+    [filteredSentences],
+  );
 
   useEffect(() => {
     shuffleItems(true);
   }, [category]);
 
-
-
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
     stop();
     setIsFlipped(false);
     setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredSentences.length);
+      setCurrentIndex(
+        (prevIndex) => (prevIndex + 1) % filteredSentences.length,
+      );
     }, 150);
   }, [filteredSentences.length, stop]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
     stop();
     setIsFlipped(false);
     setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredSentences.length) % filteredSentences.length);
+      setCurrentIndex(
+        (prevIndex) =>
+          (prevIndex - 1 + filteredSentences.length) % filteredSentences.length,
+      );
     }, 150);
   }, [filteredSentences.length, stop]);
 
@@ -314,11 +452,8 @@ const SentencesApp = () => {
     confetti({
       particleCount: 30,
       spread: 50,
-      origin: { y: 0.6 }
+      origin: { y: 0.6 },
     });
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
     stop();
     setIsFlipped(false);
     setTimeout(() => {
@@ -335,14 +470,12 @@ const SentencesApp = () => {
 
   const handleInteraction = () => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
+    if (isFlipped) {
+      setIsFlipped(false);
+    } else {
+      stop();
+      setIsFlipped(true);
     }
-    stop();
-    audioTimeoutRef.current = setTimeout(() => {
-      speak(currentItem.text, { voice: femaleVoice ?? null });
-    }, 1000);
-    setIsFlipped(!isFlipped);
   };
 
   const swipeHandlers = useSwipe({
@@ -351,117 +484,91 @@ const SentencesApp = () => {
   });
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // e.preventDefault();
     // Handled by swipe
   };
 
   useEffect(() => {
-    if (currentItem) {
-      speak(currentItem.text, {
-        voice: femaleVoice ?? null
-      });
-    }
-  }, [currentItem, speak, femaleVoice]);
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= 'a' && e.key <= 'z') {
-        const newIndex = filteredSentences.findIndex(item => item.text.toLowerCase().startsWith(e.key));
+      if (e.key >= "a" && e.key <= "z") {
+        const newIndex = filteredSentences.findIndex((item) =>
+          item.text.toLowerCase().startsWith(e.key),
+        );
         if (newIndex !== -1) {
           setCurrentIndex(newIndex);
         }
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === "ArrowLeft") {
         handlePrevious();
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === "ArrowRight") {
         handleNext();
-      } else if (e.key === ' ' || e.key === 'Spacebar') {
+      } else if (e.key === " " || e.key === "Spacebar") {
         e.preventDefault();
         handleShuffle();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handlePrevious, handleNext, filteredSentences, handleShuffle]);
-
-  useLayoutEffect(() => {
-    if (sentenceRef.current) {
-      const container = sentenceRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        
-        // Reset font size for measurement
-        sentenceRef.current.style.fontSize = '100px';
-        const textWidth = sentenceRef.current.scrollWidth;
-        
-        const targetWidth = containerWidth * 0.9; // Use 90% of container width
-        
-        let newFontSize = (targetWidth / textWidth) * 100;
-        
-        // Set max and min font size
-        const maxFontSize = 8 * 16; // 8rem
-        const minFontSize = 2 * 16; // 2rem
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-
-        sentenceRef.current.style.fontSize = `${newFontSize}px`;
-      }
-    }
-  }, [currentItem]);
 
   if (!currentItem) {
     return <div>Loading...</div>;
   }
 
-  const words = currentItem.text.split(' ');
-
   return (
-    <div 
-        className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
-        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
-        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
-        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+    <div
+      className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area"
+      onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+      onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
+        <Link
+          href="/"
+          onClick={(e) => e.stopPropagation()}
+          className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="w-12 h-12"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 19.5L8.25 12l7.5-7.5"
+            />
+          </svg>
         </Link>
       </header>
 
       <div className="flex-1 flex flex-col justify-center">
-        <main 
-            className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden mt-[10vh] md:-mt-[25vh]"
-            onClick={handleInteraction}
+        <main
+          className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden mt-[10vh] md:-mt-[25vh]"
+          onClick={handleInteraction}
         >
-          {/* Removed click zone arrows */}
-
-          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
+          <div
+            className="w-full flex justify-center items-center"
+            style={{ perspective: "1000px" }}
+          >
+            <div
+              className={`card ${isFlipped ? "is-flipped" : ""}`}
+              style={{ width: "100%", height: "clamp(300px, 80vw, 600px)" }}
+            >
               <div className="card-face card-face-front">
-                <h2 
-                  ref={sentenceRef} 
-                  style={{ visibility: isTextVisible ? 'visible' : 'visible' }} // Force visible
-                  className="font-bold break-words"
-                >
-                  {words.map((word, index) => {
-                    const cleanedWord = word.toLowerCase().replace('.', '');
-                    const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-                    if (isNoun) {
-                      return (
-                        <span key={index}>
-                          <span className={getLetterColors(word.charAt(0)).text}>{word.charAt(0)}</span>
-                          <span>{word.slice(1)}</span>
-                          {' '}
-                        </span>
-                      );
-                    }
-                    return <span key={index}>{word} </span>;
-                  })}
-                </h2>
+                {!isFlipped && (
+                  <AnimatedSentence
+                    key={currentIndex}
+                    text={currentItem.text}
+                    voice={femaleVoice ?? null}
+                    onComplete={() => {}}
+                  />
+                )}
               </div>
               <div className="card-face card-face-back flex items-center justify-center">
                 {imageToDisplay && (
@@ -470,7 +577,7 @@ const SentencesApp = () => {
                     alt={currentItem.text}
                     className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
                     draggable="false"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                    onError={(e) => (e.currentTarget.style.display = "none")}
                   />
                 )}
               </div>
@@ -479,17 +586,20 @@ const SentencesApp = () => {
         </main>
       </div>
 
-      <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 pointer-events-none">
         <button
-          onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            handleShuffle();
+            e.currentTarget.blur();
+          }}
+          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground pointer-events-auto opacity-50 hover:opacity-100"
         >
           <Shuffle className="w-16 h-16" />
         </button>
       </div>
     </div>
-  )
+  );
 };
 
 export default SentencesApp;

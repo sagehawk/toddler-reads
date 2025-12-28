@@ -20,6 +20,113 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
   return a.name.localeCompare(b.name);
 });
 
+// Extracted component to handle animation isolation
+const AnimatedWord = ({ 
+    text, 
+    ttsText, 
+    onComplete, 
+    voice, 
+    isAnimatingRef 
+}: { 
+    text: string, 
+    ttsText: string, 
+    onComplete: () => void, 
+    voice: SpeechSynthesisVoice | null,
+    isAnimatingRef: React.MutableRefObject<boolean>
+}) => {
+    const [visibleCount, setVisibleCount] = useState(0);
+    const { speak, stop } = useSpeechSynthesis();
+    const wordRef = useRef<HTMLHeadingElement>(null);
+
+    useEffect(() => {
+        let isCancelled = false;
+        let animationInterval: NodeJS.Timeout;
+
+                const runSequence = async () => {
+                    isAnimatingRef.current = true;
+                    setVisibleCount(0);
+        
+                    // 1. Start Animate letters IMMEDIATELY
+                    const totalLetters = text.length;
+                    let current = 0;
+                    const letterDelay = 300; 
+        
+                                animationInterval = setInterval(() => {
+                                    if (isCancelled) return;
+                                    current++;
+                                    setVisibleCount(current);
+                                    if (current >= totalLetters) {
+                                        clearInterval(animationInterval);
+                                    }
+                                }, letterDelay);
+                    
+                                // 3. Slow TTS
+                                const slowSpeechPromise = speak(ttsText, { 
+                                    voice: voice, 
+                                    rate: 0.5 
+                                });        
+                    await slowSpeechPromise;
+                    if (isCancelled) return;
+        
+                    // Ensure we clear interval if speech finished first (unlikely with delay)
+                                clearInterval(animationInterval);
+                                setVisibleCount(totalLetters);
+                    
+                                await new Promise(r => setTimeout(r, 200));
+                                if (isCancelled) return;
+                    
+                                // 4. Normal TTS
+                                await speak(ttsText, { 
+                                    voice: voice, 
+                                    rate: 1.0 
+                                });
+                    
+                    if (!isCancelled) {
+                        isAnimatingRef.current = false;
+                        onComplete();
+                    }
+                };
+        runSequence();
+
+        return () => {
+            isCancelled = true;
+            stop();
+            clearInterval(animationInterval);
+            isAnimatingRef.current = false;
+        };
+    }, [text, ttsText, voice, speak, stop, isAnimatingRef, onComplete]);
+
+    useLayoutEffect(() => {
+        if (wordRef.current) {
+            const container = wordRef.current.parentElement;
+            if (container) {
+                const containerWidth = container.clientWidth;
+                wordRef.current.style.fontSize = '100px';
+                const wordWidth = wordRef.current.scrollWidth;
+                const targetWidth = containerWidth * 0.9;
+                let newFontSize = (targetWidth / wordWidth) * 100;
+                const maxFontSize = 12 * 16; 
+                const minFontSize = 3 * 16; 
+                newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+                wordRef.current.style.fontSize = `${newFontSize}px`;
+            }
+        }
+    }, [text]);
+
+    return (
+        <h2 ref={wordRef} className="font-bold break-words">
+            {text.split('').map((char, index) => (
+                <span 
+                    key={index} 
+                    className={`transition-opacity duration-300 ${index < visibleCount ? 'opacity-100' : 'opacity-0'} ${index === 0 ? getLetterColors(char).text : 'text-gray-600 dark:text-gray-400'}`}
+                >
+                    {char}
+                </span>
+            ))}
+        </h2>
+    );
+};
+
 const VocabApp = () => {
   const [match, params] = useRoute("/vocab/:category?");
   const category = params?.category;
@@ -39,9 +146,10 @@ const VocabApp = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const wordRef = useRef<HTMLHeadingElement>(null);
   const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isTextVisible, setIsTextVisible] = useState(true); // Default true to ensure visibility
+  
+  // Ref to track animation status across the extracted component
+  const isAnimatingRef = useRef(false);
 
   const currentItem = filteredVocab[currentIndex];
 
@@ -64,31 +172,21 @@ const VocabApp = () => {
     shuffleItems(true);
   }, [category]);
 
-
-
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
-    stop();
     setIsFlipped(false);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
     }, 150);
-  }, [filteredVocab.length, stop]);
+  }, [filteredVocab.length]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
-    stop();
     setIsFlipped(false);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => (prevIndex - 1 + filteredVocab.length) % filteredVocab.length);
     }, 150);
-  }, [filteredVocab.length, stop]);
+  }, [filteredVocab.length]);
 
   const handleShuffle = () => {
     if (navigator.vibrate) navigator.vibrate(10);
@@ -97,10 +195,6 @@ const VocabApp = () => {
       spread: 50,
       origin: { y: 0.6 }
     });
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
-    stop();
     setIsFlipped(false);
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length) {
@@ -116,14 +210,22 @@ const VocabApp = () => {
 
   const handleInteraction = () => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
+    
+    // If still animating letters, we might want to skip? 
+    // Or simpler: normal click behavior just flips.
+    // The AnimatedWord handles its own mounting/unmounting.
+    // When we flip, we might want to replay sound if on front side?
+    
+    if (isFlipped) {
+        // Flipping back to front -> Re-mount AnimatedWord to replay?
+        // Or just show full word? Usually flipping back just shows static.
+        // Let's just flip.
+        setIsFlipped(false);
+    } else {
+        // Flipping to back (image)
+        stop(); // Stop any current speech
+        setIsFlipped(true);
     }
-    stop();
-    audioTimeoutRef.current = setTimeout(() => {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
-    }, 1000);
-    setIsFlipped(!isFlipped);
   };
 
   const swipeHandlers = useSwipe({
@@ -155,38 +257,6 @@ const VocabApp = () => {
     };
   }, [handlePrevious, handleNext, filteredVocab, handleShuffle]);
 
-  useEffect(() => {
-    if (currentItem) {
-      speak(currentItem.tts || currentItem.name, { voice: femaleVoice ?? null });
-    }
-  }, [currentIndex, femaleVoice, speak, currentItem]);
-
-  useLayoutEffect(() => {
-    // setIsTextVisible(false); // Removed to ensure default visibility
-    if (wordRef.current) {
-      const container = wordRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        
-        // Reset font size for measurement
-        wordRef.current.style.fontSize = '100px';
-        const wordWidth = wordRef.current.scrollWidth;
-        
-        const targetWidth = containerWidth * 0.9; // Use 90% of container width
-        
-        let newFontSize = (targetWidth / wordWidth) * 100;
-        
-        // Set max and min font size
-        const maxFontSize = 12 * 16; // 12rem
-        const minFontSize = 3 * 16; // 3rem
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-
-        wordRef.current.style.fontSize = `${newFontSize}px`;
-        // setIsTextVisible(true);
-      }
-    }
-  }, [currentItem]);
-
   if (!currentItem) {
     return <div>Loading...</div>;
   }
@@ -211,19 +281,20 @@ const VocabApp = () => {
             className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-32"
             onClick={handleInteraction}
         >
-          {/* Removed arrow indicators */}
-
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', height: 'clamp(300px, 80vw, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 
-                  ref={wordRef} 
-                  style={{ visibility: isTextVisible ? 'visible' : 'visible' }} // Force visible
-                  className="font-bold break-words"
-                >
-                  <span className={getLetterColors(currentItem.name.charAt(0)).text}>{currentItem.name.charAt(0)}</span>
-                  <span className="text-gray-600 dark:text-gray-400">{currentItem.name.slice(1)}</span>
-                </h2>
+                {/* Use key to force remount on index change -> Fixes FOUC and resets animation */}
+                {!isFlipped && (
+                    <AnimatedWord 
+                        key={currentIndex} 
+                        text={currentItem.name} 
+                        ttsText={currentItem.tts || currentItem.name}
+                        voice={femaleVoice ?? null}
+                        onComplete={() => {}}
+                        isAnimatingRef={isAnimatingRef}
+                    />
+                )}
               </div>
               <div className="card-face card-face-back flex items-center justify-center">
                 <img

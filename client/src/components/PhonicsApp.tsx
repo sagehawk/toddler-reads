@@ -329,7 +329,7 @@ export default function PhonicsApp() {
         >
           {currentIndex !== null && currentDisplayData && (
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-              <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
+              <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
                 <div className="card-face card-face-front">
                   <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(9.2rem, 57.5vw, 23rem)' }}>
                     {currentDisplayData.letter}
