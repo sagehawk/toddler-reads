@@ -20,6 +20,10 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
   return a.name.localeCompare(b.name);
 });
 
+// Helper to detect Android
+const isAndroid = /Android/i.test(navigator.userAgent);
+const SLOW_RATE = isAndroid ? 0.2 : 0.5;
+
 // Extracted component to handle animation isolation
 const AnimatedWord = ({ 
     text, 
@@ -42,50 +46,76 @@ const AnimatedWord = ({
         let isCancelled = false;
         let animationInterval: NodeJS.Timeout;
 
-                const runSequence = async () => {
-                    isAnimatingRef.current = true;
-                    setVisibleCount(0);
-        
-                    // 1. Start Animate letters IMMEDIATELY
-                    const totalLetters = text.length;
-                    let current = 0;
-                    const letterDelay = 300; 
-        
-                                animationInterval = setInterval(() => {
-                                    if (isCancelled) return;
-                                    current++;
-                                    setVisibleCount(current);
-                                    if (current >= totalLetters) {
-                                        clearInterval(animationInterval);
-                                    }
-                                }, letterDelay);
-                    
-                                // 3. Slow TTS
-                                const slowSpeechPromise = speak(ttsText, { 
-                                    voice: voice, 
-                                    rate: 0.5 
-                                });        
-                    await slowSpeechPromise;
-                    if (isCancelled) return;
-        
-                    // Ensure we clear interval if speech finished first (unlikely with delay)
-                                clearInterval(animationInterval);
-                                setVisibleCount(totalLetters);
-                    
-                                await new Promise(r => setTimeout(r, 200));
-                                if (isCancelled) return;
-                    
-                                // 4. Normal TTS
-                                await speak(ttsText, { 
-                                    voice: voice, 
-                                    rate: 1.0 
-                                });
-                    
-                    if (!isCancelled) {
-                        isAnimatingRef.current = false;
-                        onComplete();
+        const animateLetters = async () => {
+            setVisibleCount(0);
+            const totalLetters = text.length;
+            let current = 0;
+            const letterDelay = 300; 
+
+            return new Promise<void>((resolve) => {
+                animationInterval = setInterval(() => {
+                    if (isCancelled) {
+                        resolve();
+                        return;
                     }
-                };
+                    current++;
+                    setVisibleCount(current);
+                    if (current >= totalLetters) {
+                        clearInterval(animationInterval);
+                        resolve();
+                    }
+                }, letterDelay);
+            });
+        };
+
+        const runSequence = async () => {
+            isAnimatingRef.current = true;
+            
+            // --- ROUND 1 ---
+            // 1. Slow TTS + Animation
+            const animPromise1 = animateLetters();
+            const speechPromise1 = speak(ttsText, { voice: voice, rate: SLOW_RATE });
+            
+            await Promise.all([animPromise1, speechPromise1]);
+            if (isCancelled) return;
+
+            // Ensure full word visible
+            setVisibleCount(text.length);
+            clearInterval(animationInterval);
+
+            await new Promise(r => setTimeout(r, 200));
+            if (isCancelled) return;
+
+            // 2. Fast TTS
+            await speak(ttsText, { voice: voice, rate: 1.0 });
+            if (isCancelled) return;
+
+            await new Promise(r => setTimeout(r, 500));
+            if (isCancelled) return;
+
+            // --- ROUND 2 ---
+            // 3. Slow TTS + Animation (Start Over)
+            const animPromise2 = animateLetters();
+            const speechPromise2 = speak(ttsText, { voice: voice, rate: SLOW_RATE });
+
+            await Promise.all([animPromise2, speechPromise2]);
+            if (isCancelled) return;
+
+            setVisibleCount(text.length);
+            clearInterval(animationInterval);
+
+            await new Promise(r => setTimeout(r, 200));
+            if (isCancelled) return;
+
+            // 4. Fast TTS
+            await speak(ttsText, { voice: voice, rate: 1.0 });
+
+            if (!isCancelled) {
+                isAnimatingRef.current = false;
+                onComplete();
+            }
+        };
+
         runSequence();
 
         return () => {
@@ -144,6 +174,8 @@ const VocabApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [hasListened, setHasListened] = useState(false); 
+  
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
   const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -172,6 +204,21 @@ const VocabApp = () => {
     shuffleItems(true);
   }, [category]);
 
+  // Reset listened state when index changes
+  useEffect(() => {
+      setHasListened(false);
+  }, [currentIndex]);
+
+  const handleSequenceComplete = useCallback(() => {
+      setHasListened(true);
+      // Auto confetti at the end of the sequence
+      confetti({
+        particleCount: 30,
+        spread: 50,
+        origin: { y: 0.6 }
+      });
+  }, []);
+
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
     setIsFlipped(false);
@@ -190,11 +237,7 @@ const VocabApp = () => {
 
   const handleShuffle = () => {
     if (navigator.vibrate) navigator.vibrate(10);
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 }
-    });
+    
     setIsFlipped(false);
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length) {
@@ -211,18 +254,9 @@ const VocabApp = () => {
   const handleInteraction = () => {
     if (navigator.vibrate) navigator.vibrate(5);
     
-    // If still animating letters, we might want to skip? 
-    // Or simpler: normal click behavior just flips.
-    // The AnimatedWord handles its own mounting/unmounting.
-    // When we flip, we might want to replay sound if on front side?
-    
     if (isFlipped) {
-        // Flipping back to front -> Re-mount AnimatedWord to replay?
-        // Or just show full word? Usually flipping back just shows static.
-        // Let's just flip.
         setIsFlipped(false);
     } else {
-        // Flipping to back (image)
         stop(); // Stop any current speech
         setIsFlipped(true);
     }
@@ -263,7 +297,7 @@ const VocabApp = () => {
 
   return (
     <div 
-        className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
+        className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
@@ -278,7 +312,7 @@ const VocabApp = () => {
 
       <div className="flex-1 flex flex-col justify-center">
         <main 
-            className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-32"
+            className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden"
             onClick={handleInteraction}
         >
           <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
@@ -291,7 +325,7 @@ const VocabApp = () => {
                         text={currentItem.name} 
                         ttsText={currentItem.tts || currentItem.name}
                         voice={femaleVoice ?? null}
-                        onComplete={() => {}}
+                        onComplete={handleSequenceComplete}
                         isAnimatingRef={isAnimatingRef}
                     />
                 )}
@@ -311,12 +345,12 @@ const VocabApp = () => {
       </div>
 
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
         >
-          <Shuffle className="w-16 h-16" />
+          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>
       </div>
     </div>

@@ -247,6 +247,10 @@ const sortedSentences = [...sentences].sort((a, b) => {
   return 0;
 });
 
+// Helper to detect Android
+const isAndroid = /Android/i.test(navigator.userAgent);
+const SLOW_RATE = isAndroid ? 0.2 : 0.5;
+
 // Extracted Component
 const AnimatedSentence = ({
   text,
@@ -266,47 +270,66 @@ const AnimatedSentence = ({
     let isCancelled = false;
     let animationInterval: NodeJS.Timeout;
 
+    const animateWords = async () => {
+        setVisibleCount(0);
+        const totalWords = words.length;
+        let current = 0;
+        const wordDelay = 500; 
+
+        return new Promise<void>((resolve) => {
+            animationInterval = setInterval(() => {
+                if (isCancelled) {
+                    resolve();
+                    return;
+                }
+                current++;
+                setVisibleCount(current);
+                if (current >= totalWords) {
+                    clearInterval(animationInterval);
+                    resolve();
+                }
+            }, wordDelay);
+        });
+    };
+
     const runSequence = async () => {
-      setVisibleCount(0);
+      // --- ROUND 1 ---
+      // 1. Slow TTS + Animation
+      const animPromise1 = animateWords();
+      const speechPromise1 = speak(text, { voice: voice, rate: SLOW_RATE });
 
-      // 1. Start Animate words IMMEDIATELY
-      const totalWords = words.length;
-      let current = 0;
-      const wordDelay = 500;
-
-      animationInterval = setInterval(() => {
-        if (isCancelled) return;
-        current++;
-        setVisibleCount(current);
-        if (current >= totalWords) {
-          clearInterval(animationInterval);
-        }
-      }, wordDelay);
-
-      // 2. Delay speech start
-      await new Promise((r) => setTimeout(r, 800));
-      if (isCancelled) return;
-
-      // 3. Slow TTS
-      const slowSpeechPromise = speak(text, {
-        voice: voice,
-        rate: 0.4, // Further slowed down
-      });
-
-      await slowSpeechPromise;
+      await Promise.all([animPromise1, speechPromise1]);
       if (isCancelled) return;
 
       clearInterval(animationInterval);
-      setVisibleCount(totalWords);
+      setVisibleCount(words.length);
 
-      await new Promise((r) => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 200));
+      if (isCancelled) return;
+
+      // 2. Normal TTS
+      await speak(text, { voice: voice, rate: 1.0 });
+      if (isCancelled) return;
+
+      await new Promise((r) => setTimeout(r, 500));
+      if (isCancelled) return;
+
+      // --- ROUND 2 ---
+      // 3. Slow TTS + Animation (Start Over)
+      const animPromise2 = animateWords();
+      const speechPromise2 = speak(text, { voice: voice, rate: SLOW_RATE });
+
+      await Promise.all([animPromise2, speechPromise2]);
+      if (isCancelled) return;
+
+      clearInterval(animationInterval);
+      setVisibleCount(words.length);
+
+      await new Promise((r) => setTimeout(r, 200));
       if (isCancelled) return;
 
       // 4. Normal TTS
-      await speak(text, {
-        voice: voice,
-        rate: 0.8,
-      });
+      await speak(text, { voice: voice, rate: 1.0 });
 
       if (!isCancelled) {
         onComplete();
@@ -384,6 +407,8 @@ const SentencesApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [hasListened, setHasListened] = useState(false);
+
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice =
     voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
@@ -424,6 +449,20 @@ const SentencesApp = () => {
     shuffleItems(true);
   }, [category]);
 
+  // Reset listened state
+  useEffect(() => {
+      setHasListened(false);
+  }, [currentIndex]);
+
+  const handleSequenceComplete = useCallback(() => {
+      setHasListened(true);
+      confetti({
+        particleCount: 30,
+        spread: 50,
+        origin: { y: 0.6 },
+      });
+  }, []);
+
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
     stop();
@@ -449,11 +488,7 @@ const SentencesApp = () => {
 
   const handleShuffle = () => {
     if (navigator.vibrate) navigator.vibrate(10);
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 },
-    });
+    
     stop();
     setIsFlipped(false);
     setTimeout(() => {
@@ -517,11 +552,10 @@ const SentencesApp = () => {
     return <div>Loading...</div>;
   }
 
-  return (
-    <div
-      className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area"
-      onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
-      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+    return (
+      <div 
+          className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
+          onTouchStart={(e) => swipeHandlers.onTouchStart(e)}      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
@@ -547,27 +581,21 @@ const SentencesApp = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center">
-        <main
-          className="relative flex flex-col items-center justify-start text-center px-4 overflow-hidden mt-[10vh] md:-mt-[25vh]"
-          onClick={handleInteraction}
+      <div className="flex-1 flex flex-col justify-center overflow-y-auto w-full">
+        <main 
+            className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
+            onClick={handleInteraction}
         >
-          <div
-            className="w-full flex justify-center items-center"
-            style={{ perspective: "1000px" }}
-          >
-            <div
-              className={`card ${isFlipped ? "is-flipped" : ""}`}
-              style={{ width: "100%", height: "clamp(300px, 80vw, 600px)" }}
-            >
-              <div className="card-face card-face-front">
+          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', maxWidth: '800px', height: 'clamp(200px, 55vh, 500px)' }}>
+              <div className="card-face card-face-front px-8">
                 {!isFlipped && (
-                  <AnimatedSentence
-                    key={currentIndex}
-                    text={currentItem.text}
-                    voice={femaleVoice ?? null}
-                    onComplete={() => {}}
-                  />
+                    <AnimatedSentence 
+                        key={currentIndex}
+                        text={currentItem.text}
+                        voice={femaleVoice ?? null}
+                        onComplete={handleSequenceComplete}
+                    />
                 )}
               </div>
               <div className="card-face card-face-back flex items-center justify-center">
@@ -577,7 +605,7 @@ const SentencesApp = () => {
                     alt={currentItem.text}
                     className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
                     draggable="false"
-                    onError={(e) => (e.currentTarget.style.display = "none")}
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
                   />
                 )}
               </div>
@@ -586,16 +614,12 @@ const SentencesApp = () => {
         </main>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            handleShuffle();
-            e.currentTarget.blur();
-          }}
-          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground pointer-events-auto opacity-50 hover:opacity-100"
+          onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
+          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
         >
-          <Shuffle className="w-16 h-16" />
+          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>
       </div>
     </div>

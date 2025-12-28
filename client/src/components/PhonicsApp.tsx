@@ -179,13 +179,6 @@ export default function PhonicsApp() {
     // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(10);
     
-    // Confetti!
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 }
-    });
-
     if (shuffledIndex >= shuffledIndices.length - 1) {
       shuffleLetters();
     } else {
@@ -297,7 +290,7 @@ export default function PhonicsApp() {
 
   return (
     <div 
-        className="fixed inset-0 bg-background select-none flex flex-col overflow-hidden touchable-area" 
+        className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
@@ -312,9 +305,6 @@ export default function PhonicsApp() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setIsAutoplayEnabled(!isAutoplayEnabled); e.currentTarget.blur(); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
-          {isAutoplayEnabled ? <Volume2 className="w-12 h-12" /> : <VolumeX className="w-12 h-12" />}
-        </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
@@ -346,13 +336,13 @@ export default function PhonicsApp() {
         </main>
       </div>
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
           disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-colors text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+          className={`w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
         >
-          <Shuffle className="w-16 h-16" />
+          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>
       </div>
     </div>

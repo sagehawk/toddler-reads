@@ -1,12 +1,91 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Shuffle, Volume2, VolumeX } from 'lucide-react';
+import { Shuffle } from 'lucide-react';
 import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
+
+// Helper to detect Android
+const isAndroid = /Android/i.test(navigator.userAgent);
+const COUNT_RATE = isAndroid ? 0.8 : 1.0;
+
+const Dot = ({ color, visible }: { color: string, visible: boolean }) => (
+  <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 ${color} rounded-full transition-opacity duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+);
+
+const DieFace = ({ count, color, visibleCount }: { count: number, color: string, visibleCount: number }) => {
+  // Helper to determine if a dot at specific index (1-based) is visible
+  const isVisible = (index: number) => index <= visibleCount;
+
+  // We map the patterns but render Dots with visibility prop
+  // Note: The patterns below are static layouts. I need to map the dots in them to indices.
+  // Since the pattern structure is complex (grids), I will just render them and assume the "order" of appearance follows the DOM order or I need to manually index them.
+  // For simplicity and visual coherence, I'll assign indices 1..N to the dots in the order they appear in the JSX.
+  
+  // Simplified: I will create a helper to render a dot with auto-incrementing index counter? 
+  // No, React rendering is pure. I'll pass specific indices.
+
+  const renderDot = (index: number) => <Dot color={color} visible={isVisible(index)} />;
+
+  const patterns: { [key: number]: React.ReactNode } = {
+      1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
+      2: <div className="grid grid-cols-2 gap-4 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div className="self-end justify-self-end">{renderDot(2)}</div></div>,
+      3: <div className="grid grid-cols-3 grid-rows-3 gap-6 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div>{renderDot(2)}</div><div className="self-end justify-self-end">{renderDot(3)}</div></div>,
+      4: <div className="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
+      5: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
+      6: <div className="grid grid-cols-2 grid-rows-3 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
+      7: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
+      8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
+      9: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
+      10: <div className="grid grid-cols-2 grid-rows-5 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
+  };
+  return <div className="w-64 h-64 flex justify-center items-center">{patterns[count]}</div>;
+};
+
+// Component to handle counting animation
+const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, color: string, onComplete: () => void, voice: SpeechSynthesisVoice | null }) => {
+    const [visibleCount, setVisibleCount] = useState(0);
+    const { speak, stop } = useSpeechSynthesis();
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        const runSequence = async () => {
+            setVisibleCount(0);
+            await new Promise(r => setTimeout(r, 500)); // Small initial pause
+            if (isCancelled) return;
+
+            for (let i = 1; i <= count; i++) {
+                if (isCancelled) return;
+                
+                // Show dot
+                setVisibleCount(i);
+                
+                // Speak number
+                await speak(i.toString(), { voice, rate: COUNT_RATE });
+                
+                // Small pause between numbers
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            if (!isCancelled) {
+                onComplete();
+            }
+        };
+
+        runSequence();
+
+        return () => {
+            isCancelled = true;
+            stop();
+        };
+    }, [count, voice, speak, stop, onComplete]);
+
+    return <DieFace count={count} color={color} visibleCount={visibleCount} />;
+};
 
 const NumbersApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -67,12 +146,6 @@ const NumbersApp = () => {
   const handleShuffle = () => {
     // Haptic
     if (navigator.vibrate) navigator.vibrate(10);
-    // Confetti
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 }
-    });
 
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
@@ -99,7 +172,7 @@ const NumbersApp = () => {
       stop();
       audioTimeoutRef.current = setTimeout(() => {
         speak(String(currentNumber), { voice: femaleVoice ?? null });
-      }, 1000); // 1 second delay
+      }, 500); 
     }
   };
 
@@ -110,8 +183,15 @@ const NumbersApp = () => {
 
   const handleInteraction = () => {
       if (navigator.vibrate) navigator.vibrate(5);
-      replaySound();
-      setIsFlipped(!isFlipped);
+      
+      if (isFlipped) {
+          setIsFlipped(false); // Flip back to number
+          // Maybe replay number sound?
+          replaySound();
+      } else {
+          stop(); // Stop number sound
+          setIsFlipped(true); // Flip to dots -> AnimatedDots triggers
+      }
   };
 
   useEffect(() => {
@@ -140,51 +220,20 @@ const NumbersApp = () => {
   }, [handlePrevious, handleNext, handleShuffle]);
 
   useEffect(() => {
-    if (currentNumber && !isQuietMode) {
+    if (currentNumber && !isQuietMode && !isFlipped) {
       speak(String(currentNumber), { voice: femaleVoice ?? null });
     }
-  }, [currentIndex, femaleVoice, speak, currentNumber, isQuietMode]);
+  }, [currentIndex, femaleVoice, speak, currentNumber, isQuietMode, isFlipped]);
 
   if (currentNumber === undefined) {
     return <div>Loading...</div>;
   }
 
-  const Dot = ({ color }: { color: string }) => (
-    <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 ${color} rounded-full`} />
-  );
-  
-  const DieFace = ({ count, color }: { count: number, color: string }) => {
-    const patterns: { [key: number]: React.ReactNode } = {
-        1: <div className="flex justify-center items-center w-full h-full"><Dot color={color} /></div>,
-        2: <div className="grid grid-cols-2 gap-4 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start"><Dot color={color} /></div><div className="self-end justify-self-end"><Dot color={color} /></div></div>,
-        3: <div className="grid grid-cols-3 grid-rows-3 gap-6 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start"><Dot color={color} /></div><div><Dot color={color} /></div><div className="self-end justify-self-end"><Dot color={color} /></div></div>,
-        4: <div className="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
-        5: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div></div>,
-        6: <div className="grid grid-cols-2 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
-        7: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1"><Dot color={color} /></div><div className="col-start-3 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-2"><Dot color={color} /></div><div className="col-start-1 row-start-3"><Dot color={color} /></div><div className="col-start-3 row-start-3"><Dot color={color} /></div><div className="col-start-2 row-start-1"><Dot color={color} /></div><div className="col-start-2 row-start-3"><Dot color={color} /></div></div>,
-        8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
-        9: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
-        10: <div className="grid grid-cols-2 grid-rows-5 gap-4 w-full h-full p-4 place-items-center"><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /><Dot color={color} /></div>,
-    };
-    return <div className="w-64 h-64 flex justify-center items-center">{patterns[count]}</div>;
-  };
-
-  const DotsDisplay = ({ count, color }: { count: number, color: string }) => {
-    return <DieFace count={count} color={color} />;
-  };
-
   const numberColor = getLetterColors(String(currentNumber === 10 ? 0 : currentNumber));
-  const [dots, setDots] = useState<React.ReactNode>(null);
-
-  useEffect(() => {
-    if (currentNumber) {
-      setDots(<DotsDisplay count={currentNumber} color={numberColor.background} />);
-    }
-  }, [currentNumber, numberColor.background]);
 
   return (
     <div 
-        className="fixed inset-0 bg-background select-none flex flex-col justify-between overflow-hidden" 
+        className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
@@ -195,9 +244,6 @@ const NumbersApp = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         </Link>
-        <button onClick={(e) => { e.stopPropagation(); setIsQuietMode(!isQuietMode); }} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
-          {isQuietMode ? <VolumeX className="w-12 h-12" /> : <Volume2 className="w-12 h-12" />}
-        </button>
       </header>
 
       <main 
@@ -219,19 +265,32 @@ const NumbersApp = () => {
                 </h2>
               </div>
               <div className="card-face card-face-back">
-                {dots}
+                {isFlipped && (
+                    <AnimatedDots 
+                        key={currentIndex}
+                        count={currentNumber} 
+                        color={numberColor.background} 
+                        voice={femaleVoice ?? null}
+                        onComplete={() => {
+                            confetti({
+                                particleCount: 30,
+                                spread: 50,
+                                origin: { y: 0.6 }
+                            });
+                        }}
+                    />
+                )}
               </div>
             </div>
           </div>
       </main>
 
-      <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-24 z-50 bg-background opacity-50">
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          className="w-full h-full flex items-center justify-center transition-colors text-secondary-foreground"
+          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
         >
-          <Shuffle className="w-16 h-16" />
+          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>
       </div>
     </div>
