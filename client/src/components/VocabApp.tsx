@@ -278,7 +278,7 @@ const VocabApp = () => {
       await new Promise((r) => setTimeout(r, 500));
       
       // Flip back to trigger AnimatedWord for the rest of the sequence
-      setIsFlipped(false);
+      // setIsFlipped(false);
     }
   };
 

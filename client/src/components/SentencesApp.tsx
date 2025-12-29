@@ -506,7 +506,7 @@ const SentencesApp = () => {
       await new Promise((r) => setTimeout(r, 500));
 
       // Flip back to trigger AnimatedSentence for the rest of the sequence
-      setIsFlipped(false);
+      // setIsFlipped(false);
     }
   };
 
@@ -579,7 +579,7 @@ const SentencesApp = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center overflow-y-auto w-full">
+      <div className="flex-1 flex flex-col justify-center overflow-hidden w-full">
         <main
           className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
           onClick={handleInteraction}
@@ -611,7 +611,7 @@ const SentencesApp = () => {
                   <img
                     src={imageToDisplay}
                     alt={currentItem.text}
-                    className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
+                    className="w-full h-full object-contain noselect p-4"
                     draggable="false"
                     onLoad={() => { imageLoadedRef.current = true; }}
                     onError={(e) => (e.currentTarget.style.display = "none")}
