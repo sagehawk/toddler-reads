@@ -47,6 +47,11 @@ const AnimatedWord = ({
   const [visibleCount, setVisibleCount] = useState(0);
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -76,6 +81,10 @@ const AnimatedWord = ({
 
     const runSequence = async () => {
       isAnimatingRef.current = true;
+      
+      // Delay start by 350ms
+      await new Promise((r) => setTimeout(r, 350));
+      if (isCancelled) return;
 
       // 1. Slow TTS + Animation
       const animPromise1 = animateLetters();
@@ -96,7 +105,7 @@ const AnimatedWord = ({
 
       if (!isCancelled) {
         isAnimatingRef.current = false;
-        onComplete();
+        onCompleteRef.current();
       }
     };
 
@@ -108,7 +117,7 @@ const AnimatedWord = ({
       clearInterval(animationInterval);
       isAnimatingRef.current = false;
     };
-  }, [text, ttsText, voice, speak, stop, isAnimatingRef, onComplete]);
+  }, [text, ttsText, voice, speak, stop, isAnimatingRef]);
 
   useLayoutEffect(() => {
     if (wordRef.current) {
@@ -119,7 +128,7 @@ const AnimatedWord = ({
         const wordWidth = wordRef.current.scrollWidth;
         const targetWidth = containerWidth * 0.9;
         let newFontSize = (targetWidth / wordWidth) * 100;
-        const maxFontSize = 12 * 16;
+        const maxFontSize = 10 * 16;
         const minFontSize = 3 * 16;
         newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
         wordRef.current.style.fontSize = `${newFontSize}px`;
@@ -168,6 +177,7 @@ const VocabApp = () => {
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasListened, setHasListened] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice =
@@ -211,6 +221,25 @@ const VocabApp = () => {
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
+  const handleInteraction = useCallback(async () => {
+    if (navigator.vibrate) navigator.vibrate(5);
+
+    if (isFlipped) {
+      setIsFlipped(false);
+      stop();
+    } else {
+      stop();
+      setIsFlipped(true);
+
+      // Wait for image to load (with timeout)
+      let retries = 0;
+      while (!imageLoadedRef.current && retries < 20) {
+        await new Promise((r) => setTimeout(r, 100));
+        retries++;
+      }
+    }
+  }, [isFlipped, stop]);
+
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
     // Auto confetti at the end of the sequence
@@ -219,7 +248,9 @@ const VocabApp = () => {
       spread: 50,
       origin: { y: 0.6 },
     });
-  }, []);
+    // Auto flip to image
+    handleInteraction();
+  }, [handleInteraction]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -240,47 +271,22 @@ const VocabApp = () => {
     }, 150);
   }, [filteredVocab.length]);
 
-  const handleShuffle = () => {
-    if (navigator.vibrate) navigator.vibrate(10);
-
-    setIsFlipped(false);
-    setTimeout(() => {
-      if (shuffledIndex >= shuffledIndices.length) {
-        shuffleItems();
-        setCurrentIndex(shuffledIndices[0]);
-        setShuffledIndex(1);
-      } else {
-        setCurrentIndex(shuffledIndices[shuffledIndex]);
-        setShuffledIndex(shuffledIndex + 1);
-      }
-    }, 150);
-  };
-
-  const handleInteraction = async () => {
+  const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    setIsFlipped(false);
+    setIsShuffling(true);
 
-    if (isFlipped) {
-      setIsFlipped(false);
-      stop();
-    } else {
-      stop();
-      setIsFlipped(true);
-
-      // Wait for image to load (with timeout)
-      let retries = 0;
-      while (!imageLoadedRef.current && retries < 20) {
-        await new Promise((r) => setTimeout(r, 100));
-        retries++;
+    setTimeout(() => {
+      let nextIndex = shuffledIndex;
+      if (nextIndex >= shuffledIndices.length) {
+        shuffleItems(true);
+      } else {
+        setCurrentIndex(shuffledIndices[nextIndex]);
+        setShuffledIndex((prev) => prev + 1);
       }
-
-      // 1. Fast TTS (with Image)
-      await speak(currentItem.name, { voice: femaleVoice ?? null, rate: 1.0 });
-      await new Promise((r) => setTimeout(r, 500));
-      
-      // Flip back to trigger AnimatedWord for the rest of the sequence
-      // setIsFlipped(false);
-    }
-  };
+      setIsShuffling(false);
+    }, 150);
+  }, [shuffledIndex, shuffledIndices, shuffleItems]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -319,10 +325,11 @@ const VocabApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-40 md:pb-24 touchable-area"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+      onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link
@@ -347,10 +354,11 @@ const VocabApp = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center">
+      <div 
+        className="flex-1 flex flex-col justify-center w-full"
+      >
         <main
           className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden md:-mt-44"
-          onClick={handleInteraction}
         >
           <div
             className="w-full flex justify-center items-center"
@@ -362,7 +370,7 @@ const VocabApp = () => {
             >
               <div className="card-face card-face-front">
                 {/* Use key to force remount on index change -> Fixes FOUC and resets animation */}
-                {!isFlipped && (
+                {!isShuffling && (
                   <AnimatedWord
                     key={currentIndex}
                     text={currentItem.name}
@@ -388,15 +396,15 @@ const VocabApp = () => {
         </main>
       </div>
 
-      <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
+      <div className="fixed bottom-6 left-0 right-0 h-32 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => {
             e.stopPropagation();
             handleShuffle();
             e.currentTarget.blur();
           }}
-          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground opacity-30 hover:opacity-30"
         >
           <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>

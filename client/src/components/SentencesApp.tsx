@@ -79,7 +79,7 @@ import nestTreeImage from "../assets/animals/nest_tree.png";
 import iSitOnRockImage from "../assets/animals/i_sit_on_rock.png";
 import logBigImage from "../assets/animals/log_big.png";
 import bigBusImage from "../assets/animals/big_bus.png";
-import jetGoImage from "../assets/animals/jet_go.png";
+import jetGoImage from "../assets/animals/the jet can go.png";
 import kidBikeImage from "../assets/animals/kid_bike.png";
 import eatAppleImage from "../assets/animals/eat_apple.png";
 import seeCarImage from "../assets/animals/see_car.png";
@@ -94,6 +94,12 @@ import weGoOnBoatImage from "../assets/animals/we_go_on_boat.png";
 import weGoTreeImage from "../assets/animals/we_go_tree.png";
 import weSeeSunImage from "../assets/animals/we_see_sun.png";
 import weSitLogImage from "../assets/animals/we_sit_log.png";
+import kidEatImage from "../assets/animals/the kid can eat.png";
+import kidRunImage from "../assets/animals/the kid can run.png";
+import kidSitImage from "../assets/animals/the kid can sit.png";
+import kidBinImage from "../assets/animals/this kid is in the bin.png";
+import kidSeeImage from "../assets/animals/see - The kid can see.png";
+import shipImage from "../assets/animals/ship.png";
 
 const wordImageMap: { [key: string]: string } = {
   apple: appleImage,
@@ -124,6 +130,7 @@ const wordImageMap: { [key: string]: string } = {
   boat: boatImage,
   bike: bikeImage,
   train: trainImage,
+  ship: shipImage,
 
   mom: momImage,
   dad: dadImage,
@@ -179,6 +186,11 @@ const combinedImageMap: { [key: string]: string } = {
   "We go to a tree.": weGoTreeImage,
   "We see the sun.": weSeeSunImage,
   "We sit on a log.": weSitLogImage,
+  "The kid can eat.": kidEatImage,
+  "The kid can run.": kidRunImage,
+  "The kid can sit.": kidSitImage,
+  "The kid is in a bin.": kidBinImage,
+  "The kid can see.": kidSeeImage,
 };
 
 interface Sentence {
@@ -215,16 +227,22 @@ export const sentences: Sentence[] = [
   { text: "The bus is big.", category: "Vehicles" },
   { text: "A van is in the sun.", category: "Vehicles" },
   { text: "I see a jet.", category: "Vehicles" },
+  { text: "I see a ship.", category: "Vehicles" },
   { text: "We go on a boat.", category: "Vehicles" },
   { text: "The kid is on a bike.", category: "Vehicles" },
   { text: "The train can go.", category: "Vehicles" },
   { text: "Mom and Dad hug.", category: "People" },
   { text: "I see a man.", category: "People" },
   { text: "The kid can hop.", category: "People" },
+  { text: "The kid is in a bin.", category: "People" },
   { text: "I run to a box.", category: "Actions" },
   { text: "We sit on a log.", category: "Actions" },
   { text: "The cat can hop.", category: "Actions" },
   { text: "The kid can nap.", category: "Actions" },
+  { text: "The kid can eat.", category: "Actions" },
+  { text: "The kid can run.", category: "Actions" },
+  { text: "The kid can sit.", category: "Actions" },
+  { text: "The kid can see.", category: "Actions" },
   { text: "We go to a tree.", category: "Actions" },
   { text: "I see the dog run.", category: "Actions" },
 ];
@@ -265,6 +283,11 @@ const AnimatedSentence = ({
   const { speak, stop } = useSpeechSynthesis();
   const sentenceRef = useRef<HTMLHeadingElement>(null);
   const words = text.split(" ");
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -293,6 +316,10 @@ const AnimatedSentence = ({
     };
 
     const runSequence = async () => {
+      // Delay start by 350ms
+      await new Promise((r) => setTimeout(r, 350));
+      if (isCancelled) return;
+
       // 1. Slow TTS + Animation
       const animPromise1 = animateWords();
       const speechPromise1 = speak(text, { voice: voice, rate: SLOW_RATE });
@@ -310,7 +337,7 @@ const AnimatedSentence = ({
       await speak(text, { voice: voice, rate: 1.0 });
 
       if (!isCancelled) {
-        onComplete();
+        onCompleteRef.current();
       }
     };
 
@@ -321,7 +348,7 @@ const AnimatedSentence = ({
       stop();
       clearInterval(animationInterval);
     };
-  }, [text, voice, speak, stop, onComplete, words.length]);
+  }, [text, voice, speak, stop, words.length]);
 
   useLayoutEffect(() => {
     if (sentenceRef.current) {
@@ -332,7 +359,7 @@ const AnimatedSentence = ({
         const textWidth = sentenceRef.current.scrollWidth;
         const targetWidth = containerWidth * 0.9;
         let newFontSize = (targetWidth / textWidth) * 100;
-        const maxFontSize = 8 * 16;
+        const maxFontSize = 6 * 16;
         const minFontSize = 2 * 16;
         newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
         sentenceRef.current.style.fontSize = `${newFontSize}px`;
@@ -386,6 +413,7 @@ const SentencesApp = () => {
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasListened, setHasListened] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice =
@@ -436,6 +464,24 @@ const SentencesApp = () => {
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
+  const handleInteraction = useCallback(async () => {
+    if (navigator.vibrate) navigator.vibrate(5);
+    if (isFlipped) {
+      setIsFlipped(false);
+      stop();
+    } else {
+      stop();
+      setIsFlipped(true);
+
+      // Wait for image to load (with timeout)
+      let retries = 0;
+      while (!imageLoadedRef.current && retries < 20) {
+        await new Promise((r) => setTimeout(r, 100));
+        retries++;
+      }
+    }
+  }, [isFlipped, stop]);
+
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
     confetti({
@@ -443,7 +489,9 @@ const SentencesApp = () => {
       spread: 50,
       origin: { y: 0.6 },
     });
-  }, []);
+    // Auto flip to image
+    handleInteraction();
+  }, [handleInteraction]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -472,6 +520,7 @@ const SentencesApp = () => {
     if (navigator.vibrate) navigator.vibrate(10);
 
     stop();
+    setIsShuffling(true);
     setIsFlipped(false);
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length) {
@@ -482,33 +531,11 @@ const SentencesApp = () => {
         setCurrentIndex(shuffledIndices[shuffledIndex]);
         setShuffledIndex(shuffledIndex + 1);
       }
-    }, 150);
+      setIsShuffling(false);
+    }, 600);
   };
 
-  const handleInteraction = async () => {
-    if (navigator.vibrate) navigator.vibrate(5);
-    if (isFlipped) {
-      setIsFlipped(false);
-      stop();
-    } else {
-      stop();
-      setIsFlipped(true);
 
-      // Wait for image to load (with timeout)
-      let retries = 0;
-      while (!imageLoadedRef.current && retries < 20) {
-        await new Promise((r) => setTimeout(r, 100));
-        retries++;
-      }
-
-      // 1. Fast TTS (with Image)
-      await speak(currentItem.text, { voice: femaleVoice ?? null, rate: 1.0 });
-      await new Promise((r) => setTimeout(r, 500));
-
-      // Flip back to trigger AnimatedSentence for the rest of the sequence
-      // setIsFlipped(false);
-    }
-  };
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -551,10 +578,11 @@ const SentencesApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-56 md:pb-24 touchable-area"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+      onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link
@@ -579,10 +607,11 @@ const SentencesApp = () => {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center overflow-hidden w-full">
+      <div 
+        className="flex-1 flex flex-col justify-center overflow-hidden w-full"
+      >
         <main
           className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
-          onClick={handleInteraction}
         >
           <div
             className="w-full flex justify-center items-center"
@@ -597,7 +626,7 @@ const SentencesApp = () => {
               }}
             >
               <div className="card-face card-face-front px-8">
-                {!isFlipped && (
+                {!isShuffling && (
                   <AnimatedSentence
                     key={currentIndex}
                     text={currentItem.text}
@@ -623,14 +652,15 @@ const SentencesApp = () => {
         </main>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
+      <div className="fixed bottom-6 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => {
             e.stopPropagation();
             handleShuffle();
             e.currentTarget.blur();
           }}
-          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground opacity-30 hover:opacity-30"
         >
           <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>

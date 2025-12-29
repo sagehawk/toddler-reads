@@ -179,14 +179,19 @@ export default function PhonicsApp() {
     // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(10);
     
-    if (shuffledIndex >= shuffledIndices.length - 1) {
-      shuffleLetters();
-    } else {
-      const nextShuffledIndex = shuffledIndex + 1;
-      setShuffledIndex(nextShuffledIndex);
-      handleLetterClick(shuffledIndices[nextShuffledIndex]);
-    }
-  }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick]);
+    stopAllSounds();
+    setIsFlipped(false);
+
+    setTimeout(() => {
+      if (shuffledIndex >= shuffledIndices.length - 1) {
+        shuffleLetters();
+      } else {
+        const nextShuffledIndex = shuffledIndex + 1;
+        setShuffledIndex(nextShuffledIndex);
+        handleLetterClick(shuffledIndices[nextShuffledIndex]);
+      }
+    }, 600);
+  }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick, stopAllSounds]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -290,14 +295,11 @@ export default function PhonicsApp() {
 
   return (
     <div 
-        className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area" 
+        className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-        // We use onClick for the tap-to-flip, relying on the fact that a swipe usually drags the pointer enough to void a clean "click" on many devices, 
-        // or we can implement a cleaner tap detector. For now, let's keep the click zones or just full screen click = flip?
-        // The user complained about click zones.
-        // Let's make the center area flip, and swipes nav.
+        onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
@@ -307,26 +309,27 @@ export default function PhonicsApp() {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
+      <div 
+        className="flex-1 flex flex-col justify-center relative overflow-hidden"
+      >
         {/* Swipe Indicators (Visual Only) */}
         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/6 flex items-center justify-center opacity-0 pointer-events-none">
              {/* Removed click handlers, just visual now if we wanted, or kept hidden */}
         </div>
         
         <main 
-            className="flex flex-col items-center justify-center mt-[-5vh] md:-mt-24 w-full h-full"
-            onClick={handleInteraction} // Simple tap to flip
+            className="flex flex-col items-center justify-center mt-[2vh] md:-mt-24 w-full h-full"
         >
           {currentIndex !== null && currentDisplayData && (
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
               <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
                 <div className="card-face card-face-front">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 35rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 30rem)' }}>
                     {currentDisplayData.letter}
                   </h2>
                 </div>
                 <div className="card-face card-face-back">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 70vmin, 30rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 70vmin, 25rem)' }}>
                     {currentDisplayData.letter.toLowerCase()}
                   </h2>
                 </div>
@@ -336,11 +339,12 @@ export default function PhonicsApp() {
         </main>
       </div>
       <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
+      <div className="fixed bottom-6 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
+          onClick={(e) => e.stopPropagation()}
           disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
+          className={`w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground opacity-30 hover:opacity-30 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
         >
           <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
         </button>

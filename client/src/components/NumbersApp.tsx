@@ -186,8 +186,7 @@ const NumbersApp = () => {
       
       if (isFlipped) {
           setIsFlipped(false); // Flip back to number
-          // Maybe replay number sound?
-          replaySound();
+          // replaySound(); // Removed to fix double audio
       } else {
           stop(); // Stop number sound
           setIsFlipped(true); // Flip to dots -> AnimatedDots triggers
@@ -237,6 +236,7 @@ const NumbersApp = () => {
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+        onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link href="/" onClick={(e) => e.stopPropagation()} className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50">
@@ -248,7 +248,6 @@ const NumbersApp = () => {
 
       <main 
           className="relative flex flex-1 flex-col items-center justify-center text-center px-4 overflow-hidden pb-48 md:pb-24"
-          onClick={handleInteraction}
       >
         <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
              {/* Removed click handlers */}
@@ -260,7 +259,7 @@ const NumbersApp = () => {
         <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
             <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 className={`font-bold tracking-widest cursor-pointer ${numberColor.text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 35rem)' }}>
+                <h2 className={`font-bold tracking-widest cursor-pointer ${numberColor.text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 30rem)' }}>
                   {currentNumber}
                 </h2>
               </div>
@@ -288,6 +287,7 @@ const NumbersApp = () => {
       <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
           onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
+          onClick={(e) => e.stopPropagation()}
           className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
         >
           <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
