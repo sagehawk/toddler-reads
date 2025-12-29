@@ -29,6 +29,17 @@ const DigitalPlayshelf = () => {
           <Link 
             key={item.title} 
             href={item.href} 
+            onClick={() => {
+                try {
+                    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch((e) => {
+                            console.log("Fullscreen request failed", e);
+                        });
+                    }
+                } catch (e) {
+                    console.log("Fullscreen not supported", e);
+                }
+            }}
             className={`w-full p-8 sm:p-4 md:p-6 rounded-3xl text-white text-5xl sm:text-4xl md:text-5xl font-bold text-center shadow-xl transition-transform transform hover:-translate-y-1 active:scale-95 border-b-8 border-black/20 ${item.color}`}
           >
               {item.title}

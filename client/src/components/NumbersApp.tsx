@@ -13,7 +13,7 @@ const isAndroid = /Android/i.test(navigator.userAgent);
 const COUNT_RATE = isAndroid ? 0.8 : 1.0;
 
 const Dot = ({ color, visible }: { color: string, visible: boolean }) => (
-  <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 ${color} rounded-full transition-opacity duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+  <div className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 ${color} rounded-full transition-opacity duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
 );
 
 const DieFace = ({ count, color, visibleCount }: { count: number, color: string, visibleCount: number }) => {
@@ -32,17 +32,17 @@ const DieFace = ({ count, color, visibleCount }: { count: number, color: string,
 
   const patterns: { [key: number]: React.ReactNode } = {
       1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
-      2: <div className="grid grid-cols-2 gap-4 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div className="self-end justify-self-end">{renderDot(2)}</div></div>,
-      3: <div className="grid grid-cols-3 grid-rows-3 gap-6 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div>{renderDot(2)}</div><div className="self-end justify-self-end">{renderDot(3)}</div></div>,
-      4: <div className="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
-      5: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
-      6: <div className="grid grid-cols-2 grid-rows-3 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
-      7: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
-      8: <div className="grid grid-cols-2 grid-rows-4 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
-      9: <div className="grid grid-cols-3 grid-rows-3 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
-      10: <div className="grid grid-cols-2 grid-rows-5 gap-4 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
+      2: <div className="grid grid-cols-2 gap-8 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div className="self-end justify-self-end">{renderDot(2)}</div></div>,
+      3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div>{renderDot(2)}</div><div className="self-end justify-self-end">{renderDot(3)}</div></div>,
+      4: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
+      5: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
+      6: <div className="grid grid-cols-2 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
+      7: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
+      8: <div className="grid grid-cols-2 grid-rows-4 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
+      9: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
+      10: <div className="grid grid-cols-2 grid-rows-5 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
   };
-  return <div className="w-64 h-64 flex justify-center items-center">{patterns[count]}</div>;
+  return <div className="w-full h-full p-8 flex justify-center items-center">{patterns[count]}</div>;
 };
 
 // Component to handle counting animation
@@ -247,7 +247,7 @@ const NumbersApp = () => {
       </header>
 
       <main 
-          className="relative flex flex-1 flex-col items-center justify-start text-center px-4 overflow-hidden pb-48 md:pb-24 mt-[10vh] md:-mt-[25vh]"
+          className="relative flex flex-1 flex-col items-center justify-center text-center px-4 overflow-hidden pb-48 md:pb-24"
           onClick={handleInteraction}
       >
         <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
@@ -258,9 +258,9 @@ const NumbersApp = () => {
         </div>
 
         <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 800px)', height: 'clamp(300px, 80vw, 600px)' }}>
+            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
               <div className="card-face card-face-front">
-                <h2 className={`text-[15rem] lg:text-[20rem] xl:text-[25rem] font-bold tracking-widest cursor-pointer ${numberColor.text}`}>
+                <h2 className={`font-bold tracking-widest cursor-pointer ${numberColor.text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 35rem)' }}>
                   {currentNumber}
                 </h2>
               </div>

@@ -307,26 +307,26 @@ export default function PhonicsApp() {
         </Link>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center relative overflow-hidden pb-48 md:pb-24">
+      <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
         {/* Swipe Indicators (Visual Only) */}
         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/6 flex items-center justify-center opacity-0 pointer-events-none">
              {/* Removed click handlers, just visual now if we wanted, or kept hidden */}
         </div>
         
         <main 
-            className="flex flex-col items-center justify-center mt-[20vh] md:mt-0 w-full h-full"
+            className="flex flex-col items-center justify-center mt-[-5vh] md:-mt-24 w-full h-full"
             onClick={handleInteraction} // Simple tap to flip
         >
           {currentIndex !== null && currentDisplayData && (
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-              <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 80vw, 600px)', height: 'clamp(300px, 80vw, 600px)' }}>
+              <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
                 <div className="card-face card-face-front">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(9.2rem, 57.5vw, 23rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 35rem)' }}>
                     {currentDisplayData.letter}
                   </h2>
                 </div>
                 <div className="card-face card-face-back">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(8rem, 50vw, 20rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 70vmin, 30rem)' }}>
                     {currentDisplayData.letter.toLowerCase()}
                   </h2>
                 </div>

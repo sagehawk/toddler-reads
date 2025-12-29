@@ -249,7 +249,7 @@ const sortedSentences = [...sentences].sort((a, b) => {
 
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
-const SLOW_RATE = isAndroid ? 0.2 : 0.5;
+const SLOW_RATE = isAndroid ? 0.2 : 0.35;
 
 // Extracted Component
 const AnimatedSentence = ({
@@ -271,29 +271,28 @@ const AnimatedSentence = ({
     let animationInterval: NodeJS.Timeout;
 
     const animateWords = async () => {
-        setVisibleCount(0);
-        const totalWords = words.length;
-        let current = 0;
-        const wordDelay = 500; 
+      setVisibleCount(0);
+      const totalWords = words.length;
+      let current = 0;
+      const wordDelay = 400;
 
-        return new Promise<void>((resolve) => {
-            animationInterval = setInterval(() => {
-                if (isCancelled) {
-                    resolve();
-                    return;
-                }
-                current++;
-                setVisibleCount(current);
-                if (current >= totalWords) {
-                    clearInterval(animationInterval);
-                    resolve();
-                }
-            }, wordDelay);
-        });
+      return new Promise<void>((resolve) => {
+        animationInterval = setInterval(() => {
+          if (isCancelled) {
+            resolve();
+            return;
+          }
+          current++;
+          setVisibleCount(current);
+          if (current >= totalWords) {
+            clearInterval(animationInterval);
+            resolve();
+          }
+        }, wordDelay);
+      });
     };
 
     const runSequence = async () => {
-      // --- ROUND 1 ---
       // 1. Slow TTS + Animation
       const animPromise1 = animateWords();
       const speechPromise1 = speak(text, { voice: voice, rate: SLOW_RATE });
@@ -307,28 +306,7 @@ const AnimatedSentence = ({
       await new Promise((r) => setTimeout(r, 200));
       if (isCancelled) return;
 
-      // 2. Normal TTS
-      await speak(text, { voice: voice, rate: 1.0 });
-      if (isCancelled) return;
-
-      await new Promise((r) => setTimeout(r, 500));
-      if (isCancelled) return;
-
-      // --- ROUND 2 ---
-      // 3. Slow TTS + Animation (Start Over)
-      const animPromise2 = animateWords();
-      const speechPromise2 = speak(text, { voice: voice, rate: SLOW_RATE });
-
-      await Promise.all([animPromise2, speechPromise2]);
-      if (isCancelled) return;
-
-      clearInterval(animationInterval);
-      setVisibleCount(words.length);
-
-      await new Promise((r) => setTimeout(r, 200));
-      if (isCancelled) return;
-
-      // 4. Normal TTS
+      // 2. Fast TTS
       await speak(text, { voice: voice, rate: 1.0 });
 
       if (!isCancelled) {
@@ -413,6 +391,9 @@ const SentencesApp = () => {
   const femaleVoice =
     voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
     voices?.find((v) => v.lang.startsWith("en"));
+  
+  // Ref to track image loading
+  const imageLoadedRef = useRef(false);
 
   const currentItem = filteredSentences[currentIndex];
   let imageToDisplay = combinedImageMap[currentItem?.text];
@@ -449,18 +430,19 @@ const SentencesApp = () => {
     shuffleItems(true);
   }, [category]);
 
-  // Reset listened state
+  // Reset listened state and image loaded ref
   useEffect(() => {
-      setHasListened(false);
+    setHasListened(false);
+    imageLoadedRef.current = false;
   }, [currentIndex]);
 
   const handleSequenceComplete = useCallback(() => {
-      setHasListened(true);
-      confetti({
-        particleCount: 30,
-        spread: 50,
-        origin: { y: 0.6 },
-      });
+    setHasListened(true);
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { y: 0.6 },
+    });
   }, []);
 
   const handleNext = useCallback(() => {
@@ -488,7 +470,7 @@ const SentencesApp = () => {
 
   const handleShuffle = () => {
     if (navigator.vibrate) navigator.vibrate(10);
-    
+
     stop();
     setIsFlipped(false);
     setTimeout(() => {
@@ -503,13 +485,28 @@ const SentencesApp = () => {
     }, 150);
   };
 
-  const handleInteraction = () => {
+  const handleInteraction = async () => {
     if (navigator.vibrate) navigator.vibrate(5);
     if (isFlipped) {
       setIsFlipped(false);
+      stop();
     } else {
       stop();
       setIsFlipped(true);
+
+      // Wait for image to load (with timeout)
+      let retries = 0;
+      while (!imageLoadedRef.current && retries < 20) {
+        await new Promise((r) => setTimeout(r, 100));
+        retries++;
+      }
+
+      // 1. Fast TTS (with Image)
+      await speak(currentItem.text, { voice: femaleVoice ?? null, rate: 1.0 });
+      await new Promise((r) => setTimeout(r, 500));
+
+      // Flip back to trigger AnimatedSentence for the rest of the sequence
+      setIsFlipped(false);
     }
   };
 
@@ -552,10 +549,11 @@ const SentencesApp = () => {
     return <div>Loading...</div>;
   }
 
-    return (
-      <div 
-          className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
-          onTouchStart={(e) => swipeHandlers.onTouchStart(e)}      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+  return (
+    <div
+      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area"
+      onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
@@ -582,20 +580,30 @@ const SentencesApp = () => {
       </header>
 
       <div className="flex-1 flex flex-col justify-center overflow-y-auto w-full">
-        <main 
-            className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
-            onClick={handleInteraction}
+        <main
+          className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
+          onClick={handleInteraction}
         >
-          <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: '100%', maxWidth: '800px', height: 'clamp(200px, 55vh, 500px)' }}>
+          <div
+            className="w-full flex justify-center items-center"
+            style={{ perspective: "1000px" }}
+          >
+            <div
+              className={`card ${isFlipped ? "is-flipped" : ""}`}
+              style={{
+                width: "100%",
+                maxWidth: "800px",
+                height: "clamp(200px, 55vh, 500px)",
+              }}
+            >
               <div className="card-face card-face-front px-8">
                 {!isFlipped && (
-                    <AnimatedSentence 
-                        key={currentIndex}
-                        text={currentItem.text}
-                        voice={femaleVoice ?? null}
-                        onComplete={handleSequenceComplete}
-                    />
+                  <AnimatedSentence
+                    key={currentIndex}
+                    text={currentItem.text}
+                    voice={femaleVoice ?? null}
+                    onComplete={handleSequenceComplete}
+                  />
                 )}
               </div>
               <div className="card-face card-face-back flex items-center justify-center">
@@ -605,7 +613,8 @@ const SentencesApp = () => {
                     alt={currentItem.text}
                     className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
                     draggable="false"
-                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                    onLoad={() => { imageLoadedRef.current = true; }}
+                    onError={(e) => (e.currentTarget.style.display = "none")}
                   />
                 )}
               </div>
@@ -616,7 +625,11 @@ const SentencesApp = () => {
 
       <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
         <button
-          onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            handleShuffle();
+            e.currentTarget.blur();
+          }}
           className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
         >
           <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
