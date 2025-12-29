@@ -32,7 +32,7 @@ export const useSpeechSynthesis = () => {
       window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = options?.rate ?? 0.8;
+      utterance.rate = options?.rate ?? 1.0;
       utterance.pitch = 1.2;
       utterance.volume = 1;
 

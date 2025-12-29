@@ -28,7 +28,6 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
 
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
-const SLOW_RATE = isAndroid ? 0.2 : 0.5;
 
 // Extracted component to handle animation isolation
 const AnimatedWord = ({
@@ -86,11 +85,9 @@ const AnimatedWord = ({
       await new Promise((r) => setTimeout(r, 350));
       if (isCancelled) return;
 
-      // 1. Slow TTS + Animation
-      const animPromise1 = animateLetters();
-      const speechPromise1 = speak(ttsText, { voice: voice, rate: SLOW_RATE });
-
-      await Promise.all([animPromise1, speechPromise1]);
+      // 1. Animation only
+      await animateLetters();
+      
       if (isCancelled) return;
 
       // Ensure full word visible
@@ -100,7 +97,7 @@ const AnimatedWord = ({
       await new Promise((r) => setTimeout(r, 200));
       if (isCancelled) return;
 
-      // 2. Fast TTS
+      // 2. Regular TTS
       await speak(ttsText, { voice: voice, rate: 1.0 });
 
       if (!isCancelled) {

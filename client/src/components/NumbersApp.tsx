@@ -10,7 +10,6 @@ import { useSwipe } from '@/hooks/useSwipe';
 
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
-const COUNT_RATE = isAndroid ? 0.8 : 1.0;
 
 const Dot = ({ color, visible }: { color: string, visible: boolean }) => (
   <div className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 ${color} rounded-full transition-opacity duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
@@ -58,17 +57,21 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
             await new Promise(r => setTimeout(r, 500)); // Small initial pause
             if (isCancelled) return;
 
+            // The higher the total count, the shorter the delay between dots
+            // This ensures counting to 10 doesn't take too long.
+            const baseDelay = Math.max(30, 250 - (count * 20));
+
             for (let i = 1; i <= count; i++) {
                 if (isCancelled) return;
                 
                 // Show dot
                 setVisibleCount(i);
                 
-                // Speak number
-                await speak(i.toString(), { voice, rate: COUNT_RATE });
+                // Speak number as it appears at normal rate
+                await speak(i.toString(), { voice, rate: 1.0 });
                 
-                // Small pause between numbers
-                await new Promise(r => setTimeout(r, 300));
+                // Pause between numbers
+                await new Promise(r => setTimeout(r, baseDelay));
             }
 
             if (!isCancelled) {

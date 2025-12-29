@@ -267,7 +267,6 @@ const sortedSentences = [...sentences].sort((a, b) => {
 
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
-const SLOW_RATE = isAndroid ? 0.2 : 0.35;
 
 // Extracted Component
 const AnimatedSentence = ({
@@ -320,11 +319,9 @@ const AnimatedSentence = ({
       await new Promise((r) => setTimeout(r, 350));
       if (isCancelled) return;
 
-      // 1. Slow TTS + Animation
-      const animPromise1 = animateWords();
-      const speechPromise1 = speak(text, { voice: voice, rate: SLOW_RATE });
-
-      await Promise.all([animPromise1, speechPromise1]);
+      // 1. Animation only
+      await animateWords();
+      
       if (isCancelled) return;
 
       clearInterval(animationInterval);
@@ -333,7 +330,7 @@ const AnimatedSentence = ({
       await new Promise((r) => setTimeout(r, 200));
       if (isCancelled) return;
 
-      // 2. Fast TTS
+      // 2. Regular TTS
       await speak(text, { voice: voice, rate: 1.0 });
 
       if (!isCancelled) {
@@ -419,7 +416,7 @@ const SentencesApp = () => {
   const femaleVoice =
     voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
     voices?.find((v) => v.lang.startsWith("en"));
-  
+
   // Ref to track image loading
   const imageLoadedRef = useRef(false);
 
@@ -535,8 +532,6 @@ const SentencesApp = () => {
     }, 600);
   };
 
-
-
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
@@ -607,12 +602,8 @@ const SentencesApp = () => {
         </Link>
       </header>
 
-      <div 
-        className="flex-1 flex flex-col justify-center overflow-hidden w-full"
-      >
-        <main
-          className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8"
-        >
+      <div className="flex-1 flex flex-col justify-center overflow-hidden w-full">
+        <main className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8">
           <div
             className="w-full flex justify-center items-center"
             style={{ perspective: "1000px" }}
@@ -642,7 +633,9 @@ const SentencesApp = () => {
                     alt={currentItem.text}
                     className="w-full h-full object-contain noselect p-4"
                     draggable="false"
-                    onLoad={() => { imageLoadedRef.current = true; }}
+                    onLoad={() => {
+                      imageLoadedRef.current = true;
+                    }}
                     onError={(e) => (e.currentTarget.style.display = "none")}
                   />
                 )}
