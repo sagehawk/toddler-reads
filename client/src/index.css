@@ -61,13 +61,8 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground select-none;
-    background-color: hsl(var(--background));
-    background-image: 
-      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, hsl(var(--accent) / 0.15) 0%, transparent 50%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-    background-attachment: fixed;
+    @apply font-sans antialiased text-foreground select-none;
+    /* Background handled by BackgroundAnimator.tsx */
   }
 }
 
@@ -123,6 +118,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: 220 10% 20%; /* dark blue */
   --foreground: 220 10% 85%; /* light gray */
 
