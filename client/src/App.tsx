@@ -1,4 +1,4 @@
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import PhonicsApp from "./components/PhonicsApp";
@@ -8,8 +8,27 @@ import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
 import StoryPage from "./pages/StoryPage";
+import { useEffect } from "react";
 
 function App() {
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        const gameRoutes = ['/phonics', '/vocab', '/sentences', '/numbers', '/story'];
+        const isGameRoute = gameRoutes.some(route => location.startsWith(route));
+        
+        if (isGameRoute) {
+          setLocation('/app');
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [location, setLocation]);
+
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
