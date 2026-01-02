@@ -5,7 +5,7 @@ import {
   useRef,
   useLayoutEffect,
 } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { Shuffle, Volume2, VolumeX } from "lucide-react";
 import { getLetterColors } from "../lib/colorUtils";
@@ -149,6 +149,7 @@ const AnimatedWord = ({
 
 const VocabApp = () => {
   const [match, params] = useRoute("/vocab/:category?");
+  const [, setLocation] = useLocation();
   const category = params?.category;
 
   const filteredVocab =
@@ -164,7 +165,12 @@ const VocabApp = () => {
     return (
       <AnimalsVocab
         items={filteredVocab}
-        onExit={() => (window.location.href = "/app")}
+        onExit={() => {
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            setLocation("/app");
+        }}
       />
     );
   }
@@ -330,8 +336,14 @@ const VocabApp = () => {
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <Link
-          href="/"
-          onClick={(e) => e.stopPropagation()}
+          href="/app"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+          }}
           className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
         >
           <svg

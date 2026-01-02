@@ -14,19 +14,7 @@ function App() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        const gameRoutes = ['/phonics', '/vocab', '/sentences', '/numbers', '/story'];
-        const isGameRoute = gameRoutes.some(route => location.startsWith(route));
-        
-        if (isGameRoute) {
-          setLocation('/app');
-        }
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    // Optional: Add global listeners if needed, but removing the auto-redirect on fullscreen exit.
   }, [location, setLocation]);
 
   return (

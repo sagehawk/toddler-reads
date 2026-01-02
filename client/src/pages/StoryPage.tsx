@@ -106,9 +106,17 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
       className="fixed inset-0 bg-black w-full h-full flex items-center justify-center"
       onClick={handleInteraction}
     >
-      <Link href="/">
-        <a className={`absolute text-white bg-black bg-opacity-50 p-2 rounded-full z-10 ${isPortrait ? 'top-4 right-4 rotate-90' : 'top-4 left-4'}`}>
-          <svg
+      <Link 
+        href="/app"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+             document.documentElement.requestFullscreen().catch(() => {});
+          }
+        }}
+        className={`absolute text-white bg-black bg-opacity-50 p-2 rounded-full z-10 ${isPortrait ? 'top-4 right-4 rotate-90' : 'top-4 left-4'}`}
+      >
+        <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6"
             fill="none"
@@ -122,7 +130,6 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-        </a>
       </Link>
       <img
         src={imageUrl}
