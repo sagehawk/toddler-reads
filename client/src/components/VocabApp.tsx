@@ -147,7 +147,10 @@ const AnimatedWord = ({
   );
 };
 
+import { usePreventBackExit } from "@/hooks/usePreventBackExit";
+
 const VocabApp = () => {
+  usePreventBackExit();
   const [match, params] = useRoute("/vocab/:category?");
   const [, setLocation] = useLocation();
   const category = params?.category;
@@ -169,7 +172,7 @@ const VocabApp = () => {
             if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
-            setLocation("/app");
+            setLocation("/app", { replace: true });
         }}
       />
     );
@@ -335,14 +338,14 @@ const VocabApp = () => {
       onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link
-          href="/app"
+        <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
+            setLocation("/app", { replace: true });
           }}
           className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
         >
@@ -360,7 +363,7 @@ const VocabApp = () => {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-        </Link>
+        </button>
       </header>
 
       <div 

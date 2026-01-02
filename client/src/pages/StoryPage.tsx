@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 
 const STORY_LENGTH = 11; // Both stories have 11 pages
 const TOTAL_STORY_LENGTH = STORY_LENGTH * 2;
 
+import { usePreventBackExit } from '@/hooks/usePreventBackExit';
+
 const StoryPage = ({ params }: { params: { id: string } }) => {
+  usePreventBackExit();
+  const [, setLocation] = useLocation();
   const storyId = params?.id;
   const isCombinedStory = storyId === 'all';
   const storyLength = isCombinedStory ? TOTAL_STORY_LENGTH : STORY_LENGTH;
@@ -106,13 +110,13 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
       className="fixed inset-0 bg-black w-full h-full flex items-center justify-center"
       onClick={handleInteraction}
     >
-      <Link 
-        href="/app"
+      <button 
         onClick={(e) => {
           e.stopPropagation();
           if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
              document.documentElement.requestFullscreen().catch(() => {});
           }
+          setLocation("/app", { replace: true });
         }}
         className={`absolute text-white bg-black bg-opacity-50 p-2 rounded-full z-10 ${isPortrait ? 'top-4 right-4 rotate-90' : 'top-4 left-4'}`}
       >
@@ -130,7 +134,7 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-      </Link>
+      </button>
       <img
         src={imageUrl}
         alt={`Story ${storyId} - Page ${currentPage}`}

@@ -56,7 +56,10 @@ export const learningModules: LearningModule[] = [
   },
 ];
 
+import { usePreventBackExit } from '@/hooks/usePreventBackExit';
+
 export default function PhonicsApp() {
+  usePreventBackExit();
   
   const [, navigate] = useLocation();
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
@@ -302,21 +305,21 @@ export default function PhonicsApp() {
         onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link 
-          href="/app" 
+        <button 
           onPointerDown={(e) => e.stopPropagation()} 
           onClick={(e) => {
             e.stopPropagation();
             if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
+            navigate('/app', { replace: true });
           }} 
           className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
         >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
-        </Link>
+        </button>
       </header>
 
       <div 

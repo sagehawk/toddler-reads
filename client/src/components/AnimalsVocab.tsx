@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { vocabData, VocabItem } from "../data/vocabData";
 import { learningModules } from "../data/phonicsDecks";
-import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import confetti from "canvas-confetti";
 

@@ -5,7 +5,7 @@ import {
   useRef,
   useLayoutEffect,
 } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { Shuffle, Volume2, VolumeX } from "lucide-react";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import useLocalStorage from "@/hooks/useLocalStorage";
@@ -393,8 +393,12 @@ const AnimatedSentence = ({
   );
 };
 
+import { usePreventBackExit } from "@/hooks/usePreventBackExit";
+
 const SentencesApp = () => {
+  usePreventBackExit();
   const [match, params] = useRoute("/sentences/:category?");
+  const [, setLocation] = useLocation();
   const category = params?.category;
 
   const filteredSentences =
@@ -580,14 +584,14 @@ const SentencesApp = () => {
       onClick={handleInteraction}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
-        <Link
-          href="/app"
+        <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
+            setLocation("/app", { replace: true });
           }}
           className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
         >
@@ -605,7 +609,7 @@ const SentencesApp = () => {
               d="M15.75 19.5L8.25 12l7.5-7.5"
             />
           </svg>
-        </Link>
+        </button>
       </header>
 
       <div className="flex-1 flex flex-col justify-center overflow-hidden w-full">
