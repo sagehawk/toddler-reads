@@ -278,7 +278,7 @@ const AnimatedSentence = ({
   voice: SpeechSynthesisVoice | null;
   onComplete: () => void;
 }) => {
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(1);
   const { speak, stop } = useSpeechSynthesis();
   const sentenceRef = useRef<HTMLHeadingElement>(null);
   const words = text.split(" ");
@@ -293,9 +293,8 @@ const AnimatedSentence = ({
     let animationInterval: NodeJS.Timeout;
 
     const animateWords = async () => {
-      setVisibleCount(0);
       const totalWords = words.length;
-      let current = 0;
+      let current = 1;
       const wordDelay = 400;
 
       return new Promise<void>((resolve) => {
@@ -315,8 +314,6 @@ const AnimatedSentence = ({
     };
 
     const runSequence = async () => {
-      // Delay start by 350ms
-      await new Promise((r) => setTimeout(r, 350));
       if (isCancelled) return;
 
       // 1. Animation only
