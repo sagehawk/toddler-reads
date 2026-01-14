@@ -278,7 +278,7 @@ const AnimatedSentence = ({
   voice: SpeechSynthesisVoice | null;
   onComplete: () => void;
 }) => {
-  const [visibleCount, setVisibleCount] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(0);
   const { speak, stop } = useSpeechSynthesis();
   const sentenceRef = useRef<HTMLHeadingElement>(null);
   const words = text.split(" ");
@@ -296,6 +296,8 @@ const AnimatedSentence = ({
       const totalWords = words.length;
       let current = 1;
       const wordDelay = 400;
+
+      if (totalWords <= 1) return;
 
       return new Promise<void>((resolve) => {
         animationInterval = setInterval(() => {
@@ -315,6 +317,9 @@ const AnimatedSentence = ({
 
     const runSequence = async () => {
       if (isCancelled) return;
+
+      // Start first word fade immediately
+      setVisibleCount(1);
 
       // 1. Animation only
       await animateWords();
@@ -530,7 +535,7 @@ const SentencesApp = () => {
         setShuffledIndex(shuffledIndex + 1);
       }
       setIsShuffling(false);
-    }, 600);
+    }, 150);
   };
 
   const swipeHandlers = useSwipe({

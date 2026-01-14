@@ -43,7 +43,7 @@ const AnimatedWord = ({
   voice: SpeechSynthesisVoice | null;
   isAnimatingRef: React.MutableRefObject<boolean>;
 }) => {
-  const [visibleCount, setVisibleCount] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(0);
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
   const onCompleteRef = useRef(onComplete);
@@ -60,6 +60,8 @@ const AnimatedWord = ({
       const totalLetters = text.length;
       let current = 1;
       const letterDelay = 300;
+
+      if (totalLetters <= 1) return;
 
       return new Promise<void>((resolve) => {
         animationInterval = setInterval(() => {
@@ -81,6 +83,9 @@ const AnimatedWord = ({
       isAnimatingRef.current = true;
       
       if (isCancelled) return;
+
+      // Start first letter fade immediately
+      setVisibleCount(1);
 
       // 1. Animation only
       await animateLetters();
