@@ -8,9 +8,20 @@ import { useSwipe } from '@/hooks/useSwipe';
 
 import { Shuffle, Volume2, VolumeX } from 'lucide-react';
 
+// Interfaces are now imported from data file or defined there, but we need to import or redefine if not exported.
+// The file reads imports from data/phonicsDecks.ts, but standard practice in this repo seems to be defining interfaces in the file or importing.
+// checking previous file content, it imported learningModules but defined interfaces inline? No, it exported them.
+// Let's rely on the imports from the data file if possible, or just treat 'selectedModule' as any for the deep property access if types are tricky without import.
+// Actually, I can just import them if I knew the path was clean.
+// The previous file defined interfaces LOCALLY. I should update them to match the data file or just rely on 'any' casting if needed, but better to update the interface definition locally to match the data I just changed.
+
+import { learningModules } from '../data/phonicsDecks';
+
+// We need to update the local interface definition to match the data file we just edited
 export interface PhonicsLetter {
   letter: string;
   sound: string;
+  phoneticText: string;
 }
 
 export interface LearningModule {
@@ -19,42 +30,6 @@ export interface LearningModule {
   type: 'letters' | 'cvc';
   letters?: PhonicsLetter[];
 }
-
-export const learningModules: LearningModule[] = [
-  {
-    id: 'letters-full',
-    name: 'Full Alphabet',
-    type: 'letters',
-    letters: [
-      { letter: 'A', sound: '/sounds/Phonics/Sound 01.mp3' },
-      { letter: 'B', sound: '/sounds/Phonics/Sound 02.mp3' },
-      { letter: 'C', sound: '/sounds/Phonics/Sound 03.mp3' },
-      { letter: 'D', sound: '/sounds/Phonics/Sound 04.mp3' },
-      { letter: 'E', sound: '/sounds/Phonics/Sound 05.mp3' },
-      { letter: 'F', sound: '/sounds/Phonics/Sound 06.mp3' },
-      { letter: 'G', sound: '/sounds/Phonics/Sound 07.mp3' },
-      { letter: 'H', sound: '/sounds/Phonics/Sound 08.mp3' },
-      { letter: 'I', sound: '/sounds/Phonics/Sound 09.mp3' },
-      { letter: 'J', sound: '/sounds/Phonics/Sound 10.mp3' },
-      { letter: 'K', sound: '/sounds/Phonics/Sound 11.mp3' },
-      { letter: 'L', sound: '/sounds/Phonics/Sound 12.mp3' },
-      { letter: 'M', sound: '/sounds/Phonics/Sound 13.mp3' },
-      { letter: 'N', sound: '/sounds/Phonics/Sound 14.mp3' },
-      { letter: 'O', sound: '/sounds/Phonics/Sound 15.mp3' },
-      { letter: 'P', sound: '/sounds/Phonics/Sound 16.mp3' },
-      { letter: 'Q', sound: '/sounds/Phonics/Sound 17.mp3' },
-      { letter: 'R', sound: '/sounds/Phonics/Sound 18.mp3' },
-      { letter: 'S', sound: '/sounds/Phonics/Sound 19.mp3' },
-      { letter: 'T', sound: '/sounds/Phonics/Sound 20.mp3' },
-      { letter: 'U', sound: '/sounds/Phonics/Sound 21.mp3' },
-      { letter: 'V', sound: '/sounds/Phonics/Sound 22.mp3' },
-      { letter: 'W', sound: '/sounds/Phonics/Sound 23.mp3' },
-      { letter: 'X', sound: '/sounds/Phonics/Sound 24.mp3' },
-      { letter: 'Y', sound: '/sounds/Phonics/Sound 25.mp3' },
-      { letter: 'Z', sound: '/sounds/Phonics/Sound 26.mp3' },
-    ]
-  },
-];
 
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 
@@ -94,7 +69,6 @@ export default function PhonicsApp() {
   }, [stop, stopAllTimers]);
 
   const handleLetterClick = useCallback((index: number) => {
-    console.log(`handleLetterClick called with index: ${index}`);
     stopAllSounds();
     setIsFlipped(false);
     
@@ -152,10 +126,14 @@ export default function PhonicsApp() {
             isSoundPlayingRef.current = false;
             resolve();
           };
-          audioRef.current.play();
+          audioRef.current.play().catch(() => {
+            isSoundPlayingRef.current = false;
+            resolve();
+          });
       });
   }, []);
 
+  // Main Sequence Effect
   useEffect(() => {
     if (currentIndex === null || !isPlaying) {
       return;
@@ -164,18 +142,41 @@ export default function PhonicsApp() {
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
 
-    const runAsync = async () => {
-        await playSoundOnce(letterInfo.sound);
-    }
+    let isCancelled = false;
 
-    if (isAutoplayEnabled) {
-      runAsync();
-    }
+    const runSequence = async () => {
+      // 1. TTS Letter Name
+      if (isAutoplayEnabled) {
+        const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
+        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
+      }
+
+      // Wait for TTS (approx 2s) - Increased from 1s
+      await new Promise(r => setTimeout(r, 2000));
+      if (isCancelled) return;
+
+      // 2. Flip Card
+      setIsFlipped(true);
+
+      // Wait for flip animation (approx 600ms)
+      await new Promise(r => setTimeout(r, 600));
+      if (isCancelled) return;
+
+      // 3. Play Sound File
+      if (isAutoplayEnabled) {
+        await playSoundOnce(letterInfo.sound);
+      }
+      
+      if (isCancelled) return;
+    };
+
+    runSequence();
 
     return () => {
-        stopAllSounds();
+      isCancelled = true;
+      stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled]);
+  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled, speak, femaleVoice]);
 
 
   const handleShuffle = useCallback(() => {
@@ -216,52 +217,26 @@ export default function PhonicsApp() {
   });
 
   const handleInteraction = () => {
-    if (!isPlaying) return;
     if (navigator.vibrate) navigator.vibrate(5);
-    setIsFlipped(prev => !prev);
-    replaySound();
+    
+    if (isFlipped) {
+      // If currently Back (Flipped), go to Front
+      setIsFlipped(false);
+      // Optional: Speak letter name again?
+      // For now, just stop audio
+      stopAllSounds();
+    } else {
+      // If currently Front, go to Back
+      setIsFlipped(true);
+      // Play sound
+      if (currentIndex !== null) {
+        const letterInfo = selectedModule.letters?.[currentIndex];
+        if (letterInfo) {
+           playSoundOnce(letterInfo.sound);
+        }
+      }
+    }
   };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-      // If the user taps (not swipes), we treat it as an interaction (flip)
-      // The swipe hook handles the start/move/end logic.
-      // We need to integrate tap detection safely.
-      // For simplicity in this hybrid approach:
-      // 1. Pass events to swipe handler
-      // 2. If it's a click (short duration, small movement), trigger interaction.
-      swipeHandlers.onTouchStart(e as unknown as React.TouchEvent);
-  };
-  
-  // Custom wrapper to handle both swipe and tap
-  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
-      swipeHandlers.onTouchEnd();
-      // Simple tap detection fallback if needed, but let's rely on the swipe hook's handlers.
-      // If no swipe triggered, we can assume it's a tap if it was short?
-      // Actually, for React, onClick is better for "Tap" if we ensure swipe doesn't trigger it.
-      // But we have a full screen touch area.
-  };
-
-  // Improved interaction handler that distinguishes tap from swipe
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const onPointerUp = (e: React.PointerEvent) => {
-       // We can use a simple ref to track if a swipe happened
-       // But let's simplify: 
-       // We'll use the useSwipe hook for swipes.
-       // We'll use a simple onClick for the flip, but we need to ensure swipe doesn't trigger click.
-       // A common pattern is to check distance in onPointerUp
-       swipeHandlers.onTouchEnd();
-  }
-
-  const replaySound = async () => {
-    if (currentIndex === null) return;
-    const letterInfo = selectedModule.letters?.[currentIndex];
-    if (!letterInfo) return;
-
-    await playSoundOnce(letterInfo.sound);
-  };
-
-
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -325,11 +300,6 @@ export default function PhonicsApp() {
       <div 
         className="flex-1 flex flex-col justify-center relative overflow-hidden"
       >
-        {/* Swipe Indicators (Visual Only) */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1/6 flex items-center justify-center opacity-0 pointer-events-none">
-             {/* Removed click handlers, just visual now if we wanted, or kept hidden */}
-        </div>
-        
         <main 
             className="flex flex-col items-center justify-center mt-[2vh] md:-mt-24 w-full h-full"
         >
@@ -337,13 +307,13 @@ export default function PhonicsApp() {
             <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
               <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
                 <div className="card-face card-face-front">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 30rem)' }}>
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 64vmin, 24rem)' }}>
                     {currentDisplayData.letter}
                   </h2>
                 </div>
                 <div className="card-face card-face-back">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 70vmin, 25rem)' }}>
-                    {currentDisplayData.letter.toLowerCase()}
+                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(9.6rem, 56vmin, 20rem)' }}>
+                    {currentDisplayData.phoneticText}
                   </h2>
                 </div>
               </div>

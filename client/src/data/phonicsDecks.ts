@@ -1,6 +1,7 @@
 export interface PhonicsLetter {
   letter: string;
   sound: string;
+  phoneticText: string;
 }
 
 export interface CVCWord {
@@ -14,52 +15,46 @@ export interface LearningModule {
   id: string;
   name: string;
   type: 'letters' | 'cvc';
-  isLocked?: boolean;
-  
-  // For letter modules
   letters?: PhonicsLetter[];
-  
-  // For CVC modules
-  family?: string; // e.g., "at", "et", "it"
-  wordStem?: string; // e.g., "_at"
-  stemSound?: string; // e.g., "at" - sound for word stem
-  consonants?: string[]; // Available consonants for this family
+  family?: string;
+  wordStem?: string;
+  stemSound?: string;
+  consonants?: string[];
   words?: CVCWord[];
 }
 
 export const learningModules: LearningModule[] = [
-  // Letters Module
   {
     id: 'letters-full',
     name: 'Full Alphabet',
     type: 'letters',
     letters: [
-      { letter: 'A', sound: '/sounds/Phonics/Sound 01.mp3' },
-      { letter: 'B', sound: '/sounds/Phonics/Sound 02.mp3' },
-      { letter: 'C', sound: '/sounds/Phonics/Sound 03.mp3' },
-      { letter: 'D', sound: '/sounds/Phonics/Sound 04.mp3' },
-      { letter: 'E', sound: '/sounds/Phonics/Sound 05.mp3' },
-      { letter: 'F', sound: '/sounds/Phonics/Sound 06.mp3' },
-      { letter: 'G', sound: '/sounds/Phonics/Sound 07.mp3' },
-      { letter: 'H', sound: '/sounds/Phonics/Sound 08.mp3' },
-      { letter: 'I', sound: '/sounds/Phonics/Sound 09.mp3' },
-      { letter: 'J', sound: '/sounds/Phonics/Sound 10.mp3' },
-      { letter: 'K', sound: '/sounds/Phonics/Sound 11.mp3' },
-      { letter: 'L', sound: '/sounds/Phonics/Sound 12.mp3' },
-      { letter: 'M', sound: '/sounds/Phonics/Sound 13.mp3' },
-      { letter: 'N', sound: '/sounds/Phonics/Sound 14.mp3' },
-      { letter: 'O', sound: '/sounds/Phonics/Sound 15.mp3' },
-      { letter: 'P', sound: '/sounds/Phonics/Sound 16.mp3' },
-      { letter: 'Q', sound: '/sounds/Phonics/Sound 17.mp3' },
-      { letter: 'R', sound: '/sounds/Phonics/Sound 18.mp3' },
-      { letter: 'S', sound: '/sounds/Phonics/Sound 19.mp3' },
-      { letter: 'T', sound: '/sounds/Phonics/Sound 20.mp3' },
-      { letter: 'U', sound: '/sounds/Phonics/Sound 21.mp3' },
-      { letter: 'V', sound: '/sounds/Phonics/Sound 22.mp3' },
-      { letter: 'W', sound: '/sounds/Phonics/Sound 23.mp3' },
-      { letter: 'X', sound: '/sounds/Phonics/Sound 24.mp3' },
-      { letter: 'Y', sound: '/sounds/Phonics/Sound 25.mp3' },
-      { letter: 'Z', sound: '/sounds/Phonics/Sound 26.mp3' },
+      { letter: 'A', sound: '/sounds/Phonics/Sound 01.mp3', phoneticText: 'Ah' },
+      { letter: 'B', sound: '/sounds/Phonics/Sound 02.mp3', phoneticText: 'Buh' },
+      { letter: 'C', sound: '/sounds/Phonics/Sound 03.mp3', phoneticText: 'Cuh' },
+      { letter: 'D', sound: '/sounds/Phonics/Sound 04.mp3', phoneticText: 'Duh' },
+      { letter: 'E', sound: '/sounds/Phonics/Sound 05.mp3', phoneticText: 'Eh' },
+      { letter: 'F', sound: '/sounds/Phonics/Sound 06.mp3', phoneticText: 'F' },
+      { letter: 'G', sound: '/sounds/Phonics/Sound 07.mp3', phoneticText: 'Guh' },
+      { letter: 'H', sound: '/sounds/Phonics/Sound 08.mp3', phoneticText: 'Huh' },
+      { letter: 'I', sound: '/sounds/Phonics/Sound 09.mp3', phoneticText: 'Ih' },
+      { letter: 'J', sound: '/sounds/Phonics/Sound 10.mp3', phoneticText: 'Juh' },
+      { letter: 'K', sound: '/sounds/Phonics/Sound 11.mp3', phoneticText: 'Kuh' },
+      { letter: 'L', sound: '/sounds/Phonics/Sound 12.mp3', phoneticText: 'L' },
+      { letter: 'M', sound: '/sounds/Phonics/Sound 13.mp3', phoneticText: 'M' },
+      { letter: 'N', sound: '/sounds/Phonics/Sound 14.mp3', phoneticText: 'N' },
+      { letter: 'O', sound: '/sounds/Phonics/Sound 15.mp3', phoneticText: 'Oh' },
+      { letter: 'P', sound: '/sounds/Phonics/Sound 16.mp3', phoneticText: 'Puh' },
+      { letter: 'Q', sound: '/sounds/Phonics/Sound 17.mp3', phoneticText: 'Qu' },
+      { letter: 'R', sound: '/sounds/Phonics/Sound 18.mp3', phoneticText: 'R' },
+      { letter: 'S', sound: '/sounds/Phonics/Sound 19.mp3', phoneticText: 'S' },
+      { letter: 'T', sound: '/sounds/Phonics/Sound 20.mp3', phoneticText: 'Tuh' },
+      { letter: 'U', sound: '/sounds/Phonics/Sound 21.mp3', phoneticText: 'Uh' },
+      { letter: 'V', sound: '/sounds/Phonics/Sound 22.mp3', phoneticText: 'V' },
+      { letter: 'W', sound: '/sounds/Phonics/Sound 23.mp3', phoneticText: 'Wuh' },
+      { letter: 'X', sound: '/sounds/Phonics/Sound 24.mp3', phoneticText: 'Ks' },
+      { letter: 'Y', sound: '/sounds/Phonics/Sound 25.mp3', phoneticText: 'Yuh' },
+      { letter: 'Z', sound: '/sounds/Phonics/Sound 26.mp3', phoneticText: 'Z' },
     ]
   },
   

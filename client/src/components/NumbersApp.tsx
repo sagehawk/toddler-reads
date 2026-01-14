@@ -19,14 +19,6 @@ const DieFace = ({ count, color, visibleCount }: { count: number, color: string,
   // Helper to determine if a dot at specific index (1-based) is visible
   const isVisible = (index: number) => index <= visibleCount;
 
-  // We map the patterns but render Dots with visibility prop
-  // Note: The patterns below are static layouts. I need to map the dots in them to indices.
-  // Since the pattern structure is complex (grids), I will just render them and assume the "order" of appearance follows the DOM order or I need to manually index them.
-  // For simplicity and visual coherence, I'll assign indices 1..N to the dots in the order they appear in the JSX.
-  
-  // Simplified: I will create a helper to render a dot with auto-incrementing index counter? 
-  // No, React rendering is pure. I'll pass specific indices.
-
   const renderDot = (index: number) => <Dot color={color} visible={isVisible(index)} />;
 
   const patterns: { [key: number]: React.ReactNode } = {
@@ -171,18 +163,6 @@ const NumbersApp = () => {
     }, 150);
   };
 
-  const replaySound = () => {
-    if (currentNumber) {
-      if (audioTimeoutRef.current) {
-        clearTimeout(audioTimeoutRef.current);
-      }
-      stop();
-      audioTimeoutRef.current = setTimeout(() => {
-        speak(String(currentNumber), { voice: femaleVoice ?? null });
-      }, 500); 
-    }
-  };
-
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
@@ -193,10 +173,10 @@ const NumbersApp = () => {
       
       if (isFlipped) {
           setIsFlipped(false); // Flip back to number
-          // replaySound(); // Removed to fix double audio
+          stop();
       } else {
           stop(); // Stop number sound
-          setIsFlipped(true); // Flip to dots -> AnimatedDots triggers
+          setIsFlipped(true); // Flip to dots
       }
   };
 
@@ -225,11 +205,33 @@ const NumbersApp = () => {
     };
   }, [handlePrevious, handleNext, handleShuffle]);
 
+  // Main Auto-Play Sequence
   useEffect(() => {
-    if (currentNumber && !isQuietMode && !isFlipped) {
+    if (currentNumber === undefined || isQuietMode) return;
+
+    let isCancelled = false;
+
+    const runSequence = async () => {
+      setIsFlipped(false);
+      
+      // 1. Speak Number Name
       speak(String(currentNumber), { voice: femaleVoice ?? null });
-    }
-  }, [currentIndex, femaleVoice, speak, currentNumber, isQuietMode, isFlipped]);
+
+      // 2. Wait 2 seconds
+      await new Promise(r => setTimeout(r, 2000));
+      if (isCancelled) return;
+
+      // 3. Flip to trigger counting animation
+      setIsFlipped(true);
+    };
+
+    runSequence();
+
+    return () => {
+      isCancelled = true;
+      stop();
+    };
+  }, [currentIndex, currentNumber, femaleVoice, speak, isQuietMode, stop]);
 
   if (currentNumber === undefined) {
     return <div>Loading...</div>;
@@ -267,10 +269,8 @@ const NumbersApp = () => {
           className="relative flex flex-1 flex-col items-center justify-center text-center px-4 overflow-hidden pb-48 md:pb-24"
       >
         <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
-             {/* Removed click handlers */}
         </div>
         <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
-             {/* Removed click handlers */}
         </div>
 
         <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
