@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Link, useRoute, useLocation } from "wouter";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { Shuffle, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { getLetterColors } from "../lib/colorUtils";
 import { vocabData, VocabItem } from "../data/vocabData";
 import useLocalStorage from "@/hooks/useLocalStorage";
@@ -183,7 +183,6 @@ const VocabApp = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [hasListened, setHasListened] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
@@ -229,59 +228,8 @@ const VocabApp = () => {
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
-  const handleInteraction = useCallback(async () => {
-    if (navigator.vibrate) navigator.vibrate(5);
-
-    if (isFlipped) {
-      setIsFlipped(false);
-      stop();
-    } else {
-      stop();
-      setIsFlipped(true);
-
-      // Wait for image to load (with timeout)
-      let retries = 0;
-      while (!imageLoadedRef.current && retries < 20) {
-        await new Promise((r) => setTimeout(r, 100));
-        retries++;
-      }
-    }
-  }, [isFlipped, stop]);
-
-  const handleSequenceComplete = useCallback(() => {
-    setHasListened(true);
-    // Auto confetti at the end of the sequence
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 },
-    });
-    // Auto flip to image
-    handleInteraction();
-  }, [handleInteraction]);
-
-  const handleNext = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate(5);
-    setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
-    }, 150);
-  }, [filteredVocab.length]);
-
-  const handlePrevious = useCallback(() => {
-    if (navigator.vibrate) navigator.vibrate(5);
-    setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex(
-        (prevIndex) =>
-          (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
-      );
-    }, 150);
-  }, [filteredVocab.length]);
-
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    setIsFlipped(false);
     setIsShuffling(true);
 
     setTimeout(() => {
@@ -295,6 +243,38 @@ const VocabApp = () => {
       setIsShuffling(false);
     }, 150);
   }, [shuffledIndex, shuffledIndices, shuffleItems]);
+
+  const handleInteraction = useCallback(async () => {
+    handleShuffle();
+  }, [handleShuffle]);
+
+  const handleSequenceComplete = useCallback(() => {
+    setHasListened(true);
+    // Auto confetti at the end of the sequence
+    confetti({
+      particleCount: 30,
+      spread: 50,
+      origin: { y: 0.6 },
+    });
+    // Removed auto-flip to image since flip is disabled
+  }, []);
+
+  const handleNext = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
+    setTimeout(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
+    }, 150);
+  }, [filteredVocab.length]);
+
+  const handlePrevious = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
+    setTimeout(() => {
+      setCurrentIndex(
+        (prevIndex) =>
+          (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
+      );
+    }, 150);
+  }, [filteredVocab.length]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -333,7 +313,7 @@ const VocabApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-40 md:pb-24 touchable-area"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-12 md:pb-0 touchable-area"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
@@ -372,56 +352,49 @@ const VocabApp = () => {
         className="flex-1 flex flex-col justify-center w-full"
       >
         <main
-          className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden md:-mt-44"
+          className="relative flex flex-col items-center justify-center text-center px-4 overflow-hidden -mt-20 md:-mt-44"
         >
           <div
             className="w-full flex justify-center items-center"
             style={{ perspective: "1000px" }}
           >
             <div
-              className={`card ${isFlipped ? "is-flipped" : ""}`}
+              className="card"
               style={{ width: "100%", height: "clamp(300px, 80vw, 600px)" }}
             >
-              <div className="card-face card-face-front">
-                {/* Use key to force remount on index change -> Fixes FOUC and resets animation */}
-                {!isShuffling && (
-                  <AnimatedWord
-                    key={currentIndex}
-                    text={currentItem.name}
-                    ttsText={currentItem.tts || currentItem.name}
-                    voice={femaleVoice ?? null}
-                    onComplete={handleSequenceComplete}
-                    isAnimatingRef={isAnimatingRef}
+              <div className="card-face card-face-front relative overflow-hidden">
+                {/* Background Image Layer */}
+                <div 
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${hasListened ? 'opacity-100' : 'opacity-0'}`}
+                >
+                   <img
+                    src={currentItem.image}
+                    alt={currentItem.name}
+                    className="w-full h-full object-contain p-8 opacity-40" 
+                    draggable="false"
+                    onLoad={() => { imageLoadedRef.current = true; }}
+                    onError={(e) => (e.currentTarget.style.display = "none")}
                   />
-                )}
-              </div>
-              <div className="card-face card-face-back flex items-center justify-center">
-                <img
-                  src={currentItem.image}
-                  alt={currentItem.name}
-                  className="w-full h-full object-contain md:w-3/5 md:h-3/5 noselect"
-                  draggable="false"
-                  onLoad={() => { imageLoadedRef.current = true; }}
-                  onError={(e) => (e.currentTarget.style.display = "none")}
-                />
+                </div>
+
+                {/* Text Layer - z-index ensures it stays on top */}
+                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                  {/* Use key to force remount on index change -> Fixes FOUC and resets animation */}
+                  {!isShuffling && (
+                    <AnimatedWord
+                      key={currentIndex}
+                      text={currentItem.name}
+                      ttsText={currentItem.tts || currentItem.name}
+                      voice={femaleVoice ?? null}
+                      onComplete={handleSequenceComplete}
+                      isAnimatingRef={isAnimatingRef}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </main>
-      </div>
-
-      <div className="fixed bottom-6 left-0 right-0 h-32 md:h-32 z-50 flex items-center justify-center">
-        <button
-          onPointerDown={(e) => {
-            e.stopPropagation();
-            handleShuffle();
-            e.currentTarget.blur();
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground opacity-30 hover:opacity-30"
-        >
-          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
-        </button>
       </div>
     </div>
   );

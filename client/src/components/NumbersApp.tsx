@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
-import { Shuffle } from 'lucide-react';
 import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -169,15 +168,7 @@ const NumbersApp = () => {
   });
 
   const handleInteraction = () => {
-      if (navigator.vibrate) navigator.vibrate(5);
-      
-      if (isFlipped) {
-          setIsFlipped(false); // Flip back to number
-          stop();
-      } else {
-          stop(); // Stop number sound
-          setIsFlipped(true); // Flip to dots
-      }
+      handleShuffle();
   };
 
   useEffect(() => {
@@ -245,7 +236,14 @@ const NumbersApp = () => {
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-        onClick={handleInteraction}
+        onClick={() => {
+            if (isFlipped) {
+                handleShuffle();
+            } else {
+                stop();
+                setIsFlipped(true);
+            }
+        }}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <button

@@ -1,20 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation, Link } from 'wouter';
+import { useLocation } from 'wouter';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
 
-import { Shuffle, Volume2, VolumeX } from 'lucide-react';
-
 // Interfaces are now imported from data file or defined there, but we need to import or redefine if not exported.
-// The file reads imports from data/phonicsDecks.ts, but standard practice in this repo seems to be defining interfaces in the file or importing.
-// checking previous file content, it imported learningModules but defined interfaces inline? No, it exported them.
-// Let's rely on the imports from the data file if possible, or just treat 'selectedModule' as any for the deep property access if types are tricky without import.
-// Actually, I can just import them if I knew the path was clean.
-// The previous file defined interfaces LOCALLY. I should update them to match the data file or just rely on 'any' casting if needed, but better to update the interface definition locally to match the data I just changed.
-
 import { learningModules } from '../data/phonicsDecks';
 
 // We need to update the local interface definition to match the data file we just edited
@@ -44,7 +35,6 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
-  const [isFlipped, setIsFlipped] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,7 +60,6 @@ export default function PhonicsApp() {
 
   const handleLetterClick = useCallback((index: number) => {
     stopAllSounds();
-    setIsFlipped(false);
     
     const letterInfo = selectedModule.letters?.[index];
     if (!letterInfo) return;
@@ -145,29 +134,22 @@ export default function PhonicsApp() {
     let isCancelled = false;
 
     const runSequence = async () => {
-      // 1. TTS Letter Name
-      if (isAutoplayEnabled) {
-        const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
-      }
-
-      // Wait for TTS (approx 2s) - Increased from 1s
-      await new Promise(r => setTimeout(r, 2000));
-      if (isCancelled) return;
-
-      // 2. Flip Card
-      setIsFlipped(true);
-
-      // Wait for flip animation (approx 600ms)
-      await new Promise(r => setTimeout(r, 600));
-      if (isCancelled) return;
-
-      // 3. Play Sound File
+      // 1. Play Sound File
       if (isAutoplayEnabled) {
         await playSoundOnce(letterInfo.sound);
       }
       
       if (isCancelled) return;
+
+      // 2. Wait 1 second
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      // 3. TTS Letter Name
+      if (isAutoplayEnabled) {
+        const textToSpeak = letterInfo.phoneticText || (letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter);
+        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
+      }
     };
 
     runSequence();
@@ -184,7 +166,6 @@ export default function PhonicsApp() {
     if (navigator.vibrate) navigator.vibrate(10);
     
     stopAllSounds();
-    setIsFlipped(false);
 
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length - 1) {
@@ -194,7 +175,7 @@ export default function PhonicsApp() {
         setShuffledIndex(nextShuffledIndex);
         handleLetterClick(shuffledIndices[nextShuffledIndex]);
       }
-    }, 600);
+    }, 150);
   }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick, stopAllSounds]);
 
   const handleNext = useCallback(() => {
@@ -217,25 +198,7 @@ export default function PhonicsApp() {
   });
 
   const handleInteraction = () => {
-    if (navigator.vibrate) navigator.vibrate(5);
-    
-    if (isFlipped) {
-      // If currently Back (Flipped), go to Front
-      setIsFlipped(false);
-      // Optional: Speak letter name again?
-      // For now, just stop audio
-      stopAllSounds();
-    } else {
-      // If currently Front, go to Back
-      setIsFlipped(true);
-      // Play sound
-      if (currentIndex !== null) {
-        const letterInfo = selectedModule.letters?.[currentIndex];
-        if (letterInfo) {
-           playSoundOnce(letterInfo.sound);
-        }
-      }
-    }
+    handleShuffle();
   };
 
   useEffect(() => {
@@ -273,7 +236,7 @@ export default function PhonicsApp() {
 
   return (
     <div 
-        className="fixed inset-0 select-none flex flex-col overflow-hidden pb-48 md:pb-24 touchable-area" 
+        className="fixed inset-0 select-none flex flex-col overflow-hidden pb-12 md:pb-0 touchable-area" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
@@ -301,36 +264,20 @@ export default function PhonicsApp() {
         className="flex-1 flex flex-col justify-center relative overflow-hidden"
       >
         <main 
-            className="flex flex-col items-center justify-center mt-[2vh] md:-mt-24 w-full h-full"
+            className="flex flex-col items-center justify-center -mt-20 md:mt-0 w-full h-full"
         >
           {currentIndex !== null && currentDisplayData && (
-            <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-              <div key={currentIndex} className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
+            <div className="w-full flex justify-center items-center">
+              <div key={currentIndex} className="card" style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
                 <div className="card-face card-face-front">
                   <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 64vmin, 24rem)' }}>
                     {currentDisplayData.letter}
-                  </h2>
-                </div>
-                <div className="card-face card-face-back">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(9.6rem, 56vmin, 20rem)' }}>
-                    {currentDisplayData.phoneticText}
                   </h2>
                 </div>
               </div>
             </div>
           )}
         </main>
-      </div>
-      <div className="h-48 md:h-24 flex-shrink-0" />
-      <div className="fixed bottom-6 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
-        <button
-          onPointerDown={(e) => { e.stopPropagation(); if (voices.length > 0) { handleShuffle(); } e.currentTarget.blur(); }}
-          onClick={(e) => e.stopPropagation()}
-          disabled={voices.length === 0}
-          className={`w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground opacity-30 hover:opacity-30 ${voices.length === 0 && 'opacity-50 cursor-not-allowed'}`}
-        >
-          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
-        </button>
       </div>
     </div>
   );
