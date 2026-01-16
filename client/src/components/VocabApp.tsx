@@ -184,6 +184,7 @@ const VocabApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [hasListened, setHasListened] = useState(false);
+  const [isImageVisible, setIsImageVisible] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
@@ -225,8 +226,20 @@ const VocabApp = () => {
   // Reset listened state and image loaded ref when index changes
   useEffect(() => {
     setHasListened(false);
+    setIsImageVisible(false);
     imageLoadedRef.current = false;
   }, [currentIndex]);
+
+  // Handle image fade in/out sequence
+  useEffect(() => {
+    if (hasListened) {
+      setIsImageVisible(true);
+      const timer = setTimeout(() => {
+        setIsImageVisible(false);
+      }, 3000); // 1s fade in + 2s hold
+      return () => clearTimeout(timer);
+    }
+  }, [hasListened]);
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -238,6 +251,7 @@ const VocabApp = () => {
         shuffleItems(true);
       } else {
         setHasListened(false); // Reset immediately
+        setIsImageVisible(false);
         setCurrentIndex(shuffledIndices[nextIndex]);
         setShuffledIndex((prev) => prev + 1);
       }
@@ -264,6 +278,7 @@ const VocabApp = () => {
     if (navigator.vibrate) navigator.vibrate(5);
     setTimeout(() => {
       setHasListened(false); // Reset immediately
+      setIsImageVisible(false);
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
     }, 150);
   }, [filteredVocab.length]);
@@ -272,6 +287,7 @@ const VocabApp = () => {
     if (navigator.vibrate) navigator.vibrate(5);
     setTimeout(() => {
       setHasListened(false); // Reset immediately
+      setIsImageVisible(false);
       setCurrentIndex(
         (prevIndex) =>
           (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
@@ -292,6 +308,7 @@ const VocabApp = () => {
         );
         if (newIndex !== -1) {
           setHasListened(false); // Reset immediately
+          setIsImageVisible(false);
           setCurrentIndex(newIndex);
         }
       } else if (e.key === "ArrowLeft") {
@@ -370,7 +387,7 @@ const VocabApp = () => {
                 {/* Background Image Layer */}
                 <div 
                   key={currentIndex}
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${hasListened ? 'opacity-100' : 'opacity-0'}`}
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${isImageVisible ? 'opacity-100' : 'opacity-0'}`}
                 >
                    <img
                     src={currentItem.image}

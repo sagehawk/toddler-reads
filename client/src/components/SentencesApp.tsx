@@ -415,6 +415,7 @@ const SentencesApp = () => {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [hasListened, setHasListened] = useState(false);
+  const [isImageVisible, setIsImageVisible] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
@@ -463,8 +464,20 @@ const SentencesApp = () => {
   // Reset listened state and image loaded ref
   useEffect(() => {
     setHasListened(false);
+    setIsImageVisible(false);
     imageLoadedRef.current = false;
   }, [currentIndex]);
+
+  // Handle image fade in/out sequence
+  useEffect(() => {
+    if (hasListened) {
+      setIsImageVisible(true);
+      const timer = setTimeout(() => {
+        setIsImageVisible(false);
+      }, 3000); // 1s fade in + 2s hold
+      return () => clearTimeout(timer);
+    }
+  }, [hasListened]);
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -476,6 +489,7 @@ const SentencesApp = () => {
         shuffleItems(true);
       } else {
         setHasListened(false); // Reset immediately
+        setIsImageVisible(false);
         setCurrentIndex(shuffledIndices[nextIndex]);
         setShuffledIndex((prev) => prev + 1);
       }
@@ -502,6 +516,7 @@ const SentencesApp = () => {
     stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
+      setIsImageVisible(false);
       setCurrentIndex(
         (prevIndex) => (prevIndex + 1) % filteredSentences.length,
       );
@@ -513,6 +528,7 @@ const SentencesApp = () => {
     stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
+      setIsImageVisible(false);
       setCurrentIndex(
         (prevIndex) =>
           (prevIndex - 1 + filteredSentences.length) % filteredSentences.length,
@@ -537,6 +553,7 @@ const SentencesApp = () => {
         );
         if (newIndex !== -1) {
           setHasListened(false); // Reset immediately
+          setIsImageVisible(false);
           setCurrentIndex(newIndex);
         }
       } else if (e.key === "ArrowLeft") {
@@ -616,7 +633,7 @@ const SentencesApp = () => {
                  {imageToDisplay && (
                   <div 
                     key={currentIndex}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex items-center justify-center ${hasListened ? 'opacity-100' : 'opacity-0'}`}
+                    className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex items-center justify-center ${isImageVisible ? 'opacity-100' : 'opacity-0'}`}
                   >
                     <img
                       src={imageToDisplay}
