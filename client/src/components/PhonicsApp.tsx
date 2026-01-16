@@ -134,22 +134,22 @@ export default function PhonicsApp() {
     let isCancelled = false;
 
     const runSequence = async () => {
-      // 1. Play Sound File
+      // 1. TTS Letter Name
+      if (isAutoplayEnabled) {
+        const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
+        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
+      }
+
+      // 2. Wait 1 second (approx)
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      // 3. Play Sound File
       if (isAutoplayEnabled) {
         await playSoundOnce(letterInfo.sound);
       }
       
       if (isCancelled) return;
-
-      // 2. Wait 1 second
-      await new Promise(r => setTimeout(r, 1000));
-      if (isCancelled) return;
-
-      // 3. TTS Letter Name
-      if (isAutoplayEnabled) {
-        const textToSpeak = letterInfo.phoneticText || (letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter);
-        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
-      }
     };
 
     runSequence();
