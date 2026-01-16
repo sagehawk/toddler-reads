@@ -475,6 +475,7 @@ const SentencesApp = () => {
       if (nextIndex >= shuffledIndices.length) {
         shuffleItems(true);
       } else {
+        setHasListened(false); // Reset immediately
         setCurrentIndex(shuffledIndices[nextIndex]);
         setShuffledIndex((prev) => prev + 1);
       }
@@ -500,6 +501,7 @@ const SentencesApp = () => {
     if (navigator.vibrate) navigator.vibrate(5);
     stop();
     setTimeout(() => {
+      setHasListened(false); // Reset immediately
       setCurrentIndex(
         (prevIndex) => (prevIndex + 1) % filteredSentences.length,
       );
@@ -510,6 +512,7 @@ const SentencesApp = () => {
     if (navigator.vibrate) navigator.vibrate(5);
     stop();
     setTimeout(() => {
+      setHasListened(false); // Reset immediately
       setCurrentIndex(
         (prevIndex) =>
           (prevIndex - 1 + filteredSentences.length) % filteredSentences.length,
@@ -533,6 +536,7 @@ const SentencesApp = () => {
           item.text.toLowerCase().startsWith(e.key),
         );
         if (newIndex !== -1) {
+          setHasListened(false); // Reset immediately
           setCurrentIndex(newIndex);
         }
       } else if (e.key === "ArrowLeft") {
@@ -611,6 +615,7 @@ const SentencesApp = () => {
                  {/* Background Image Layer */}
                  {imageToDisplay && (
                   <div 
+                    key={currentIndex}
                     className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex items-center justify-center ${hasListened ? 'opacity-100' : 'opacity-0'}`}
                   >
                     <img

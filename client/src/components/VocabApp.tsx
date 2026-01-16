@@ -237,6 +237,7 @@ const VocabApp = () => {
       if (nextIndex >= shuffledIndices.length) {
         shuffleItems(true);
       } else {
+        setHasListened(false); // Reset immediately
         setCurrentIndex(shuffledIndices[nextIndex]);
         setShuffledIndex((prev) => prev + 1);
       }
@@ -262,6 +263,7 @@ const VocabApp = () => {
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
     setTimeout(() => {
+      setHasListened(false); // Reset immediately
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
     }, 150);
   }, [filteredVocab.length]);
@@ -269,6 +271,7 @@ const VocabApp = () => {
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
     setTimeout(() => {
+      setHasListened(false); // Reset immediately
       setCurrentIndex(
         (prevIndex) =>
           (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
@@ -288,6 +291,7 @@ const VocabApp = () => {
           item.name.toLowerCase().startsWith(e.key),
         );
         if (newIndex !== -1) {
+          setHasListened(false); // Reset immediately
           setCurrentIndex(newIndex);
         }
       } else if (e.key === "ArrowLeft") {
@@ -365,6 +369,7 @@ const VocabApp = () => {
               <div className="card-face card-face-front relative overflow-hidden">
                 {/* Background Image Layer */}
                 <div 
+                  key={currentIndex}
                   className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${hasListened ? 'opacity-100' : 'opacity-0'}`}
                 >
                    <img
