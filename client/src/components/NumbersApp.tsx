@@ -299,14 +299,8 @@ const NumbersApp = () => {
           </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center">
-        <button
-          onPointerDown={(e) => { e.stopPropagation(); handleShuffle(); e.currentTarget.blur(); }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full h-full flex items-center justify-center transition-transform active:scale-95 text-secondary-foreground/50 hover:text-secondary-foreground"
-        >
-          <Shuffle className="w-16 h-16 md:w-20 md:h-20" />
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 h-48 md:h-32 z-50 flex items-center justify-center pointer-events-none">
+        {/* Shuffle button removed */}
       </div>
     </div>
   )
