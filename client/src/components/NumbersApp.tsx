@@ -232,7 +232,7 @@ const NumbersApp = () => {
 
   return (
     <div 
-        className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-[#FFFAF0]" 
+        className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-[#FFFAF0] dark:bg-background" 
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
