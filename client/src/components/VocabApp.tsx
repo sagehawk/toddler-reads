@@ -392,7 +392,7 @@ const VocabApp = () => {
                    <img
                     src={currentItem.image}
                     alt={currentItem.name}
-                    className="w-full h-full object-contain scale-150 opacity-25" 
+                    className="w-full h-full object-contain scale-115 opacity-25" 
                     draggable="false"
                     onLoad={() => { imageLoadedRef.current = true; }}
                     onError={(e) => (e.currentTarget.style.display = "none")}

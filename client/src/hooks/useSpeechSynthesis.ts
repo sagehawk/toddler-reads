@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { Capacitor } from '@capacitor/core';
 
 export const useSpeechSynthesis = () => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
+    if (isNative) return;
+
     const handleVoicesChanged = () => {
       setVoices(window.speechSynthesis.getVoices());
     };
@@ -19,9 +23,28 @@ export const useSpeechSynthesis = () => {
         window.speechSynthesis.onvoiceschanged = null;
       }
     };
-  }, []);
+  }, [isNative]);
 
-  const speak = useCallback((text: string, options?: { voice: SpeechSynthesisVoice | null; rate?: number; onEnd?: () => void }) => {
+  const speak = useCallback(async (text: string, options?: { voice: SpeechSynthesisVoice | null; rate?: number; onEnd?: () => void }) => {
+    if (isNative) {
+      try {
+        await TextToSpeech.stop();
+        await TextToSpeech.speak({
+          text,
+          lang: 'en-US',
+          rate: options?.rate ?? 1.0,
+          pitch: 1.2,
+          volume: 1.0,
+          category: 'ambient',
+        });
+        if (options?.onEnd) options.onEnd();
+      } catch (error) {
+        console.error('Native speech error:', error);
+        if (options?.onEnd) options.onEnd();
+      }
+      return;
+    }
+
     return new Promise<void>(resolve => {
       if (!('speechSynthesis' in window)) {
         console.warn('Speech synthesis not supported');
@@ -55,13 +78,15 @@ export const useSpeechSynthesis = () => {
 
       window.speechSynthesis.speak(utterance);
     });
-  }, []);
+  }, [isNative]);
 
-  const stop = useCallback(() => {
-    if ('speechSynthesis' in window) {
+  const stop = useCallback(async () => {
+    if (isNative) {
+      await TextToSpeech.stop();
+    } else if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-  }, []);
+  }, [isNative]);
 
   return { speak, stop, voices };
 };
