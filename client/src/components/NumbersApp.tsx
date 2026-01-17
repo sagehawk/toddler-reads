@@ -291,6 +291,10 @@ const NumbersApp = () => {
                                 spread: 50,
                                 origin: { y: 0.6 }
                             });
+                            // Flip back to number after a short delay
+                            setTimeout(() => {
+                                setIsFlipped(false);
+                            }, 2000);
                         }}
                     />
                 )}
