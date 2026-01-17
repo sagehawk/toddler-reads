@@ -236,14 +236,7 @@ const NumbersApp = () => {
         onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
         onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
         onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-        onClick={() => {
-            if (isFlipped) {
-                handleShuffle();
-            } else {
-                stop();
-                setIsFlipped(true);
-            }
-        }}
+        onClick={handleShuffle}
     >
       <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
         <button
