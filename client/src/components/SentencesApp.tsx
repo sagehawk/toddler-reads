@@ -579,13 +579,13 @@ const SentencesApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden pb-56 md:pb-24 touchable-area"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-[#FFFAF0]"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
       onClick={handleInteraction}
     >
-      <header className="flex items-center justify-between p-4 flex-shrink-0 w-full">
+      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -595,15 +595,15 @@ const SentencesApp = () => {
             }
             setLocation("/app", { replace: true });
           }}
-          className="z-50 flex items-center justify-center w-20 h-20 rounded-full bg-secondary hover:bg-border text-secondary-foreground transition-colors focus:outline-none focus:ring-0 opacity-50"
+          className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 hover:bg-white/80 text-secondary-foreground transition-colors focus:outline-none focus:ring-0 shadow-sm backdrop-blur-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            strokeWidth={1.5}
+            strokeWidth={2}
             stroke="currentColor"
-            className="w-12 h-12"
+            className="w-8 h-8"
           >
             <path
               strokeLinecap="round"
@@ -614,8 +614,8 @@ const SentencesApp = () => {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center overflow-hidden w-full">
-        <main className="relative flex flex-col items-center justify-center text-center px-4 w-full min-h-full py-8">
+      <div className="flex-1 flex flex-col justify-center items-center overflow-hidden w-full relative">
+        <main className="flex flex-col items-center justify-center text-center px-4 w-full h-full">
           <div
             className="w-full flex justify-center items-center"
             style={{ perspective: "1000px" }}
