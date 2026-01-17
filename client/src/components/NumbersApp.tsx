@@ -22,8 +22,8 @@ const DieFace = ({ count, color, visibleCount }: { count: number, color: string,
 
   const patterns: { [key: number]: React.ReactNode } = {
       1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
-      2: <div className="grid grid-cols-2 gap-8 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div className="self-end justify-self-end">{renderDot(2)}</div></div>,
-      3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="self-start justify-self-start">{renderDot(1)}</div><div>{renderDot(2)}</div><div className="self-end justify-self-end">{renderDot(3)}</div></div>,
+      2: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div></div>,
+      3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div><div className="col-start-3 row-start-3">{renderDot(3)}</div></div>,
       4: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
       5: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
       6: <div className="grid grid-cols-2 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,

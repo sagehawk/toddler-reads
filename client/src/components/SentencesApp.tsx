@@ -638,7 +638,7 @@ const SentencesApp = () => {
                     <img
                       src={imageToDisplay}
                       alt={currentItem.text}
-                      className="w-full h-full object-contain p-4 opacity-40"
+                      className="w-full h-full object-contain scale-150 opacity-25"
                       draggable="false"
                       onLoad={() => {
                         imageLoadedRef.current = true;
