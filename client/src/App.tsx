@@ -8,6 +8,7 @@ import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
 import StoryPage from "./pages/StoryPage";
+import SandboxPage from "./pages/SandboxPage";
 import { useEffect } from "react";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
       <Route path="/vocab/:category?" component={VocabApp} />
       <Route path="/sentences/:category?" component={SentencesApp} />
       <Route path="/numbers" component={NumbersApp} />
+      <Route path="/sandbox" component={SandboxPage} />
       <Route path="/my-story" component={MyStory} />
       <Route path="/story/:id" component={StoryPage} />
       <Route component={NotFound} />

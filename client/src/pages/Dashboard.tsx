@@ -5,10 +5,10 @@ import whiteLogoUrl from '../assets/toddler-reads-logo-white.png';
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const menuItems = [
+  { title: "🧩 Play", href: "/sandbox", color: "bg-gradient-to-r from-amber-400 to-orange-500" },
   { title: "ABC", href: "/phonics", color: "bg-[hsl(170,75%,40%)]" },
   { title: "123", href: "/numbers", color: "bg-[hsl(35,90%,50%)]" },
   { title: "Words", href: "/vocab", color: "bg-[hsl(210,85%,50%)]" },
-  { title: "Read", href: "/sentences", color: "bg-[hsl(0,85%,50%)]" },
 ];
 
 const DigitalPlayshelf = () => {
@@ -26,23 +26,23 @@ const DigitalPlayshelf = () => {
       </div>
       <div className="w-full max-w-md mx-auto flex flex-col gap-y-4 sm:gap-y-4 md:-mt-16">
         {menuItems.map((item) => (
-          <Link 
-            key={item.title} 
-            href={item.href} 
+          <Link
+            key={item.title}
+            href={item.href}
             onClick={() => {
-                try {
-                    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen().catch((e) => {
-                            console.log("Fullscreen request failed", e);
-                        });
-                    }
-                } catch (e) {
-                    console.log("Fullscreen not supported", e);
+              try {
+                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                  document.documentElement.requestFullscreen().catch((e) => {
+                    console.log("Fullscreen request failed", e);
+                  });
                 }
+              } catch (e) {
+                console.log("Fullscreen not supported", e);
+              }
             }}
             className={`w-full p-8 sm:p-4 md:p-6 rounded-3xl text-white text-5xl sm:text-4xl md:text-5xl font-bold text-center shadow-xl transition-transform transform hover:-translate-y-1 active:scale-95 border-b-8 border-black/20 ${item.color}`}
           >
-              {item.title}
+            {item.title}
           </Link>
         ))}
       </div>
