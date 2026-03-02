@@ -6,12 +6,38 @@ import { getLetterColors } from '../lib/colorUtils';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
 
+// Actual CSS color values for dots (Tailwind classes don't work in inline styles)
+const dotColors: { [key: number]: string } = {
+  1: '#f87171', // red-400
+  2: '#60a5fa', // blue-400
+  3: '#facc15', // yellow-400
+  4: '#22d3ee', // cyan-400
+  5: '#a78bfa', // purple-400
+  6: '#a3e635', // lime-400
+  7: '#38bdf8', // sky-400
+  8: '#f472b6', // pink-400
+  9: '#4ade80', // green-400
+  10: '#8b5cf6', // violet-400
+};
+
 const Dot = ({ color, visible }: { color: string, visible: boolean }) => (
-  <div className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 ${color} rounded-full transition-opacity duration-300 ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`} />
+  <motion.div
+    className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full`}
+    style={{
+      background: visible ? color : 'transparent',
+      boxShadow: visible ? `0 4px 12px ${color}44` : 'none',
+    }}
+    animate={{
+      scale: visible ? [0, 1.15, 1] : 0,
+      opacity: visible ? 1 : 0,
+    }}
+    transition={{ duration: 0.15, ease: 'easeOut' }}
+  />
 );
 
 const DieFace = ({ count, color, visibleCount }: { count: number, color: string, visibleCount: number }) => {
@@ -21,64 +47,64 @@ const DieFace = ({ count, color, visibleCount }: { count: number, color: string,
   const renderDot = (index: number) => <Dot color={color} visible={isVisible(index)} />;
 
   const patterns: { [key: number]: React.ReactNode } = {
-      1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
-      2: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div></div>,
-      3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div><div className="col-start-3 row-start-3">{renderDot(3)}</div></div>,
-      4: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
-      5: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
-      6: <div className="grid grid-cols-2 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
-      7: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
-      8: <div className="grid grid-cols-2 grid-rows-4 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
-      9: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
-      10: <div className="grid grid-cols-2 grid-rows-5 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
+    1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
+    2: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div></div>,
+    3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div><div className="col-start-3 row-start-3">{renderDot(3)}</div></div>,
+    4: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
+    5: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
+    6: <div className="grid grid-cols-2 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
+    7: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
+    8: <div className="grid grid-cols-2 grid-rows-4 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
+    9: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
+    10: <div className="grid grid-cols-2 grid-rows-5 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
   };
   return <div className="w-full h-full p-8 flex justify-center items-center">{patterns[count]}</div>;
 };
 
 // Component to handle counting animation
 const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, color: string, onComplete: () => void, voice: SpeechSynthesisVoice | null }) => {
-    const [visibleCount, setVisibleCount] = useState(0);
-    const { speak, stop } = useSpeechSynthesis();
+  const [visibleCount, setVisibleCount] = useState(0);
+  const { speak, stop } = useSpeechSynthesis();
 
-    useEffect(() => {
-        let isCancelled = false;
+  useEffect(() => {
+    let isCancelled = false;
 
-        const runSequence = async () => {
-            setVisibleCount(0);
-            await new Promise(r => setTimeout(r, 500)); // Small initial pause
-            if (isCancelled) return;
+    const runSequence = async () => {
+      setVisibleCount(0);
+      await new Promise(r => setTimeout(r, 500)); // Small initial pause
+      if (isCancelled) return;
 
-            // The higher the total count, the shorter the delay between dots
-            // This ensures counting to 10 doesn't take too long.
-            const baseDelay = Math.max(30, 250 - (count * 20));
+      // The higher the total count, the shorter the delay between dots
+      // This ensures counting to 10 doesn't take too long.
+      const baseDelay = Math.max(30, 250 - (count * 20));
 
-            for (let i = 1; i <= count; i++) {
-                if (isCancelled) return;
-                
-                // Show dot
-                setVisibleCount(i);
-                
-                // Speak number as it appears at normal rate
-                await speak(i.toString(), { voice, rate: 1.0 });
-                
-                // Pause between numbers
-                await new Promise(r => setTimeout(r, baseDelay));
-            }
+      for (let i = 1; i <= count; i++) {
+        if (isCancelled) return;
 
-            if (!isCancelled) {
-                onComplete();
-            }
-        };
+        // Show dot
+        setVisibleCount(i);
 
-        runSequence();
+        // Speak number as it appears at normal rate
+        await speak(i.toString(), { voice, rate: 1.0 });
 
-        return () => {
-            isCancelled = true;
-            stop();
-        };
-    }, [count, voice, speak, stop, onComplete]);
+        // Pause between numbers
+        await new Promise(r => setTimeout(r, baseDelay));
+      }
 
-    return <DieFace count={count} color={color} visibleCount={visibleCount} />;
+      if (!isCancelled) {
+        onComplete();
+      }
+    };
+
+    runSequence();
+
+    return () => {
+      isCancelled = true;
+      stop();
+    };
+  }, [count, voice, speak, stop, onComplete]);
+
+  return <DieFace count={count} color={color} visibleCount={visibleCount} />;
 };
 
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
@@ -124,9 +150,7 @@ const NumbersApp = () => {
     }
     stop();
     setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
-    }, 150);
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
   }, [numbersData.length, stop]);
 
   const handlePrevious = useCallback(() => {
@@ -136,30 +160,24 @@ const NumbersApp = () => {
     }
     stop();
     setIsFlipped(false);
-    setTimeout(() => {
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
-    }, 150);
+    setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
   }, [numbersData.length, stop]);
 
   const handleShuffle = () => {
-    // Haptic
     if (navigator.vibrate) navigator.vibrate(10);
-
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
     }
     stop();
     setIsFlipped(false);
-    setTimeout(() => {
-      if (shuffledIndex >= shuffledIndices.length) {
-        shuffleItems();
-        setCurrentIndex(shuffledIndices[0]);
-        setShuffledIndex(1);
-      } else {
-        setCurrentIndex(shuffledIndices[shuffledIndex]);
-        setShuffledIndex(shuffledIndex + 1);
-      }
-    }, 150);
+    if (shuffledIndex >= shuffledIndices.length) {
+      shuffleItems();
+      setCurrentIndex(shuffledIndices[0]);
+      setShuffledIndex(1);
+    } else {
+      setCurrentIndex(shuffledIndices[shuffledIndex]);
+      setShuffledIndex(shuffledIndex + 1);
+    }
   };
 
   const swipeHandlers = useSwipe({
@@ -168,7 +186,7 @@ const NumbersApp = () => {
   });
 
   const handleInteraction = () => {
-      handleShuffle();
+    handleShuffle();
   };
 
   useEffect(() => {
@@ -204,7 +222,7 @@ const NumbersApp = () => {
 
     const runSequence = async () => {
       setIsFlipped(false);
-      
+
       // 1. Speak Number Name
       speak(String(currentNumber), { voice: femaleVoice ?? null });
 
@@ -231,69 +249,102 @@ const NumbersApp = () => {
   const numberColor = getLetterColors(String(currentNumber === 10 ? 0 : currentNumber));
 
   return (
-    <div 
-        className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-[#FFFAF0] dark:bg-background" 
-        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
-        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
-        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-        onClick={handleShuffle}
+    <div
+      className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800"
+      onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+      onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+      onClick={handleShuffle}
     >
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-amber-200/30 dark:bg-amber-500/10"
+            style={{
+              width: 8 + i * 3,
+              height: 8 + i * 3,
+              left: `${15 + i * 14}%`,
+              top: `${20 + (i % 3) * 25}%`,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              x: [0, 10, 0],
+              opacity: [0.2, 0.5, 0.2],
+            }}
+            transition={{
+              duration: 4 + i * 0.7,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.5,
+            }}
+          />
+        ))}
+      </div>
+
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
         <button
-            onPointerDown={(e) => e.stopPropagation()} 
-            onClick={(e) => {
-                e.stopPropagation();
-                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                }
-                setLocation("/app", { replace: true });
-            }} 
-            className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 hover:bg-white/80 text-secondary-foreground transition-colors focus:outline-none focus:ring-0 shadow-sm backdrop-blur-sm"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setLocation("/app", { replace: true });
+          }}
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
         </button>
       </header>
 
-      <main 
-          className="flex-1 flex flex-col items-center justify-center text-center px-4 overflow-hidden w-full relative"
+      <main
+        className="flex-1 flex flex-col items-center justify-center text-center px-4 overflow-hidden w-full relative"
       >
-        <div className="absolute left-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
-        </div>
-        <div className="absolute right-0 top-0 h-full w-1/4 flex items-center justify-center opacity-80 md:opacity-20 md:hover:opacity-80 transition-opacity pointer-events-none">
-        </div>
-
         <div className="w-full flex justify-center items-center" style={{ perspective: '1000px' }}>
-            <div className={`card ${isFlipped ? 'is-flipped' : ''}`} style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
-              <div className="card-face card-face-front">
-                <h2 className={`font-bold tracking-widest cursor-pointer ${numberColor.text}`} style={{ fontSize: 'clamp(15rem, 80vmin, 30rem)' }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${currentIndex}-${isFlipped}`}
+              className="flex items-center justify-center"
+              style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            >
+              {!isFlipped ? (
+                <h2
+                  className={`font-black tracking-widest cursor-pointer ${numberColor.text}`}
+                  style={{
+                    fontSize: 'clamp(15rem, 75vmin, 28rem)',
+                    fontFamily: "'Nunito', sans-serif",
+                    textShadow: '2px 4px 8px rgba(0,0,0,0.08)',
+                    lineHeight: 1,
+                  }}
+                >
                   {currentNumber}
                 </h2>
-              </div>
-              <div className="card-face card-face-back">
-                {isFlipped && (
-                    <AnimatedDots 
-                        key={currentIndex}
-                        count={currentNumber} 
-                        color={numberColor.background} 
-                        voice={femaleVoice ?? null}
-                        onComplete={() => {
-                            confetti({
-                                particleCount: 30,
-                                spread: 50,
-                                origin: { y: 0.6 }
-                            });
-                            // Flip back to number after a short delay
-                            setTimeout(() => {
-                                setIsFlipped(false);
-                            }, 2000);
-                        }}
-                    />
-                )}
-              </div>
-            </div>
-          </div>
+              ) : (
+                <AnimatedDots
+                  key={currentIndex}
+                  count={currentNumber}
+                  color={dotColors[currentNumber] || '#60a5fa'}
+                  voice={femaleVoice ?? null}
+                  onComplete={() => {
+                    confetti({
+                      particleCount: 30,
+                      spread: 50,
+                      origin: { y: 0.6 }
+                    });
+                    setTimeout(() => {
+                      setIsFlipped(false);
+                    }, 2000);
+                  }}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </main>
     </div>
   )

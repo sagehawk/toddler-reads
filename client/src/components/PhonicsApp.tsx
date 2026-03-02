@@ -4,6 +4,7 @@ import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSwipe } from '@/hooks/useSwipe';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Interfaces are now imported from data file or defined there, but we need to import or redefine if not exported.
 import { learningModules } from '../data/phonicsDecks';
@@ -26,7 +27,7 @@ import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 
 export default function PhonicsApp() {
   usePreventBackExit();
-  
+
   const [, navigate] = useLocation();
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
@@ -35,7 +36,7 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
-  
+
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -60,7 +61,7 @@ export default function PhonicsApp() {
 
   const handleLetterClick = useCallback((index: number) => {
     stopAllSounds();
-    
+
     const letterInfo = selectedModule.letters?.[index];
     if (!letterInfo) return;
 
@@ -97,29 +98,29 @@ export default function PhonicsApp() {
 
   useEffect(() => {
     if (voices && voices.length > 0) {
-        const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
-        setFemaleVoice(foundVoice || null);
+      const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
+      setFemaleVoice(foundVoice || null);
     }
   }, [voices]);
 
   const playSoundOnce = useCallback(async (soundFile: string) => {
-      if (isSoundPlayingRef.current) return;
-      isSoundPlayingRef.current = true;
-      return new Promise<void>(resolve => {
-          audioRef.current.src = soundFile;
-          audioRef.current.onended = () => {
-            isSoundPlayingRef.current = false;
-            resolve();
-          };
-          audioRef.current.onerror = () => {
-            isSoundPlayingRef.current = false;
-            resolve();
-          };
-          audioRef.current.play().catch(() => {
-            isSoundPlayingRef.current = false;
-            resolve();
-          });
+    if (isSoundPlayingRef.current) return;
+    isSoundPlayingRef.current = true;
+    return new Promise<void>(resolve => {
+      audioRef.current.src = soundFile;
+      audioRef.current.onended = () => {
+        isSoundPlayingRef.current = false;
+        resolve();
+      };
+      audioRef.current.onerror = () => {
+        isSoundPlayingRef.current = false;
+        resolve();
+      };
+      audioRef.current.play().catch(() => {
+        isSoundPlayingRef.current = false;
+        resolve();
       });
+    });
   }, []);
 
   // Main Sequence Effect
@@ -148,7 +149,7 @@ export default function PhonicsApp() {
       if (isAutoplayEnabled) {
         await playSoundOnce(letterInfo.sound);
       }
-      
+
       if (isCancelled) return;
     };
 
@@ -164,7 +165,7 @@ export default function PhonicsApp() {
   const handleShuffle = useCallback(() => {
     // Haptic feedback
     if (navigator.vibrate) navigator.vibrate(10);
-    
+
     stopAllSounds();
 
     setTimeout(() => {
@@ -235,48 +236,117 @@ export default function PhonicsApp() {
   const currentDisplayData = currentIndex !== null ? selectedModule.letters?.[currentIndex] : null;
 
   return (
-    <div 
-        className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-[#FFFAF0] dark:bg-background" 
-        onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
-        onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
-        onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-        onClick={handleInteraction}
+    <div
+      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800"
+      onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
+      onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
+      onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
+      onClick={handleInteraction}
     >
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-amber-200/30 dark:bg-amber-500/10"
+            style={{
+              width: 8 + i * 3,
+              height: 8 + i * 3,
+              left: `${15 + i * 14}%`,
+              top: `${20 + (i % 3) * 25}%`,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              x: [0, 10, 0],
+              opacity: [0.2, 0.5, 0.2],
+            }}
+            transition={{
+              duration: 4 + i * 0.7,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.5,
+            }}
+          />
+        ))}
+      </div>
+
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
-        <button 
-          onPointerDown={(e) => e.stopPropagation()} 
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
             navigate('/app', { replace: true });
-          }} 
-          className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 hover:bg-white/80 text-secondary-foreground transition-colors focus:outline-none focus:ring-0 shadow-sm backdrop-blur-sm"
+          }}
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
         </button>
+
+        {/* Progress dots */}
+        <div className="flex items-center gap-1.5">
+          {shuffledIndices.slice(0, Math.min(shuffledIndices.length, 10)).map((_, i) => (
+            <div
+              key={i}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i < shuffledIndex
+                  ? 'bg-teal-400 scale-100'
+                  : i === shuffledIndex
+                    ? 'bg-teal-500 scale-125'
+                    : 'bg-gray-300/50 dark:bg-gray-600/50 scale-75'
+                }`}
+            />
+          ))}
+        </div>
+
+        <div className="w-14" />
       </header>
 
-      <div 
-        className="flex-1 flex flex-col justify-center relative overflow-hidden w-full"
-      >
-        <main 
-            className="flex flex-col items-center justify-center w-full h-full"
-        >
-          {currentIndex !== null && currentDisplayData && (
-            <div className="w-full flex justify-center items-center">
-              <div key={currentIndex} className="card" style={{ width: 'clamp(300px, 95vmin, 600px)', height: 'clamp(300px, 95vmin, 600px)' }}>
-                <div className="card-face card-face-front">
-                  <h2 className={`font-semibold ${getLetterColors(currentDisplayData.letter).text}`} style={{ fontSize: 'clamp(12rem, 64vmin, 24rem)' }}>
+      <div className="flex-1 flex flex-col justify-center relative overflow-hidden w-full">
+        <main className="flex flex-col items-center justify-center w-full h-full">
+          <AnimatePresence mode="wait">
+            {currentIndex !== null && currentDisplayData && (
+              <motion.div
+                key={currentIndex}
+                className="w-full flex justify-center items-center"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              >
+                <div className="flex items-center justify-center" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
+                  <h2
+                    className={`font-black ${getLetterColors(currentDisplayData.letter).text}`}
+                    style={{
+                      fontSize: 'clamp(14rem, 60vmin, 24rem)',
+                      fontFamily: "'Nunito', sans-serif",
+                      textShadow: '2px 4px 8px rgba(0,0,0,0.08)',
+                      lineHeight: 1,
+                    }}
+                  >
                     {currentDisplayData.letter}
                   </h2>
                 </div>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Phonetic hint */}
+          <AnimatePresence>
+            {currentDisplayData && (
+              <motion.p
+                key={currentIndex}
+                className="text-lg sm:text-xl text-gray-400 dark:text-gray-500 font-medium mt-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: 0.3 }}
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                {currentDisplayData.phoneticText}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>

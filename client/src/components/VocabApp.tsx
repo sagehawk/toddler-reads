@@ -14,6 +14,7 @@ import useLocalStorage from "@/hooks/useLocalStorage";
 import { AnimalsVocab } from "./AnimalsVocab";
 import confetti from "canvas-confetti";
 import { useSwipe } from "@/hooks/useSwipe";
+import { motion, AnimatePresence } from 'framer-motion';
 
 const categoryOrder = ["Animals", "Things", "Nature", "Vehicles", "People"];
 
@@ -81,7 +82,7 @@ const AnimatedWord = ({
 
     const runSequence = async () => {
       isAnimatingRef.current = true;
-      
+
       if (isCancelled) return;
 
       // Start first letter fade immediately
@@ -89,7 +90,7 @@ const AnimatedWord = ({
 
       // 1. Animation only
       await animateLetters();
-      
+
       if (isCancelled) return;
 
       // Ensure full word visible
@@ -140,7 +141,7 @@ const AnimatedWord = ({
       {text.split("").map((char, index) => (
         <span
           key={index}
-          className={`transition-opacity duration-300 ${index < visibleCount ? "opacity-100" : "opacity-0"} ${index === 0 ? getLetterColors(char).text : "text-gray-600 dark:text-gray-400"}`}
+          className={`transition-opacity duration-300 ${index < visibleCount ? "opacity-100" : "opacity-0"} ${getLetterColors(char).text}`}
         >
           {char}
         </span>
@@ -160,9 +161,9 @@ const VocabApp = () => {
   const filteredVocab =
     category && category !== "all"
       ? sortedVocabData.filter(
-          (item) =>
-            item.category.toLowerCase().replace(/[\s/]+/g, "-") === category,
-        )
+        (item) =>
+          item.category.toLowerCase().replace(/[\s/]+/g, "-") === category,
+      )
       : sortedVocabData;
 
   // New Animals Flow Integration
@@ -171,10 +172,10 @@ const VocabApp = () => {
       <AnimalsVocab
         items={filteredVocab}
         onExit={() => {
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
-            setLocation("/app", { replace: true });
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => { });
+          }
+          setLocation("/app", { replace: true });
         }}
       />
     );
@@ -195,7 +196,7 @@ const VocabApp = () => {
 
   // Ref to track animation status across the extracted component
   const isAnimatingRef = useRef(false);
-  
+
   // Ref to track image loading
   const imageLoadedRef = useRef(false);
 
@@ -334,23 +335,47 @@ const VocabApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-[#FFFAF0] dark:bg-background"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
       onClick={handleInteraction}
     >
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-amber-200/30 dark:bg-amber-500/10"
+            style={{
+              width: 8 + i * 3,
+              height: 8 + i * 3,
+              left: `${15 + i * 14}%`,
+              top: `${20 + (i % 3) * 25}%`,
+            }}
+            animate={{
+              y: [0, -20, 0],
+              x: [0, 10, 0],
+              opacity: [0.2, 0.5, 0.2],
+            }}
+            transition={{
+              duration: 4 + i * 0.7,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.5,
+            }}
+          />
+        ))}
+      </div>
+
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
             setLocation("/app", { replace: true });
           }}
-          className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 hover:bg-white/80 text-secondary-foreground transition-colors focus:outline-none focus:ring-0 shadow-sm backdrop-blur-sm"
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -358,7 +383,7 @@ const VocabApp = () => {
             viewBox="0 0 24 24"
             strokeWidth={2}
             stroke="currentColor"
-            className="w-8 h-8"
+            className="w-7 h-7"
           >
             <path
               strokeLinecap="round"
@@ -367,9 +392,24 @@ const VocabApp = () => {
             />
           </svg>
         </button>
+
+        {/* Category badge */}
+        <motion.div
+          key={currentItem.category}
+          className="px-3 py-1.5 rounded-full bg-white/70 dark:bg-gray-700/60 backdrop-blur-sm shadow-sm"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        >
+          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400" style={{ fontFamily: "'Nunito', sans-serif" }}>
+            {currentItem.category}
+          </span>
+        </motion.div>
+
+        <div className="w-14" />
       </header>
 
-      <div 
+      <div
         className="flex-1 flex flex-col justify-center w-full overflow-hidden relative"
       >
         <main
@@ -377,42 +417,46 @@ const VocabApp = () => {
         >
           <div
             className="w-full flex justify-center items-center"
-            style={{ perspective: "1000px" }}
           >
             <div
-              className="card"
-              style={{ width: "100%", height: "clamp(300px, 80vw, 600px)" }}
+              className="relative flex items-center justify-center"
+              style={{ width: "100%", maxWidth: "600px", height: "clamp(250px, 70vw, 500px)" }}
             >
-              <div className="card-face card-face-front relative overflow-hidden">
-                {/* Background Image Layer */}
-                <div 
-                  key={currentIndex}
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${isImageVisible ? 'opacity-100' : 'opacity-0'}`}
-                >
-                   <img
-                    src={currentItem.image}
-                    alt={currentItem.name}
-                    className="w-full h-full object-contain scale-115 opacity-25" 
-                    draggable="false"
-                    onLoad={() => { imageLoadedRef.current = true; }}
-                    onError={(e) => (e.currentTarget.style.display = "none")}
-                  />
-                </div>
-
-                {/* Text Layer - z-index ensures it stays on top */}
-                <div className="relative z-10 w-full h-full flex items-center justify-center">
-                  {/* Use key to force remount on index change -> Fixes FOUC and resets animation */}
-                  {!isShuffling && (
-                    <AnimatedWord
-                      key={currentIndex}
-                      text={currentItem.name}
-                      ttsText={currentItem.tts || currentItem.name}
-                      voice={femaleVoice ?? null}
-                      onComplete={handleSequenceComplete}
-                      isAnimatingRef={isAnimatingRef}
+              {/* Background Image Layer */}
+              <AnimatePresence>
+                {isImageVisible && (
+                  <motion.div
+                    key={currentIndex}
+                    className="absolute inset-0 w-full h-full"
+                    initial={{ opacity: 0, scale: 1.05 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <img
+                      src={currentItem.image}
+                      alt={currentItem.name}
+                      className="w-full h-full object-contain opacity-25"
+                      draggable="false"
+                      onLoad={() => { imageLoadedRef.current = true; }}
+                      onError={(e) => (e.currentTarget.style.display = "none")}
                     />
-                  )}
-                </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Text Layer */}
+              <div className="relative z-10 w-full h-full flex items-center justify-center">
+                {!isShuffling && (
+                  <AnimatedWord
+                    key={currentIndex}
+                    text={currentItem.name}
+                    ttsText={currentItem.tts || currentItem.name}
+                    voice={femaleVoice ?? null}
+                    onComplete={handleSequenceComplete}
+                    isAnimatingRef={isAnimatingRef}
+                  />
+                )}
               </div>
             </div>
           </div>

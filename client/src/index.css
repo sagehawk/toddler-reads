@@ -62,6 +62,7 @@
 
   body {
     @apply font-sans antialiased text-foreground select-none;
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
     /* Background handled by BackgroundAnimator.tsx */
   }
 }
