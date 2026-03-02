@@ -15,6 +15,8 @@ import { AnimalsVocab } from "./AnimalsVocab";
 import confetti from "canvas-confetti";
 import { useSwipe } from "@/hooks/useSwipe";
 import { motion, AnimatePresence } from 'framer-motion';
+import { TrayMenu } from '@/components/TrayMenu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const categoryOrder = ["Animals", "Things", "Nature", "Vehicles", "People"];
 
@@ -368,45 +370,14 @@ const VocabApp = () => {
         ))}
       </div>
 
-      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setLocation("/app", { replace: true });
-          }}
-          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-7 h-7"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5L8.25 12l7.5-7.5"
-            />
-          </svg>
-        </button>
+      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
+        <TrayMenu currentPageId="vocab" />
 
-        {/* Category badge */}
-        <motion.div
-          key={currentItem.category}
-          className="px-3 py-1.5 rounded-full bg-white/70 dark:bg-gray-700/60 backdrop-blur-sm shadow-sm"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        >
-          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400" style={{ fontFamily: "'Nunito', sans-serif" }}>
-            {currentItem.category}
-          </span>
-        </motion.div>
 
-        <div className="w-14" />
+
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       <div

@@ -7,28 +7,57 @@ import { motion } from 'framer-motion';
 
 // SVG icons as components
 const PuzzleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.313-.745.653-.835a3.5 3.5 0 100-4.504c-.34-.09-.653-.48-.653-.835V2.25A2.25 2.25 0 0012 0h-2.25a.75.75 0 00-.75.75v2.087c0 .355-.313.745-.653.835a3.5 3.5 0 100 4.504c.34.09.653.48.653.835V11.25a.75.75 0 00.75.75H12" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.745.476-.835a3.5 3.5 0 014.048 0c.29.09.476.48.476.835v1.163a.75.75 0 00.75.75h2.25a.75.75 0 01.75.75V12a2.25 2.25 0 01-2.25 2.25h-1.163c-.355 0-.745.186-.835.476a3.5 3.5 0 010 4.048c.09.29.48.476.835.476H21a.75.75 0 01.75.75v2.25A2.25 2.25 0 0119.5 24H12a.75.75 0 01-.75-.75v-2.25" />
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
+    <path fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round"
+      d="M 8 6
+         h 2
+         a 2 2 0 1 0 4 0
+         h 2
+         a 2 2 0 0 1 2 2
+         v 2
+         a 2 2 0 1 0 0 4
+         v 2
+         a 2 2 0 0 1 -2 2
+         h -2
+         a 2 2 0 1 1 -4 0
+         h -2
+         a 2 2 0 0 1 -2 -2
+         v -2
+         a 2 2 0 1 1 0 -4
+         v -2
+         a 2 2 0 0 1 2 -2
+         Z" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const LettersIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 20L8 4h1l4.5 16M5.5 14h5" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 20c0-3.5 2-6 4.5-6s4.5 2.5 4.5 6M14.5 20h9" />
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
+    <rect x="3" y="4" width="9" height="9" rx="2" fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M5.5 10L7.5 5.5L9.5 10M6.5 8.5h2" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="12" y="11" width="9" height="9" rx="2" fill="currentColor" fillOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14.5 18V13.5H16c.8 0 1.5.3 1.5 1s-.7 1-1.5 1h-1.5c.8 0 1.5.3 1.5 1s-.7 1-1.5 1h-1.5z" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
 const NumbersIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z" />
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
+    <circle cx="7" cy="7" r="5" fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M6 6.5L7 5.5v4" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="17" cy="17" r="5" fill="currentColor" fillOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M15 16s1-1.5 2-1.5c.8 0 1.5.5 1.5 1.25 0 1.5-3.5 3.25-3.5 3.25h3.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="18" r="1.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
 const BookIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10" stroke="currentColor" strokeWidth={1.8}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
+    <path fill="currentColor" fillOpacity="0.2" strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+    <path d="M12 9v2M12 13v1" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+    <circle cx="9" cy="11" r="1" fill="currentColor" stroke="none" />
+    <circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    <path d="M7 8h1M8 12h2M15 8h2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 

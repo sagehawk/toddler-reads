@@ -5,6 +5,8 @@ import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSwipe } from '@/hooks/useSwipe';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TrayMenu } from '@/components/TrayMenu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 // Interfaces are now imported from data file or defined there, but we need to import or redefine if not exported.
 import { learningModules } from '../data/phonicsDecks';
@@ -270,36 +272,24 @@ export default function PhonicsApp() {
         ))}
       </div>
 
-      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate('/app', { replace: true });
-          }}
-          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-        </button>
+      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
+        <TrayMenu currentPageId="phonics" />
 
-        {/* Progress dots */}
-        <div className="flex items-center gap-1.5">
-          {shuffledIndices.slice(0, Math.min(shuffledIndices.length, 10)).map((_, i) => (
-            <div
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i < shuffledIndex
-                  ? 'bg-teal-400 scale-100'
-                  : i === shuffledIndex
-                    ? 'bg-teal-500 scale-125'
-                    : 'bg-gray-300/50 dark:bg-gray-600/50 scale-75'
-                }`}
+        {/* Progress bar */}
+        <div className="flex-1 mx-6 max-w-xs pointer-events-none">
+          <div className="h-2 rounded-full bg-gray-200/50 dark:bg-gray-700/50 overflow-hidden backdrop-blur-sm">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-500"
+              initial={{ width: '0%' }}
+              animate={{ width: `${shuffledIndices.length > 0 ? ((shuffledIndex + 1) / shuffledIndices.length) * 100 : 0}%` }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             />
-          ))}
+          </div>
         </div>
 
-        <div className="w-14" />
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden w-full">
@@ -331,22 +321,7 @@ export default function PhonicsApp() {
             )}
           </AnimatePresence>
 
-          {/* Phonetic hint */}
-          <AnimatePresence>
-            {currentDisplayData && (
-              <motion.p
-                key={currentIndex}
-                className="text-lg sm:text-xl text-gray-400 dark:text-gray-500 font-medium mt-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ delay: 0.3 }}
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              >
-                {currentDisplayData.phoneticText}
-              </motion.p>
-            )}
-          </AnimatePresence>
+
         </main>
       </div>
     </div>

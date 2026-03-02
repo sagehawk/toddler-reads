@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
+import { TrayMenu } from '@/components/TrayMenu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
@@ -283,19 +285,11 @@ const NumbersApp = () => {
         ))}
       </div>
 
-      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            setLocation("/app", { replace: true });
-          }}
-          className="flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-        </button>
+      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
+        <TrayMenu currentPageId="numbers" />
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       <main

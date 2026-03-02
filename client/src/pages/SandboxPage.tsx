@@ -6,7 +6,10 @@ import { getLetterColors } from '../lib/colorUtils';
 import { learningModules } from '../data/phonicsDecks';
 import { sandboxWords } from '../data/sandboxWords';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { TrayMenu } from '@/components/TrayMenu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import confetti from 'canvas-confetti';
+
 
 // ----- Constants -----
 const BLOCK_SIZE = 88;
@@ -339,9 +342,24 @@ export default function SandboxPage() {
         let candidateX = startX + index * stepX + xJitter;
         let candidateY = randY;
 
-        // Push away from existing blocks to avoid overlap
-        for (let attempt = 0; attempt < 10; attempt++) {
+        // Push away from existing blocks and the question box to avoid overlap
+        for (let attempt = 0; attempt < 20; attempt++) {
             let hasOverlap = false;
+
+            // Check question block (located at 75% width, 50% height)
+            const qX = w * 0.75;
+            const qY = h / 2;
+            const qDist = Math.sqrt(Math.pow(candidateX - qX, 2) + Math.pow(candidateY - qY, 2));
+            if (qDist < MIN_SPAWN_DISTANCE + 40) {
+                hasOverlap = true;
+                const pushAngle = Math.atan2(candidateY - qY, candidateX - qX) + (Math.random() - 0.5) * 0.5;
+                candidateX = qX + Math.cos(pushAngle) * (MIN_SPAWN_DISTANCE + 40);
+                candidateY = qY + Math.sin(pushAngle) * (MIN_SPAWN_DISTANCE + 40);
+                candidateX = Math.max(BLOCK_SIZE, Math.min(w - BLOCK_SIZE * 2, candidateX));
+                candidateY = Math.max(BLOCK_SIZE + 60, Math.min(h - BLOCK_SIZE * 2, candidateY));
+                continue;
+            }
+
             for (const existing of existingBlocks) {
                 const dx = candidateX - existing.homeX;
                 const dy = candidateY - existing.homeY;
@@ -686,41 +704,12 @@ export default function SandboxPage() {
                 ))}
             </div>
 
-            {/* Header */}
+            {/* Header — Tray Menu + Theme Toggle */}
             <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
-                <button
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/app', { replace: true });
-                    }}
-                    className="pointer-events-auto flex items-center justify-center w-14 h-14 rounded-full bg-white/60 hover:bg-white/90 dark:bg-gray-700/50 dark:hover:bg-gray-700/80 text-gray-600 dark:text-gray-300 transition-colors focus:outline-none shadow-sm backdrop-blur-sm"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                </button>
-
-                {/* Word hint — blanks that fill in as letters are dispensed */}
-                <div className="flex items-center gap-1.5">
-                    {wordLetters.map((letter, i) => {
-                        const isSpawned = i < spawnedCount;
-                        return (
-                            <div
-                                key={i}
-                                className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all duration-300 ${isSpawned
-                                    ? 'bg-amber-100 border-2 border-amber-300 text-amber-600'
-                                    : 'bg-gray-200/50 border-2 border-dashed border-gray-300/50 text-transparent'
-                                    }`}
-                                style={{ fontFamily: "'Nunito', sans-serif" }}
-                            >
-                                {isSpawned ? letter : '?'}
-                            </div>
-                        );
-                    })}
+                <TrayMenu currentPageId="sandbox" />
+                <div className="pointer-events-auto">
+                    <ThemeToggle />
                 </div>
-
-                <div className="w-14" />
             </header>
 
             {/* Floating blocks */}
@@ -749,8 +738,8 @@ export default function SandboxPage() {
                 })}
             </AnimatePresence>
 
-            {/* Toy Box — vertically centered, right side */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 z-40">
+            {/* Toy Box — horizontally 50% from center to right, vertically centered */}
+            <div className="absolute left-[75%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-40">
                 <DispenseToyBox
                     lettersRemaining={lettersRemaining}
                     onDispense={handleDispense}
@@ -802,23 +791,7 @@ export default function SandboxPage() {
                 )}
             </AnimatePresence>
 
-            {/* Empty state */}
-            {blocks.length === 0 && !isWordComplete && (
-                <motion.div
-                    className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-3"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    <motion.p
-                        className="text-2xl sm:text-3xl font-bold text-gray-300 dark:text-gray-600 text-center"
-                        animate={{ y: [0, -6, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                        Tap <span className="text-amber-400">?</span> for a letter!
-                    </motion.p>
-                </motion.div>
-            )}
+            {/* Removed Empty state */}
         </div>
     );
 }
