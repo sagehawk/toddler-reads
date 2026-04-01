@@ -35,13 +35,13 @@ interface TrayMenuItem {
 }
 
 const TRAY_ITEMS: TrayMenuItem[] = [
-    { id: 'sandbox', label: 'Play', Icon: PuzzleIcon, href: '/sandbox', gradient: 'from-amber-400 to-orange-500' },
+
     { id: 'phonics', label: 'ABC', Icon: LettersIcon, href: '/phonics', gradient: 'from-teal-400 to-emerald-500' },
     { id: 'numbers', label: '123', Icon: NumbersIcon, href: '/numbers', gradient: 'from-yellow-400 to-amber-500' },
     { id: 'vocab', label: 'Words', Icon: BookIcon, href: '/vocab', gradient: 'from-blue-400 to-indigo-500' },
 ];
 
-export type TrayPageId = 'sandbox' | 'phonics' | 'numbers' | 'vocab';
+export type TrayPageId = 'phonics' | 'numbers' | 'vocab';
 
 export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
     const [isOpen, setIsOpen] = useState(false);

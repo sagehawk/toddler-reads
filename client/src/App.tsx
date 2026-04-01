@@ -7,7 +7,7 @@ import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
 import StoryPage from "./pages/StoryPage";
-import SandboxPage from "./pages/SandboxPage";
+
 import { LandscapeEnforcer } from "./components/LandscapeEnforcer";
 import { useEffect } from "react";
 
@@ -22,12 +22,12 @@ function App() {
     <LandscapeEnforcer>
       <Switch>
         <Route path="/" component={LandingPage} />
-        <Route path="/app">{() => <Redirect to="/sandbox" replace />}</Route>
+        <Route path="/app">{() => <Redirect to="/phonics" replace />}</Route>
         <Route path="/phonics" component={PhonicsApp} />
         <Route path="/vocab/:category?" component={VocabApp} />
         <Route path="/sentences/:category?" component={SentencesApp} />
         <Route path="/numbers" component={NumbersApp} />
-        <Route path="/sandbox" component={SandboxPage} />
+
         <Route path="/my-story" component={MyStory} />
         <Route path="/story/:id" component={StoryPage} />
         <Route component={NotFound} />

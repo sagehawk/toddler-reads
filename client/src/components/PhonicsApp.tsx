@@ -137,6 +137,10 @@ export default function PhonicsApp() {
     let isCancelled = false;
 
     const runSequence = async () => {
+      // Wait for the letter fade-in animation to finish (~400ms)
+      await new Promise(r => setTimeout(r, 400));
+      if (isCancelled) return;
+
       // 1. TTS Letter Name
       if (isAutoplayEnabled) {
         const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
