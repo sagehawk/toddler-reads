@@ -5,31 +5,7 @@ import whiteLogoUrl from '../assets/toddler-reads-logo-white.png';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion } from 'framer-motion';
 
-// SVG icons as components
-const PuzzleIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
-    <path fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round"
-      d="M 8 6
-         h 2
-         a 2 2 0 1 0 4 0
-         h 2
-         a 2 2 0 0 1 2 2
-         v 2
-         a 2 2 0 1 0 0 4
-         v 2
-         a 2 2 0 0 1 -2 2
-         h -2
-         a 2 2 0 1 1 -4 0
-         h -2
-         a 2 2 0 0 1 -2 -2
-         v -2
-         a 2 2 0 1 1 0 -4
-         v -2
-         a 2 2 0 0 1 2 -2
-         Z" />
-    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
-  </svg>
-);
+
 
 const LettersIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
@@ -62,14 +38,6 @@ const BookIcon = () => (
 );
 
 const menuItems = [
-  {
-    title: "Play",
-    subtitle: "Build Words",
-    Icon: PuzzleIcon,
-    href: "/sandbox",
-    gradient: "from-amber-400 to-orange-500",
-    shadow: "shadow-orange-300/40 dark:shadow-orange-900/30",
-  },
   {
     title: "ABC",
     subtitle: "Letters & Sounds",
