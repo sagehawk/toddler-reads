@@ -69,23 +69,23 @@ const DieFace = ({
   poppedSet: Set<number>;
   onPopCircle: (index: number) => void;
 }) => {
-  // Dynamically size dots based on count to prevent overlapping on mobile screens
+  // Dynamically size dots based on count to utilize screen space fully
   const getDotSizeClass = (num: number) => {
     if (num <= 4) {
-      return "w-14 h-14 sm:w-18 sm:h-18 md:w-22 md:h-22";
+      return "w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28";
     }
     if (num <= 7) {
-      return "w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20";
+      return "w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24";
     }
-    // High numbers (8, 9, 10) get slightly smaller bubbles to fit perfectly in 300px min-height
-    return "w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16";
+    // High numbers (8, 9, 10) get w-14 (56px) on mobile which is very large and super easy to tap!
+    return "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20";
   };
 
-  // Adjust gap sizes based on dot density to maximize mathematical spacing without overcrowding
+  // Adjust gap sizes based on dot density to maximize mathematical spacing
   const getGapClass = (num: number) => {
-    if (num <= 3) return "gap-6 sm:gap-10";
-    if (num <= 6) return "gap-4 sm:gap-8";
-    return "gap-2 sm:gap-4";
+    if (num <= 3) return "gap-8 sm:gap-12";
+    if (num <= 6) return "gap-6 sm:gap-10";
+    return "gap-4 sm:gap-6";
   };
 
   const sizeClass = getDotSizeClass(count);
@@ -414,8 +414,7 @@ const NumbersApp = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={`${currentIndex}-${isFlipped}`}
-              className="flex items-center justify-center"
-              style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}
+              className="flex items-center justify-center w-[95%] max-w-[600px] h-[clamp(420px,75vh,600px)]"
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
