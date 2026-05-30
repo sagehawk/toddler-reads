@@ -164,6 +164,7 @@ export default function PhonicsApp() {
 
   const replaySound = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isPulsing) return; // Block taps while the letter is still enlarged from the previous sound
     if (currentIndex === null) return;
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
@@ -188,7 +189,7 @@ export default function PhonicsApp() {
       setIsPulsing(false);
       setSoundToggle('phonic'); // Toggle back to phonic sound next
     }
-  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, femaleVoice, soundToggle]);
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, femaleVoice, soundToggle, isPulsing]);
 
   // Main Sequence Effect
   useEffect(() => {
