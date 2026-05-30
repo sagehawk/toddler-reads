@@ -187,7 +187,7 @@ const DecodableWord = ({
 
       // Snappy un-highlight to show spelling reset
       setHighlightedCount(0);
-      await new Promise((r) => setTimeout(r, 120));
+      await new Promise((r) => setTimeout(r, 200));
       if (isCancelled) return;
 
       // Rapidly sound it out without awaiting, letting letter sounds blend together naturally!
@@ -198,8 +198,8 @@ const DecodableWord = ({
         for (let current = 2; current <= totalLetters; current++) {
           if (isCancelled) return;
           
-          // Fast blending delay (120ms) between letter starts
-          await new Promise((r) => setTimeout(r, 120));
+          // Fast blending delay (200ms) between letter starts for smooth non-interrupted overlap
+          await new Promise((r) => setTimeout(r, 200));
           if (isCancelled) return;
           
           setHighlightedCount(current);
