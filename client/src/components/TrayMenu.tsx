@@ -109,26 +109,22 @@ export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
                             exit={{ scale: 0.8, y: 30, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                         >
-                            {TRAY_ITEMS.map((item, i) => {
-                                const isCurrent = item.id === currentPageId;
+                            {TRAY_ITEMS.filter(item => item.id !== currentPageId).map((item, i) => {
                                 return (
                                     <motion.button
                                         key={item.id}
                                         onClick={(e) => handleSelect(item, e)}
-                                        className={`relative flex flex-col items-center justify-center w-36 h-36 sm:w-48 sm:h-48 rounded-[2rem] shadow-2xl focus:outline-none transition-shadow ${isCurrent
-                                            ? 'bg-gray-300/90 dark:bg-gray-800/90 text-gray-500 dark:text-gray-500 cursor-default shadow-none'
-                                            : `bg-gradient-to-br ${item.gradient} text-white cursor-pointer hover:shadow-[0_0_40px_rgba(255,255,255,0.4)]`
-                                            }`}
+                                        className={`relative flex flex-col items-center justify-center w-36 h-36 sm:w-48 sm:h-48 rounded-[2rem] shadow-2xl focus:outline-none transition-shadow bg-gradient-to-br ${item.gradient} text-white cursor-pointer hover:shadow-[0_0_40px_rgba(255,255,255,0.4)]`}
                                         initial={{ opacity: 0, scale: 0.5 }}
-                                        animate={{ opacity: isCurrent ? 0.7 : 1, scale: 1 }}
+                                        animate={{ opacity: 1, scale: 1 }}
                                         transition={{
                                             type: 'spring',
                                             stiffness: 400,
                                             damping: 20,
                                             delay: i * 0.05 + 0.1,
                                         }}
-                                        whileHover={isCurrent ? {} : { scale: 1.05, y: -5 }}
-                                        whileTap={isCurrent ? {} : { scale: 0.95 }}
+                                        whileHover={{ scale: 1.05, y: -5 }}
+                                        whileTap={{ scale: 0.95 }}
                                     >
                                         <item.Icon size={100} />
                                     </motion.button>

@@ -7,8 +7,8 @@ const MyStory = () => {
     <div className="min-h-screen bg-background">
       <header className="py-4">
         <div className="container mx-auto px-6">
-          <Link href="/">
-            <Button variant="outline">← Back to Home</Button>
+          <Link href="/phonics">
+            <Button variant="outline">← Back to App</Button>
           </Link>
         </div>
       </header>
@@ -70,7 +70,7 @@ const MyStory = () => {
           </Card>
 
           <div className="text-center">
-            <Link href="/">
+            <Link href="/phonics">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-button">
                 Start Your Child's Reading Journey
               </Button>

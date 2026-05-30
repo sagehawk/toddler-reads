@@ -141,22 +141,25 @@ export default function PhonicsApp() {
       await new Promise(r => setTimeout(r, 400));
       if (isCancelled) return;
 
-      // 1. TTS Letter Name
+      // 1. Delay the MP3 by a second so they get the chance to recognize it and say it themselves
+      await new Promise(r => setTimeout(r, 1000));
+      if (isCancelled) return;
+
+      // 2. Play the MP3 audio first
+      if (isAutoplayEnabled) {
+        await playSoundOnce(letterInfo.sound);
+      }
+      if (isCancelled) return;
+
+      // 3. Wait a brief delay after the audio ends before saying the TTS (delayed by an additional second)
+      await new Promise(r => setTimeout(r, 1600));
+      if (isCancelled) return;
+
+      // 4. Speak the TTS letter name second
       if (isAutoplayEnabled) {
         const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
         speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
       }
-
-      // 2. Wait 1 second (approx)
-      await new Promise(r => setTimeout(r, 1000));
-      if (isCancelled) return;
-
-      // 3. Play Sound File
-      if (isAutoplayEnabled) {
-        await playSoundOnce(letterInfo.sound);
-      }
-
-      if (isCancelled) return;
     };
 
     runSequence();
