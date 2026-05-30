@@ -252,38 +252,12 @@ const NumbersApp = () => {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800"
+      className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-[#FFFDF9] dark:bg-[#000000]"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
       onClick={handleShuffle}
     >
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-amber-200/30 dark:bg-amber-500/10"
-            style={{
-              width: 8 + i * 3,
-              height: 8 + i * 3,
-              left: `${15 + i * 14}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              x: [0, 10, 0],
-              opacity: [0.2, 0.5, 0.2],
-            }}
-            transition={{
-              duration: 4 + i * 0.7,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.5,
-            }}
-          />
-        ))}
-      </div>
 
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
         <TrayMenu currentPageId="numbers" />

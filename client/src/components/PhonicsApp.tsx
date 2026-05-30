@@ -38,6 +38,7 @@ export default function PhonicsApp() {
   const { speak, stop, voices } = useSpeechSynthesis();
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
+  const [isPulsing, setIsPulsing] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +60,7 @@ export default function PhonicsApp() {
     stop(); // Stop TTS
     stopAllTimers();
     isSoundPlayingRef.current = false;
+    setIsPulsing(false);
   }, [stop, stopAllTimers]);
 
   const handleLetterClick = useCallback((index: number) => {
@@ -108,22 +110,55 @@ export default function PhonicsApp() {
   const playSoundOnce = useCallback(async (soundFile: string) => {
     if (isSoundPlayingRef.current) return;
     isSoundPlayingRef.current = true;
+    setIsPulsing(true);
     return new Promise<void>(resolve => {
       audioRef.current.src = soundFile;
       audioRef.current.onended = () => {
         isSoundPlayingRef.current = false;
+        setIsPulsing(false);
         resolve();
       };
       audioRef.current.onerror = () => {
         isSoundPlayingRef.current = false;
+        setIsPulsing(false);
         resolve();
       };
       audioRef.current.play().catch(() => {
         isSoundPlayingRef.current = false;
+        setIsPulsing(false);
         resolve();
       });
     });
   }, []);
+
+  const replaySound = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (currentIndex === null) return;
+    const letterInfo = selectedModule.letters?.[currentIndex];
+    if (!letterInfo) return;
+
+    stopAllSounds();
+
+    // 1. Play MP3 immediately on manual letter click
+    if (isAutoplayEnabled) {
+      await playSoundOnce(letterInfo.sound);
+    }
+
+    // 2. Wait 1600ms
+    await new Promise(r => setTimeout(r, 1600));
+
+    // 3. Speak TTS
+    if (isAutoplayEnabled) {
+      const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
+      setIsPulsing(true);
+      speak(textToSpeak, {
+        voice: femaleVoice,
+        rate: 1.0,
+        onEnd: () => setIsPulsing(false)
+      });
+      setTimeout(() => setIsPulsing(false), 1200);
+    }
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled, speak, femaleVoice]);
 
   // Main Sequence Effect
   useEffect(() => {
@@ -158,7 +193,13 @@ export default function PhonicsApp() {
       // 4. Speak the TTS letter name second
       if (isAutoplayEnabled) {
         const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-        speak(textToSpeak, { voice: femaleVoice, rate: 1.0 });
+        setIsPulsing(true);
+        speak(textToSpeak, {
+          voice: femaleVoice,
+          rate: 1.0,
+          onEnd: () => setIsPulsing(false)
+        });
+        setTimeout(() => setIsPulsing(false), 1200);
       }
     };
 
@@ -246,51 +287,52 @@ export default function PhonicsApp() {
 
   return (
     <div
-      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800"
+      className="fixed inset-0 select-none flex flex-col overflow-hidden touchable-area bg-[#FFFDF9] dark:bg-[#000000]"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
       onClick={handleInteraction}
     >
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-amber-200/30 dark:bg-amber-500/10"
-            style={{
-              width: 8 + i * 3,
-              height: 8 + i * 3,
-              left: `${15 + i * 14}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              x: [0, 10, 0],
-              opacity: [0.2, 0.5, 0.2],
-            }}
-            transition={{
-              duration: 4 + i * 0.7,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.5,
-            }}
-          />
-        ))}
-      </div>
-
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
         <TrayMenu currentPageId="phonics" />
 
-        {/* Progress bar */}
-        <div className="flex-1 mx-6 max-w-xs pointer-events-none">
-          <div className="h-2 rounded-full bg-gray-200/50 dark:bg-gray-700/50 overflow-hidden backdrop-blur-sm">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-500"
-              initial={{ width: '0%' }}
-              animate={{ width: `${shuffledIndices.length > 0 ? ((shuffledIndex + 1) / shuffledIndices.length) * 100 : 0}%` }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            />
+        {/* Rainbow Pop-It progress tracker */}
+        <div className="flex-1 mx-4 max-w-[280px] flex items-center justify-center pointer-events-auto">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {shuffledIndices.map((letterIdx, idx) => {
+              const isCompleted = idx < shuffledIndex;
+              const isCurrent = idx === shuffledIndex;
+              
+              // Generate a cute rainbow color based on the index
+              const hue = (idx * 360 / Math.max(shuffledIndices.length, 1)) % 360;
+              
+              return (
+                <motion.div
+                  key={idx}
+                  className="w-3.5 h-3.5 rounded-full border shadow-sm relative flex items-center justify-center"
+                  style={{
+                    borderColor: isCompleted 
+                      ? `hsl(${hue}, 70%, 45%)` 
+                      : isCurrent 
+                      ? `hsl(${hue}, 80%, 50%)` 
+                      : 'rgba(156, 163, 175, 0.3)',
+                    backgroundColor: isCompleted
+                      ? `hsl(${hue}, 65%, 55%)`
+                      : isCurrent
+                      ? `hsl(${hue}, 80%, 65%)`
+                      : 'rgba(156, 163, 175, 0.1)',
+                  }}
+                  animate={
+                    isCurrent 
+                      ? { scale: [1, 1.3, 1.25], boxShadow: `0 0 10px hsl(${hue}, 80%, 60%)` } 
+                      : isCompleted 
+                      ? { scale: [1, 1.15, 1], opacity: 1 } 
+                      : { scale: 1, opacity: 0.4 }
+                  }
+                  transition={{ type: 'spring', stiffness: 300, damping: 12 }}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -306,14 +348,17 @@ export default function PhonicsApp() {
               <motion.div
                 key={currentIndex}
                 className="w-full flex justify-center items-center"
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ duration: 0.7, ease: "easeInOut" }}
               >
                 <div className="flex items-center justify-center" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
-                  <h2
-                    className={`font-black ${getLetterColors(currentDisplayData.letter).text}`}
+                  <motion.h2
+                    onClick={replaySound}
+                    className={`font-black cursor-pointer pointer-events-auto select-none ${getLetterColors(currentDisplayData.letter).text}`}
+                    animate={{ scale: isPulsing ? 1.25 : 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 10 }}
                     style={{
                       fontSize: 'clamp(14rem, 60vmin, 24rem)',
                       fontFamily: "'Nunito', sans-serif",
@@ -322,13 +367,11 @@ export default function PhonicsApp() {
                     }}
                   >
                     {currentDisplayData.letter}
-                  </h2>
+                  </motion.h2>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-
-
         </main>
       </div>
     </div>

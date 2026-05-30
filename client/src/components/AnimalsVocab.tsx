@@ -137,7 +137,7 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#FFFAF0] flex flex-col font-nunito">
+    <div className="fixed inset-0 bg-[#FFFDF9] dark:bg-[#000000] flex flex-col font-nunito">
       {/* Top Bar */}
       <div className="p-4">
         <button
