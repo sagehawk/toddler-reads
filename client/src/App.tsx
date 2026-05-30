@@ -9,9 +9,13 @@ import StoryPage from "./pages/StoryPage";
 import Dashboard from "./pages/Dashboard";
 
 import { useEffect } from "react";
+import { preloadAllAudio } from "./lib/audioPreloader";
 
 function App() {
   useEffect(() => {
+    // Preload all phonics MP3 files into browser cache for instant playback
+    preloadAllAudio();
+
     const requestFullscreen = () => {
       const docEl = document.documentElement;
       if (!document.fullscreenElement && docEl.requestFullscreen) {
