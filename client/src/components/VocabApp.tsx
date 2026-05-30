@@ -33,6 +33,18 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
 const isAndroid = /Android/i.test(navigator.userAgent);
 
 // Extracted component to handle animation isolation
+// Helper to get letter sound file path from Phonics audio assets
+const getLetterSoundFile = (char: string): string | null => {
+  const code = char.toLowerCase().charCodeAt(0);
+  if (code >= 97 && code <= 122) {
+    const index = code - 96;
+    const paddedIndex = index.toString().padStart(2, "0");
+    return `/sounds/Phonics/Sound ${paddedIndex}.mp3`;
+  }
+  return null;
+};
+
+// Extracted component to handle animation isolation
 const DecodableWord = ({
   text,
   ttsText,
@@ -54,6 +66,7 @@ const DecodableWord = ({
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
   const onCompleteRef = useRef(onComplete);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -90,30 +103,43 @@ const DecodableWord = ({
     };
   }, [adjustFontSize]);
 
-  // Soft synth ascending chime sounds as letters light up
-  const playLetterSound = (index: number) => {
-    try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) return;
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+  // Play real human-recorded phonics MP3 letter sound sequentially
+  const playLetterSound = (char: string): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      const soundFile = getLetterSoundFile(char);
+      if (!soundFile) {
+        resolve();
+        return;
+      }
       
-      osc.type = "sine";
-      const baseFreq = 261.63; // C4 (Middle C)
-      const freqStep = 35; // Gentle step up for each letter
-      osc.frequency.setValueAtTime(baseFreq + index * freqStep, ctx.currentTime);
+      const audio = new Audio(soundFile);
+      activeAudioRef.current = audio;
       
-      gain.gain.setValueAtTime(0.04, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      audio.onended = () => {
+        activeAudioRef.current = null;
+        resolve();
+      };
       
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
-    } catch (e) {
-      console.error("Synth play failed:", e);
-    }
+      audio.onerror = () => {
+        activeAudioRef.current = null;
+        resolve();
+      };
+      
+      // Safety backup timeout of 1.2s to prevent getting stuck
+      const timeout = setTimeout(() => {
+        activeAudioRef.current = null;
+        resolve();
+      }, 1200);
+      
+      audio.play()
+        .then(() => {})
+        .catch((err) => {
+          console.error("Audio playback error:", err);
+          clearTimeout(timeout);
+          activeAudioRef.current = null;
+          resolve();
+        });
+    });
   };
 
   useEffect(() => {
@@ -124,44 +150,34 @@ const DecodableWord = ({
     }
 
     let isCancelled = false;
-    let animationInterval: NodeJS.Timeout;
 
     const runSequence = async () => {
       isAnimatingRef.current = true;
       const totalLetters = text.length;
 
-      // Start highlighting the first letter immediately
+      // Start highlighting the first letter immediately and play sound
       setHighlightedCount(1);
-      playLetterSound(0);
+      await playLetterSound(text[0]);
 
       if (totalLetters > 1) {
-        await new Promise<void>((resolve) => {
-          let current = 1;
-          const letterDelay = 320; // Perfect toddler-friendly speed
-
-          animationInterval = setInterval(() => {
-            if (isCancelled) {
-              resolve();
-              return;
-            }
-            current++;
-            setHighlightedCount(current);
-            playLetterSound(current - 1);
-
-            if (current >= totalLetters) {
-              clearInterval(animationInterval);
-              resolve();
-            }
-          }, letterDelay);
-        });
+        for (let current = 2; current <= totalLetters; current++) {
+          if (isCancelled) return;
+          
+          // Added a gentle, toddler-friendly delay of 250ms between letter sound files
+          await new Promise((r) => setTimeout(r, 250));
+          if (isCancelled) return;
+          
+          setHighlightedCount(current);
+          await playLetterSound(text[current - 1]);
+        }
       }
 
       if (isCancelled) return;
 
       setHighlightedCount(totalLetters);
 
-      // Short beat after spelling before TTS speaks the word
-      await new Promise((r) => setTimeout(r, 250));
+      // Short beat after spelling before TTS speaks the word (500ms)
+      await new Promise((r) => setTimeout(r, 500));
       if (isCancelled) return;
 
       // Speak word with slightly slower rate for toddler decoding clarity
@@ -178,7 +194,10 @@ const DecodableWord = ({
     return () => {
       isCancelled = true;
       stop();
-      if (animationInterval) clearInterval(animationInterval);
+      if (activeAudioRef.current) {
+        activeAudioRef.current.pause();
+        activeAudioRef.current = null;
+      }
       isAnimatingRef.current = false;
     };
   }, [text, ttsText, voice, speak, stop, hasInteracted, replayTrigger, isAnimatingRef]);
@@ -192,7 +211,7 @@ const DecodableWord = ({
         const isHighlighted = index < highlightedCount;
         const colorClass = isHighlighted
           ? getLetterColors(char).text
-          : "text-gray-300 dark:text-gray-700"; // Always visible, neutral color in high-contrast mode
+          : "text-slate-700 dark:text-slate-200"; // Extremely high contrast legibility in both light & dark modes!
 
         return (
           <span

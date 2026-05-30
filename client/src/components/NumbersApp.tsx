@@ -307,6 +307,7 @@ const NumbersApp = () => {
   }, [numbersData.length, stop]);
 
   const handleShuffle = () => {
+    if (isFlipped) return; // Safeguard: Prevent background misclicks from shuffling the card while the board is flipped open!
     if (navigator.vibrate) navigator.vibrate(10);
     if (audioTimeoutRef.current) {
       clearTimeout(audioTimeoutRef.current);
