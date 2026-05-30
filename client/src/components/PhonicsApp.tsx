@@ -39,6 +39,12 @@ export default function PhonicsApp() {
   const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
   const [isPulsing, setIsPulsing] = useState(false);
+  const [soundToggle, setSoundToggle] = useState<'phonic' | 'name'>('phonic');
+
+  // Always reset manual tap toggle back to phonic first when entering a new letter
+  useEffect(() => {
+    setSoundToggle('phonic');
+  }, [currentIndex]);
 
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,26 +145,25 @@ export default function PhonicsApp() {
 
     stopAllSounds();
 
-    // 1. Play MP3 immediately on manual letter click
-    if (isAutoplayEnabled) {
+    if (soundToggle === 'phonic') {
+      // Tap 1: Play phonic MP3 sound, and animate a pulse
+      setIsPulsing(true);
       await playSoundOnce(letterInfo.sound);
-    }
-
-    // 2. Wait 1600ms
-    await new Promise(r => setTimeout(r, 1600));
-
-    // 3. Speak TTS
-    if (isAutoplayEnabled) {
+      setIsPulsing(false);
+      setSoundToggle('name'); // Toggle to TTS letter name next
+    } else {
+      // Tap 2: Speak TTS letter name, and animate a pulse
       const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
       setIsPulsing(true);
-      speak(textToSpeak, {
+      await speak(textToSpeak, {
         voice: femaleVoice,
         rate: 1.0,
         onEnd: () => setIsPulsing(false)
       });
-      setTimeout(() => setIsPulsing(false), 1200);
+      setIsPulsing(false);
+      setSoundToggle('phonic'); // Toggle back to phonic sound next
     }
-  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled, speak, femaleVoice]);
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, femaleVoice, soundToggle]);
 
   // Main Sequence Effect
   useEffect(() => {
