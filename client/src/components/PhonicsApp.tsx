@@ -8,6 +8,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+// ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
+const playCardTransitionChime = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.22);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  } catch (e) {}
+};
+
 // Interfaces are now imported from data file or defined there, but we need to import or redefine if not exported.
 import { learningModules } from '../data/phonicsDecks';
 
@@ -222,6 +247,7 @@ export default function PhonicsApp() {
     if (navigator.vibrate) navigator.vibrate(10);
 
     stopAllSounds();
+    playCardTransitionChime();
 
     setTimeout(() => {
       if (shuffledIndex >= shuffledIndices.length - 1) {
@@ -362,8 +388,9 @@ export default function PhonicsApp() {
                   <motion.h2
                     onClick={replaySound}
                     className={`font-black cursor-pointer pointer-events-auto select-none ${getLetterColors(currentDisplayData.letter).text}`}
-                    animate={{ scale: isPulsing ? 1.25 : 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 10 }}
+                    animate={isPulsing ? { scale: 1.25 } : { scale: [1, 1.04, 1] }}
+                    transition={isPulsing ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                    whileTap={{ scale: 0.95 }}
                     style={{
                       fontSize: 'clamp(14rem, 60vmin, 24rem)',
                       fontFamily: "'Nunito', sans-serif",

@@ -10,6 +10,55 @@ import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
+const playVocabTapPop = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.12);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {}
+};
+
+const playCardTransitionChime = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.22);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  } catch (e) {}
+};
+
 // Helper to detect Android
 const isAndroid = /Android/i.test(navigator.userAgent);
 
@@ -313,6 +362,7 @@ const NumbersApp = () => {
       clearTimeout(audioTimeoutRef.current);
     }
     stop();
+    playCardTransitionChime();
     setIsFlipped(false);
     if (shuffledIndex >= shuffledIndices.length) {
       shuffleItems();
@@ -428,9 +478,10 @@ const NumbersApp = () => {
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             >
               {!isFlipped ? (
-                <h2
+                <motion.h2
                   onClick={async (e) => {
                     e.stopPropagation();
+                    playVocabTapPop();
                     stop();
                     // Await the TTS speak promise to fully finish pronouncing the number first!
                     await speak(String(currentNumber), { voice: femaleVoice ?? null });
@@ -439,6 +490,9 @@ const NumbersApp = () => {
                     setIsFlipped(true);
                   }}
                   className={`font-black tracking-widest cursor-pointer pointer-events-auto ${numberColor.text}`}
+                  animate={{ scale: [1, 1.04, 1] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                  whileTap={{ scale: 0.93 }}
                   style={{
                     fontSize: 'clamp(15rem, 75vmin, 28rem)',
                     fontFamily: "'Nunito', sans-serif",
@@ -447,7 +501,7 @@ const NumbersApp = () => {
                   }}
                 >
                   {currentNumber}
-                </h2>
+                </motion.h2>
               ) : (
                 <AnimatedDots
                   key={currentIndex}

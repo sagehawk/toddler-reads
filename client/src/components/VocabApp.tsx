@@ -18,6 +18,55 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+// ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
+const playVocabTapPop = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.12);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {}
+};
+
+const playCardTransitionChime = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.22);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  } catch (e) {}
+};
+
 const categoryOrder = ["Animals", "Things", "Nature", "Vehicles", "People"];
 
 const sortedVocabData = [...vocabData].sort((a, b) => {
@@ -212,26 +261,32 @@ const DecodableWord = ({
   }, [text, ttsText, voice, speak, stop, hasInteracted, replayTrigger, isAnimatingRef]);
 
   return (
-    <h2
-      ref={wordRef}
-      className="font-black text-center tracking-wide break-words select-none leading-none"
+    <motion.div
+      animate={isAnimatingRef.current ? { scale: 1 } : { scale: [1, 1.03, 1] }}
+      transition={isAnimatingRef.current ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+      whileTap={{ scale: 0.95 }}
     >
-      {text.split("").map((char, index) => {
-        const isHighlighted = index < highlightedCount;
-        const colorClass = isHighlighted
-          ? getLetterColors(char).text
-          : "text-slate-700 dark:text-slate-200"; // Extremely high contrast legibility in both light & dark modes!
+      <h2
+        ref={wordRef}
+        className="font-black text-center tracking-wide break-words select-none leading-none"
+      >
+        {text.split("").map((char, index) => {
+          const isHighlighted = index < highlightedCount;
+          const colorClass = isHighlighted
+            ? getLetterColors(char).text
+            : "text-slate-700 dark:text-slate-200"; // Extremely high contrast legibility in both light & dark modes!
 
-        return (
-          <span
-            key={index}
-            className={`transition-colors duration-200 ${colorClass}`}
-          >
-            {char}
-          </span>
-        );
-      })}
-    </h2>
+          return (
+            <span
+              key={index}
+              className={`transition-colors duration-200 ${colorClass}`}
+            >
+              {char}
+            </span>
+          );
+        })}
+      </h2>
+    </motion.div>
   );
 };
 
@@ -329,6 +384,7 @@ const VocabApp = () => {
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
     stop();
+    playCardTransitionChime();
     setIsShuffling(true);
 
     setTimeout(() => {
@@ -444,6 +500,7 @@ const VocabApp = () => {
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
+                      playVocabTapPop();
                       stop();
                       if (!hasInteracted) {
                         setHasInteracted(true);
