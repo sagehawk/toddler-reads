@@ -432,8 +432,10 @@ const NumbersApp = () => {
                   onClick={async (e) => {
                     e.stopPropagation();
                     stop();
-                    speak(String(currentNumber), { voice: femaleVoice ?? null });
-                    await new Promise(r => setTimeout(r, 800));
+                    // Await the TTS speak promise to fully finish pronouncing the number first!
+                    await speak(String(currentNumber), { voice: femaleVoice ?? null });
+                    // Natural 150ms beat to allow natural audio decay before transitioning
+                    await new Promise(r => setTimeout(r, 150));
                     setIsFlipped(true);
                   }}
                   className={`font-black tracking-widest cursor-pointer pointer-events-auto ${numberColor.text}`}

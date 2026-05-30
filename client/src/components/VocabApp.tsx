@@ -210,8 +210,8 @@ const DecodableWord = ({
       if (isCancelled) return;
       setHighlightedCount(totalLetters);
 
-      // Short beat after blending before TTS speaks the word (450ms)
-      await new Promise((r) => setTimeout(r, 450));
+      // Spacious toddler-friendly pause after blending (1200ms) to let them say the word before the TTS voice does
+      await new Promise((r) => setTimeout(r, 1200));
       if (isCancelled) return;
 
       // Speak word with slightly slower rate for toddler decoding clarity
