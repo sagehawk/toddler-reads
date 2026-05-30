@@ -70,7 +70,7 @@ export default function PhonicsApp() {
     if (!letterInfo) return;
 
     setCurrentIndex(index);
-    setIsPlaying(true);
+    setIsPlaying(false);
   }, [selectedModule.letters, stopAllSounds]);
 
   const shuffleLetters = useCallback(() => {

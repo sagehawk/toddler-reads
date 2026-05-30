@@ -130,8 +130,8 @@ const AnimatedWord = ({
         const wordWidth = wordRef.current.scrollWidth;
         const targetWidth = containerWidth * 0.9;
         let newFontSize = (targetWidth / wordWidth) * 100;
-        const maxFontSize = 10 * 16;
-        const minFontSize = 3 * 16;
+        const maxFontSize = 12 * 16;
+        const minFontSize = 4.5 * 16;
         newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
         wordRef.current.style.fontSize = `${newFontSize}px`;
       }
@@ -139,7 +139,7 @@ const AnimatedWord = ({
   }, [text]);
 
   return (
-    <h2 ref={wordRef} className="font-bold break-words">
+    <h2 ref={wordRef} className="font-black text-center tracking-wide break-words">
       {text.split("").map((char, index) => (
         <span
           key={index}
@@ -148,6 +148,33 @@ const AnimatedWord = ({
           {char}
         </span>
       ))}
+    </h2>
+  );
+};
+
+const StaticWord = ({ text }: { text: string }) => {
+  const wordRef = useRef<HTMLHeadingElement>(null);
+  
+  useLayoutEffect(() => {
+    if (wordRef.current) {
+      const container = wordRef.current.parentElement;
+      if (container) {
+        const containerWidth = container.clientWidth;
+        wordRef.current.style.fontSize = "100px";
+        const wordWidth = wordRef.current.scrollWidth;
+        const targetWidth = containerWidth * 0.9;
+        let newFontSize = (targetWidth / wordWidth) * 100;
+        const maxFontSize = 12 * 16;
+        const minFontSize = 4.5 * 16;
+        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+        wordRef.current.style.fontSize = `${newFontSize}px`;
+      }
+    }
+  }, [text]);
+
+  return (
+    <h2 ref={wordRef} className="font-black text-center tracking-wide break-words text-gray-700 dark:text-gray-300">
+      {text}
     </h2>
   );
 };
@@ -190,6 +217,7 @@ const VocabApp = () => {
   const [isImageVisible, setIsImageVisible] = useState(false);
   const [replayTrigger, setReplayTrigger] = useState(0);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
   const femaleVoice =
@@ -231,6 +259,7 @@ const VocabApp = () => {
   useEffect(() => {
     setHasListened(false);
     setIsImageVisible(false);
+    setHasInteracted(false);
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
@@ -243,6 +272,7 @@ const VocabApp = () => {
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    stop();
     setIsShuffling(true);
 
     setTimeout(() => {
@@ -257,7 +287,7 @@ const VocabApp = () => {
       }
       setIsShuffling(false);
     }, 150);
-  }, [shuffledIndex, shuffledIndices, shuffleItems]);
+  }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
 
   const handleInteraction = useCallback(async () => {
     handleShuffle();
@@ -265,26 +295,21 @@ const VocabApp = () => {
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
-    // Auto confetti at the end of the sequence
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 },
-    });
-    // Removed auto-flip to image since flip is disabled
   }, []);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
       setIsImageVisible(false);
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
     }, 150);
-  }, [filteredVocab.length]);
+  }, [filteredVocab.length, stop]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
       setIsImageVisible(false);
@@ -293,7 +318,7 @@ const VocabApp = () => {
           (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
       );
     }, 150);
-  }, [filteredVocab.length]);
+  }, [filteredVocab.length, stop]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -363,20 +388,29 @@ const VocabApp = () => {
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
-                      setHasListened(false);
-                      setIsImageVisible(false);
-                      setReplayTrigger(prev => prev + 1);
+                      stop();
+                      if (!hasInteracted) {
+                        setHasInteracted(true);
+                      } else {
+                        setHasListened(false);
+                        setIsImageVisible(false);
+                        setReplayTrigger(prev => prev + 1);
+                      }
                     }}
                     className="cursor-pointer"
                   >
-                    <AnimatedWord
-                      key={`${currentIndex}-${replayTrigger}`}
-                      text={currentItem.name}
-                      ttsText={currentItem.tts || currentItem.name}
-                      voice={femaleVoice ?? null}
-                      onComplete={handleSequenceComplete}
-                      isAnimatingRef={isAnimatingRef}
-                    />
+                    {hasInteracted ? (
+                      <AnimatedWord
+                        key={`${currentIndex}-${replayTrigger}`}
+                        text={currentItem.name}
+                        ttsText={currentItem.tts || currentItem.name}
+                        voice={femaleVoice ?? null}
+                        onComplete={handleSequenceComplete}
+                        isAnimatingRef={isAnimatingRef}
+                      />
+                    ) : (
+                      <StaticWord text={currentItem.name} />
+                    )}
                   </div>
                 )}
               </div>

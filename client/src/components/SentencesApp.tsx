@@ -481,6 +481,7 @@ const SentencesApp = () => {
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    stop();
     setIsShuffling(true);
 
     setTimeout(() => {
@@ -495,7 +496,7 @@ const SentencesApp = () => {
       }
       setIsShuffling(false);
     }, 150);
-  }, [shuffledIndex, shuffledIndices, shuffleItems]);
+  }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
 
   const handleInteraction = useCallback(async () => {
     handleShuffle();
@@ -503,12 +504,6 @@ const SentencesApp = () => {
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
-    confetti({
-      particleCount: 30,
-      spread: 50,
-      origin: { y: 0.6 },
-    });
-    // Auto flip removed
   }, []);
 
   const handleNext = useCallback(() => {

@@ -27,27 +27,33 @@ const dotColors: { [key: number]: string } = {
   10: '#8b5cf6', // violet-400
 };
 
-const Dot = ({ color, visible }: { color: string, visible: boolean }) => (
+const Dot = ({ color, visible, onClick }: { color: string, visible: boolean, onClick: () => void }) => (
   <motion.div
-    className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full`}
+    onClick={onClick}
+    className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full cursor-pointer pointer-events-auto flex items-center justify-center relative"
     style={{
-      background: visible ? color : 'transparent',
-      boxShadow: visible ? `0 4px 12px ${color}44` : 'none',
+      backgroundColor: visible ? color : 'rgba(156, 163, 175, 0.1)',
+      border: `4px dashed ${visible ? 'transparent' : color}`,
+      boxShadow: visible ? `0 4px 12px ${color}55` : 'none',
     }}
     animate={{
-      scale: visible ? [0, 1.15, 1] : 0,
-      opacity: visible ? 1 : 0,
+      scale: visible ? [0.8, 1.25, 1.2] : 1,
     }}
-    transition={{ duration: 0.15, ease: 'easeOut' }}
+    whileHover={{ scale: visible ? 1.2 : 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    transition={{ type: 'spring', stiffness: 350, damping: 10 }}
   />
 );
 
-const DieFace = ({ count, color, visibleCount }: { count: number, color: string, visibleCount: number }) => {
-  // Helper to determine if a dot at specific index (1-based) is visible
-  const isVisible = (index: number) => index <= visibleCount;
-
-  const renderDot = (index: number) => <Dot color={color} visible={isVisible(index)} />;
-
+const DieFace = ({ count, color, poppedSet, onPopCircle }: { count: number, color: string, poppedSet: Set<number>, onPopCircle: (index: number) => void }) => {
+  const renderDot = (index: number) => (
+    <Dot 
+      color={color} 
+      visible={poppedSet.has(index)} 
+      onClick={() => onPopCircle(index)} 
+    />
+  );
+  
   const patterns: { [key: number]: React.ReactNode } = {
     1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
     2: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div></div>,
@@ -63,50 +69,50 @@ const DieFace = ({ count, color, visibleCount }: { count: number, color: string,
   return <div className="w-full h-full p-8 flex justify-center items-center">{patterns[count]}</div>;
 };
 
-// Component to handle counting animation
+// Component to handle interactive counting popping game
 const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, color: string, onComplete: () => void, voice: SpeechSynthesisVoice | null }) => {
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [poppedSet, setPoppedSet] = useState<Set<number>>(new Set());
   const { speak, stop } = useSpeechSynthesis();
 
-  useEffect(() => {
-    let isCancelled = false;
+  const handlePopCircle = useCallback(async (index: number) => {
+    if (poppedSet.has(index)) return; // Already popped
 
-    const runSequence = async () => {
-      setVisibleCount(0);
-      await new Promise(r => setTimeout(r, 500)); // Small initial pause
-      if (isCancelled) return;
+    // Play a satisfying pop sound using Web Audio API!
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.warn("Web Audio API Pop failed", e);
+    }
 
-      // The higher the total count, the shorter the delay between dots
-      // This ensures counting to 10 doesn't take too long.
-      const baseDelay = Math.max(30, 250 - (count * 20));
+    const newSet = new Set(poppedSet);
+    newSet.add(index);
+    setPoppedSet(newSet);
 
-      for (let i = 1; i <= count; i++) {
-        if (isCancelled) return;
+    // Speak the next incremental number
+    const currentPopCount = newSet.size;
+    stop();
+    speak(currentPopCount.toString(), { voice, rate: 1.0 });
 
-        // Show dot
-        setVisibleCount(i);
-
-        // Speak number as it appears at normal rate
-        await speak(i.toString(), { voice, rate: 1.0 });
-
-        // Pause between numbers
-        await new Promise(r => setTimeout(r, baseDelay));
-      }
-
-      if (!isCancelled) {
+    if (currentPopCount === count) {
+      // All popped! Small delay, then trigger success
+      setTimeout(() => {
         onComplete();
-      }
-    };
+      }, 600);
+    }
+  }, [poppedSet, count, voice, speak, stop, onComplete]);
 
-    runSequence();
-
-    return () => {
-      isCancelled = true;
-      stop();
-    };
-  }, [count, voice, speak, stop, onComplete]);
-
-  return <DieFace count={count} color={color} visibleCount={visibleCount} />;
+  return <DieFace count={count} color={color} poppedSet={poppedSet} onPopCircle={handlePopCircle} />;
 };
 
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
@@ -216,33 +222,32 @@ const NumbersApp = () => {
     };
   }, [handlePrevious, handleNext, handleShuffle]);
 
-  // Main Auto-Play Sequence
-  useEffect(() => {
-    if (currentNumber === undefined || isQuietMode) return;
+  const triggerCelebration = () => {
+    const duration = 2.0 * 1000;
+    const end = Date.now() + duration;
 
-    let isCancelled = false;
+    const frame = () => {
+      confetti({
+        particleCount: 5,
+        angle: 60,
+        spread: 60,
+        origin: { x: 0, y: 0.8 },
+        colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa']
+      });
+      confetti({
+        particleCount: 5,
+        angle: 120,
+        spread: 60,
+        origin: { x: 1, y: 0.8 },
+        colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa']
+      });
 
-    const runSequence = async () => {
-      setIsFlipped(false);
-
-      // 1. Speak Number Name
-      speak(String(currentNumber), { voice: femaleVoice ?? null });
-
-      // 2. Wait 2 seconds
-      await new Promise(r => setTimeout(r, 2000));
-      if (isCancelled) return;
-
-      // 3. Flip to trigger counting animation
-      setIsFlipped(true);
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
     };
-
-    runSequence();
-
-    return () => {
-      isCancelled = true;
-      stop();
-    };
-  }, [currentIndex, currentNumber, femaleVoice, speak, isQuietMode, stop]);
+    frame();
+  };
 
   if (currentNumber === undefined) {
     return <div>Loading...</div>;
@@ -282,7 +287,14 @@ const NumbersApp = () => {
             >
               {!isFlipped ? (
                 <h2
-                  className={`font-black tracking-widest cursor-pointer ${numberColor.text}`}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    stop();
+                    speak(String(currentNumber), { voice: femaleVoice ?? null });
+                    await new Promise(r => setTimeout(r, 800));
+                    setIsFlipped(true);
+                  }}
+                  className={`font-black tracking-widest cursor-pointer pointer-events-auto ${numberColor.text}`}
                   style={{
                     fontSize: 'clamp(15rem, 75vmin, 28rem)',
                     fontFamily: "'Nunito', sans-serif",
@@ -299,14 +311,10 @@ const NumbersApp = () => {
                   color={dotColors[currentNumber] || '#60a5fa'}
                   voice={femaleVoice ?? null}
                   onComplete={() => {
-                    confetti({
-                      particleCount: 30,
-                      spread: 50,
-                      origin: { y: 0.6 }
-                    });
+                    triggerCelebration();
                     setTimeout(() => {
                       setIsFlipped(false);
-                    }, 2000);
+                    }, 2500);
                   }}
                 />
               )}
@@ -315,7 +323,7 @@ const NumbersApp = () => {
         </div>
       </main>
     </div>
-  )
+  );
 };
 
 export default NumbersApp;
