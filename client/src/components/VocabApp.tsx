@@ -135,8 +135,8 @@ const DecodableWord = ({
         let newFontSize = (targetWidth / wordWidth) * 100;
         
         // Boundaries for font size to ensure legibility and control on large viewports
-        const maxFontSize = 10 * 16; // 160px
-        const minFontSize = 4.5 * 16; // 72px
+        const maxFontSize = 18 * 16; // 288px
+        const minFontSize = 8.5 * 16; // 136px
         newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
         wordRef.current.style.fontSize = `${newFontSize}px`;
       }
