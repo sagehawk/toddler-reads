@@ -358,22 +358,29 @@ const NumbersApp = () => {
     };
   }, [handlePrevious, handleNext, handleShuffle]);
 
-  const triggerCelebration = () => {
-    const duration = 2.0 * 1000;
+  const triggerCelebration = (num: number) => {
+    // Proportional duration: 400ms base + 200ms per number magnitude (from 600ms to 2400ms)
+    const duration = 400 + num * 200;
     const end = Date.now() + duration;
+    
+    // Proportional intensity (number of particles spawned per frame, from 1 to 7 per side)
+    const particleCount = Math.max(1, Math.round(num * 0.7));
+    
+    // Proportional spread (from 44 degrees to 80 degrees)
+    const spread = 40 + num * 4;
 
     const frame = () => {
       confetti({
-        particleCount: 5,
+        particleCount: particleCount,
         angle: 60,
-        spread: 60,
+        spread: spread,
         origin: { x: 0, y: 0.8 },
         colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa']
       });
       confetti({
-        particleCount: 5,
+        particleCount: particleCount,
         angle: 120,
-        spread: 60,
+        spread: spread,
         origin: { x: 1, y: 0.8 },
         colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa']
       });
@@ -446,10 +453,11 @@ const NumbersApp = () => {
                   color={dotColors[currentNumber] || '#60a5fa'}
                   voice={femaleVoice ?? null}
                   onComplete={() => {
-                    triggerCelebration();
+                    const celebrationDuration = 400 + currentNumber * 200; // ms
+                    triggerCelebration(currentNumber);
                     setTimeout(() => {
                       setIsFlipped(false);
-                    }, 2500);
+                    }, celebrationDuration + 600); // 600ms buffer to let the confetti fall beautifully
                   }}
                 />
               )}
