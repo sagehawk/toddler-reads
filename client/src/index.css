@@ -194,3 +194,17 @@
     max-height: 100vw;
   }
 }
+
+/* Buttery-smooth twilight transition for all backdrops, panels, borders, and text */
+html,
+body,
+div,
+main,
+header,
+h2,
+h1,
+span,
+button,
+svg {
+  transition: background-color 1000ms ease-in-out, color 1000ms ease-in-out, border-color 1000ms ease-in-out, box-shadow 1000ms ease-in-out;
+}
