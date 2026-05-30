@@ -1,169 +1,233 @@
-import { Link } from "wouter";
-import { useTheme } from "@/hooks/useTheme";
-import logoUrl from '../assets/toddler-reads-logo.png';
-import whiteLogoUrl from '../assets/toddler-reads-logo-white.png';
+import { useLocation } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
+import { BackgroundAnimator } from "@/components/BackgroundAnimator";
 
+// ----- Synthesize Bubbly Pop Sound for Card Taps -----
+const playBubblePop = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    // Soft, bubbly pitch sweep upwards for a highly satisfying blop/pop effect
+    osc.frequency.setValueAtTime(140, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.15);
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (e) {
+    console.error(e);
+  }
+};
 
-
-const LettersIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
-    <rect x="3" y="4" width="9" height="9" rx="2" fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M5.5 10L7.5 5.5L9.5 10M6.5 8.5h2" strokeLinecap="round" strokeLinejoin="round" />
-    <rect x="12" y="11" width="9" height="9" rx="2" fill="currentColor" fillOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M14.5 18V13.5H16c.8 0 1.5.3 1.5 1s-.7 1-1.5 1h-1.5c.8 0 1.5.3 1.5 1s-.7 1-1.5 1h-1.5z" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+// ----- Premium Toddler Card Icons -----
+const LettersIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      🍎
+    </span>
+    <span 
+      style={{ fontSize: `${size * 0.35}px` }} 
+      className="absolute text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] font-nunito uppercase select-none bottom-[10%]"
+    >
+      A
+    </span>
+  </div>
 );
 
-const NumbersIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
-    <circle cx="7" cy="7" r="5" fill="currentColor" fillOpacity="0.25" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M6 6.5L7 5.5v4" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="17" cy="17" r="5" fill="currentColor" fillOpacity="0.15" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M15 16s1-1.5 2-1.5c.8 0 1.5.5 1.5 1.25 0 1.5-3.5 3.25-3.5 3.25h3.5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="18" cy="6" r="1.5" fill="currentColor" stroke="none" />
-    <circle cx="6" cy="18" r="1.5" fill="currentColor" stroke="none" />
-  </svg>
+const NumbersIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      🎈
+    </span>
+    <span 
+      style={{ fontSize: `${size * 0.35}px` }} 
+      className="absolute text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] font-nunito select-none top-[25%]"
+    >
+      123
+    </span>
+  </div>
 );
 
-const BookIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 sm:w-10 sm:h-10 text-white" stroke="currentColor" strokeWidth={2}>
-    <path fill="currentColor" fillOpacity="0.2" strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-    <path d="M12 9v2M12 13v1" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
-    <circle cx="9" cy="11" r="1" fill="currentColor" stroke="none" />
-    <circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" />
-    <path d="M7 8h1M8 12h2M15 8h2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+const SparklesIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      📖
+    </span>
+    <span 
+      style={{ fontSize: `${size * 0.45}px` }} 
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
+    >
+      ✨
+    </span>
+  </div>
 );
 
-const menuItems = [
+interface LobbyCardItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  Icon: React.FC<{ size?: number }>;
+  href: string;
+  gradient: string;
+  shadowColor: string;
+}
+
+const LOBBY_CARDS: LobbyCardItem[] = [
   {
-    title: "ABC",
-    subtitle: "Letters & Sounds",
+    id: "phonics",
+    title: "Letters",
+    subtitle: "ABC Phonics",
     Icon: LettersIcon,
     href: "/phonics",
-    gradient: "from-teal-400 to-emerald-500",
-    shadow: "shadow-emerald-300/40 dark:shadow-emerald-900/30",
+    gradient: "from-emerald-400 to-teal-500",
+    shadowColor: "shadow-teal-400/30 dark:shadow-teal-900/40",
   },
   {
-    title: "123",
-    subtitle: "Counting",
+    id: "numbers",
+    title: "Numbers",
+    subtitle: "123 Counting",
     Icon: NumbersIcon,
     href: "/numbers",
-    gradient: "from-yellow-400 to-amber-500",
-    shadow: "shadow-amber-300/40 dark:shadow-amber-900/30",
+    gradient: "from-amber-400 to-orange-500",
+    shadowColor: "shadow-orange-400/30 dark:shadow-orange-950/40",
   },
   {
+    id: "vocab",
     title: "Words",
     subtitle: "Vocabulary",
-    Icon: BookIcon,
+    Icon: SparklesIcon,
     href: "/vocab",
-    gradient: "from-blue-400 to-indigo-500",
-    shadow: "shadow-blue-300/40 dark:shadow-blue-900/30",
+    gradient: "from-indigo-400 to-violet-500",
+    shadowColor: "shadow-violet-400/30 dark:shadow-violet-950/40",
   },
 ];
 
-const DigitalPlayshelf = () => {
-  const { isDarkMode } = useTheme();
+export default function Dashboard() {
+  const [, setLocation] = useLocation();
+
+  const handleCardClick = (href: string) => {
+    playBubblePop();
+    
+    // Ensure fullscreen request carries forward seamlessly
+    try {
+      if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {}
+
+    // Brief delay to let the bubbly sound trigger before screen switches
+    setTimeout(() => {
+      setLocation(href);
+    }, 150);
+  };
 
   return (
-    <div className="h-dvh w-full flex flex-col items-center justify-center px-5 sm:px-8 relative overflow-hidden bg-gradient-to-b from-sky-200 via-sky-100 to-amber-50 dark:from-gray-900 dark:via-gray-850 dark:to-gray-800">
-      {/* Floating particles background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(8)].map((_, i) => (
+    <div className="relative w-full h-dvh overflow-hidden flex flex-col items-center justify-center select-none font-nunito px-4">
+      {/* Visual Atmospheric Background Day/Night */}
+      <BackgroundAnimator />
+
+      {/* Floating Sparkle Particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+        {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute rounded-full"
+            className="absolute rounded-full bg-white/20 dark:bg-white/5 backdrop-blur-[1px]"
             style={{
-              width: 8 + i * 4,
-              height: 8 + i * 4,
-              left: `${10 + i * 11}%`,
-              top: `${15 + (i % 4) * 20}%`,
-              background: isDarkMode
-                ? `hsla(${180 + i * 30}, 50%, 60%, 0.08)`
-                : `hsla(${30 + i * 25}, 80%, 70%, 0.25)`,
+              width: 12 + i * 8,
+              height: 12 + i * 8,
+              left: `${15 + i * 15}%`,
+              top: `${10 + (i % 3) * 25}%`,
             }}
             animate={{
-              y: [0, -25, 0],
-              x: [0, 12, 0],
-              opacity: [0.15, 0.4, 0.15],
+              y: [0, -30, 0],
+              x: [0, 15, 0],
+              scale: [1, 1.15, 1],
+              opacity: [0.15, 0.45, 0.15],
             }}
             transition={{
-              duration: 5 + i * 0.8,
+              duration: 6 + i * 1.2,
               repeat: Infinity,
-              ease: 'easeInOut',
-              delay: i * 0.6,
+              ease: "easeInOut",
+              delay: i * 0.4,
             }}
           />
         ))}
       </div>
 
-      {/* Theme toggle */}
-      <div className="absolute top-3 right-3 sm:top-5 sm:right-5 z-10">
+      {/* Header with Theme Toggle */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
         <ThemeToggle />
       </div>
 
-      {/* Logo */}
-      <motion.div
-        className="flex-shrink-0 mb-6 sm:mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <Link href="/story/all">
-          <img
-            src={isDarkMode ? whiteLogoUrl : logoUrl}
-            alt="ToddlerReads Logo"
-            className="h-16 sm:h-24 select-none cursor-pointer drop-shadow-sm"
-            draggable="false"
-            onError={(e) => (e.currentTarget.style.display = 'none')}
-          />
-        </Link>
-      </motion.div>
+      {/* Central Immersive Playshelf Grid */}
+      <div className="w-full max-w-4xl flex flex-col items-center justify-center z-10">
+        {/* Animated Bobbing Logo */}
+        <motion.h1
+          className="font-black text-center text-4xl sm:text-6xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-500 dark:from-amber-300 dark:via-emerald-300 dark:to-indigo-300 pb-12 sm:pb-16 font-nunito filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.1)] select-none"
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ 
+            opacity: 1,
+            y: [0, -8, 0] // Soft bobbing sequence
+          }}
+          transition={{
+            y: { repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.2 },
+            opacity: { duration: 0.6 }
+          }}
+        >
+          ToddlerReads 🎨✨
+        </motion.h1>
 
-      {/* Menu buttons — compact to fit without scrolling */}
-      <div className="w-full max-w-md mx-auto flex flex-col gap-3 sm:gap-4 relative z-10">
-        {menuItems.map((item, i) => (
-          <motion.div
-            key={item.title}
-            initial={{ opacity: 0, y: 25, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{
-              type: 'spring',
-              stiffness: 300,
-              damping: 24,
-              delay: 0.15 + i * 0.08,
-            }}
-          >
-            <Link
-              href={item.href}
-              onClick={() => {
-                try {
-                  if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => { });
-                  }
-                } catch { }
+        {/* 3D Claymorphic Cards Container */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10 w-full max-w-2xl px-4">
+          {LOBBY_CARDS.map((card, idx) => (
+            <motion.button
+              key={card.id}
+              onClick={() => handleCardClick(card.href)}
+              className={`relative flex flex-col items-center justify-center w-40 h-40 sm:w-48 sm:h-48 rounded-[2.5rem] text-white focus:outline-none bg-gradient-to-br ${card.gradient} shadow-2xl ${card.shadowColor}`}
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ 
+                scale: 1, 
+                opacity: 1,
+                y: [0, -6, 0] // Independent card floating sequences
               }}
-              className={`group w-full flex items-center gap-4 px-5 py-4 sm:px-6 sm:py-5 rounded-2xl text-white font-bold shadow-lg ${item.shadow} transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.97] border-b-[3px] border-black/10 bg-gradient-to-r ${item.gradient}`}
+              transition={{
+                scale: { type: "spring", stiffness: 300, damping: 20, delay: idx * 0.1 },
+                opacity: { duration: 0.4, delay: idx * 0.1 },
+                y: { repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: idx * 0.25 }
+              }}
+              whileHover={{ scale: 1.07 }}
+              whileTap={{ scale: 0.93 }}
+              style={{
+                // Thick 3D Inner Clay Shadowing
+                boxShadow: `inset 0 6px 12px rgba(255,255,255,0.5), inset 0 -6px 12px rgba(0,0,0,0.2), 0 20px 40px rgba(0,0,0,0.15)`
+              }}
             >
-              <div className="flex-shrink-0 bg-white/20 rounded-xl p-2 backdrop-blur-sm group-hover:scale-110 transition-transform duration-200">
-                <item.Icon />
+              {/* Icon Container */}
+              <div className="transform-gpu transition-transform hover:scale-105 duration-200 mb-2">
+                <card.Icon size={96} />
               </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xl sm:text-2xl tracking-wide leading-tight" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  {item.title}
-                </span>
-                <span className="text-xs sm:text-sm font-medium text-white/70 leading-tight">
-                  {item.subtitle}
-                </span>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+
+              {/* Game Text Label */}
+              <span className="absolute bottom-5 font-black tracking-widest text-sm sm:text-base font-nunito uppercase select-none text-white/90 drop-shadow-sm">
+                {card.title}
+              </span>
+            </motion.button>
+          ))}
+        </div>
       </div>
     </div>
   );
-};
-
-export default DigitalPlayshelf;
+}

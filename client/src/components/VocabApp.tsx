@@ -178,40 +178,8 @@ const DecodableWord = ({
 
       if (isCancelled) return;
 
-      // ==========================================
-      // STAGE 2: BLENDING (Rapid Spelling)
-      // ==========================================
-      // Toddler beat: Pause for 600ms to separate spelling from blending
-      await new Promise((r) => setTimeout(r, 600));
-      if (isCancelled) return;
-
-      // Snappy un-highlight to show spelling reset
-      setHighlightedCount(0);
-      await new Promise((r) => setTimeout(r, 200));
-      if (isCancelled) return;
-
-      // Rapidly sound it out without awaiting, letting letter sounds blend together naturally!
-      setHighlightedCount(1);
-      playLetterSound(text[0]); // Fire and forget so they blend!
-
-      if (totalLetters > 1) {
-        for (let current = 2; current <= totalLetters; current++) {
-          if (isCancelled) return;
-          
-          // Fast blending delay (200ms) between letter starts for smooth non-interrupted overlap
-          await new Promise((r) => setTimeout(r, 200));
-          if (isCancelled) return;
-          
-          setHighlightedCount(current);
-          playLetterSound(text[current - 1]);
-        }
-      }
-
-      if (isCancelled) return;
-      setHighlightedCount(totalLetters);
-
-      // Spacious toddler-friendly pause after blending (1200ms) to let them say the word before the TTS voice does
-      await new Promise((r) => setTimeout(r, 1200));
+      // Toddler beat: Pause after slow spelling (800ms) to let them think before the TTS voice does
+      await new Promise((r) => setTimeout(r, 800));
       if (isCancelled) return;
 
       // Speak word with slightly slower rate for toddler decoding clarity
