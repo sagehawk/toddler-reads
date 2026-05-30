@@ -66,7 +66,9 @@ const DecodableWord = ({
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
   const onCompleteRef = useRef(onComplete);
-  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Track multiple concurrent active audios during rapid blending phase to prevent memory/sensory leaks
+  const activeAudiosRef = useRef<Set<HTMLAudioElement>>(new Set());
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -113,21 +115,21 @@ const DecodableWord = ({
       }
       
       const audio = new Audio(soundFile);
-      activeAudioRef.current = audio;
+      activeAudiosRef.current.add(audio);
       
       audio.onended = () => {
-        activeAudioRef.current = null;
+        activeAudiosRef.current.delete(audio);
         resolve();
       };
       
       audio.onerror = () => {
-        activeAudioRef.current = null;
+        activeAudiosRef.current.delete(audio);
         resolve();
       };
       
       // Safety backup timeout of 1.2s to prevent getting stuck
       const timeout = setTimeout(() => {
-        activeAudioRef.current = null;
+        activeAudiosRef.current.delete(audio);
         resolve();
       }, 1200);
       
@@ -136,7 +138,7 @@ const DecodableWord = ({
         .catch((err) => {
           console.error("Audio playback error:", err);
           clearTimeout(timeout);
-          activeAudioRef.current = null;
+          activeAudiosRef.current.delete(audio);
           resolve();
         });
     });
@@ -155,7 +157,9 @@ const DecodableWord = ({
       isAnimatingRef.current = true;
       const totalLetters = text.length;
 
-      // Start highlighting the first letter immediately and play sound
+      // ==========================================
+      // STAGE 1: DECODING (Slow Spelling)
+      // ==========================================
       setHighlightedCount(1);
       await playLetterSound(text[0]);
 
@@ -163,7 +167,7 @@ const DecodableWord = ({
         for (let current = 2; current <= totalLetters; current++) {
           if (isCancelled) return;
           
-          // Added a gentle, toddler-friendly delay of 250ms between letter sound files
+          // Gentle, slow spelling delay (250ms) for letter recognition
           await new Promise((r) => setTimeout(r, 250));
           if (isCancelled) return;
           
@@ -174,10 +178,40 @@ const DecodableWord = ({
 
       if (isCancelled) return;
 
+      // ==========================================
+      // STAGE 2: BLENDING (Rapid Spelling)
+      // ==========================================
+      // Toddler beat: Pause for 600ms to separate spelling from blending
+      await new Promise((r) => setTimeout(r, 600));
+      if (isCancelled) return;
+
+      // Snappy un-highlight to show spelling reset
+      setHighlightedCount(0);
+      await new Promise((r) => setTimeout(r, 120));
+      if (isCancelled) return;
+
+      // Rapidly sound it out without awaiting, letting letter sounds blend together naturally!
+      setHighlightedCount(1);
+      playLetterSound(text[0]); // Fire and forget so they blend!
+
+      if (totalLetters > 1) {
+        for (let current = 2; current <= totalLetters; current++) {
+          if (isCancelled) return;
+          
+          // Fast blending delay (120ms) between letter starts
+          await new Promise((r) => setTimeout(r, 120));
+          if (isCancelled) return;
+          
+          setHighlightedCount(current);
+          playLetterSound(text[current - 1]);
+        }
+      }
+
+      if (isCancelled) return;
       setHighlightedCount(totalLetters);
 
-      // Short beat after spelling before TTS speaks the word (500ms)
-      await new Promise((r) => setTimeout(r, 500));
+      // Short beat after blending before TTS speaks the word (450ms)
+      await new Promise((r) => setTimeout(r, 450));
       if (isCancelled) return;
 
       // Speak word with slightly slower rate for toddler decoding clarity
@@ -194,10 +228,17 @@ const DecodableWord = ({
     return () => {
       isCancelled = true;
       stop();
-      if (activeAudioRef.current) {
-        activeAudioRef.current.pause();
-        activeAudioRef.current = null;
-      }
+      
+      // Stop and clear all active letter audio objects instantly
+      activeAudiosRef.current.forEach((audio) => {
+        try {
+          audio.pause();
+        } catch (e) {
+          // Ignore
+        }
+      });
+      activeAudiosRef.current.clear();
+      
       isAnimatingRef.current = false;
     };
   }, [text, ttsText, voice, speak, stop, hasInteracted, replayTrigger, isAnimatingRef]);
