@@ -1,22 +1,15 @@
 import appleImage from '../assets/animals/apple.png';
 import ballImage from '../assets/animals/ball.png';
 import hatImage from '../assets/animals/hat.png';
-import keyImage from '../assets/animals/key.png';
 import boxImage from '../assets/animals/box.png';
 import cupImage from '../assets/animals/cup.png';
 import bedImage from '../assets/animals/bed.png';
 import toyImage from '../assets/animals/toy.png';
 import penImage from '../assets/animals/pen.png';
 import bagImage from '../assets/animals/bag.png';
-import juiceImage from '../assets/animals/juice.png';
-import pizzaImage from '../assets/animals/pizza.png';
-import yogurtImage from '../assets/animals/yogurt.png';
-import orangeImage from '../assets/animals/orange.png';
-import watermelonImage from '../assets/animals/watermelon.png';
 import sunImage from '../assets/animals/sun.png';
 import moonImage from '../assets/animals/moon.png';
 import nestImage from '../assets/animals/nest.png';
-import treeImage from '../assets/animals/tree.png';
 import rockImage from '../assets/animals/rock.png';
 import logImage from '../assets/animals/log.png';
 import carImage from '../assets/animals/car.png';
@@ -71,22 +64,15 @@ export const vocabData: VocabItem[] = [
   { name: 'Apple', image: appleImage, category: 'Things' },
   { name: 'Ball', image: ballImage, category: 'Things' },
   { name: 'Hat', image: hatImage, category: 'Things' },
-  { name: 'Key', image: keyImage, category: 'Things' },
   { name: 'Box', image: boxImage, category: 'Things' },
   { name: 'Cup', image: cupImage, category: 'Things' },
   { name: 'Bed', image: bedImage, category: 'Things' },
   { name: 'Toy', image: toyImage, category: 'Things' },
   { name: 'Pen', image: penImage, category: 'Things' },
   { name: 'Bag', image: bagImage, category: 'Things' },
-  { name: 'Juice', image: juiceImage, category: 'Things' },
-  { name: 'Pizza', image: pizzaImage, category: 'Things' },
-  { name: 'Yogurt', image: yogurtImage, category: 'Things' },
-  { name: 'Orange', image: orangeImage, category: 'Things' },
-  { name: 'Watermelon', image: watermelonImage, category: 'Things' },
   { name: 'Sun', image: sunImage, category: 'Nature' },
   { name: 'Moon', image: moonImage, category: 'Nature' },
   { name: 'Nest', image: nestImage, category: 'Nature' },
-  { name: 'Tree', image: treeImage, category: 'Nature' },
   { name: 'Rock', image: rockImage, category: 'Nature' },
   { name: 'Log', image: logImage, category: 'Nature' },
   { name: 'Car', image: carImage, category: 'Vehicles' },
