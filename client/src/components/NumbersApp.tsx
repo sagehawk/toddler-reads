@@ -27,10 +27,23 @@ const dotColors: { [key: number]: string } = {
   10: '#8b5cf6', // violet-400
 };
 
-const Dot = ({ color, visible, onClick }: { color: string, visible: boolean, onClick: () => void }) => (
+const Dot = ({
+  color,
+  visible,
+  onClick,
+  sizeClass,
+}: {
+  color: string;
+  visible: boolean;
+  onClick: (e: React.MouseEvent) => void;
+  sizeClass: string;
+}) => (
   <motion.div
-    onClick={onClick}
-    className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full cursor-pointer pointer-events-auto flex items-center justify-center relative"
+    onClick={(e) => {
+      e.stopPropagation(); // Crucial: Stop click event propagation so the page doesn't advance!
+      onClick(e);
+    }}
+    className={`${sizeClass} rounded-full cursor-pointer pointer-events-auto flex items-center justify-center relative`}
     style={{
       backgroundColor: visible ? color : 'rgba(156, 163, 175, 0.1)',
       border: `4px dashed ${visible ? 'transparent' : color}`,
@@ -45,28 +58,150 @@ const Dot = ({ color, visible, onClick }: { color: string, visible: boolean, onC
   />
 );
 
-const DieFace = ({ count, color, poppedSet, onPopCircle }: { count: number, color: string, poppedSet: Set<number>, onPopCircle: (index: number) => void }) => {
+const DieFace = ({
+  count,
+  color,
+  poppedSet,
+  onPopCircle,
+}: {
+  count: number;
+  color: string;
+  poppedSet: Set<number>;
+  onPopCircle: (index: number) => void;
+}) => {
+  // Dynamically size dots based on count to prevent overlapping on mobile screens
+  const getDotSizeClass = (num: number) => {
+    if (num <= 4) {
+      return "w-14 h-14 sm:w-18 sm:h-18 md:w-22 md:h-22";
+    }
+    if (num <= 7) {
+      return "w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20";
+    }
+    // High numbers (8, 9, 10) get slightly smaller bubbles to fit perfectly in 300px min-height
+    return "w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16";
+  };
+
+  // Adjust gap sizes based on dot density to maximize mathematical spacing without overcrowding
+  const getGapClass = (num: number) => {
+    if (num <= 3) return "gap-6 sm:gap-10";
+    if (num <= 6) return "gap-4 sm:gap-8";
+    return "gap-2 sm:gap-4";
+  };
+
+  const sizeClass = getDotSizeClass(count);
+  const gapClass = getGapClass(count);
+
   const renderDot = (index: number) => (
-    <Dot 
-      color={color} 
-      visible={poppedSet.has(index)} 
-      onClick={() => onPopCircle(index)} 
+    <Dot
+      color={color}
+      visible={poppedSet.has(index)}
+      onClick={() => onPopCircle(index)}
+      sizeClass={sizeClass}
     />
   );
-  
+
   const patterns: { [key: number]: React.ReactNode } = {
-    1: <div className="flex justify-center items-center w-full h-full">{renderDot(1)}</div>,
-    2: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div></div>,
-    3: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-2 row-start-2">{renderDot(2)}</div><div className="col-start-3 row-start-3">{renderDot(3)}</div></div>,
-    4: <div className="grid grid-cols-2 grid-rows-2 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}</div>,
-    5: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div></div>,
-    6: <div className="grid grid-cols-2 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}</div>,
-    7: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center"><div className="col-start-1 row-start-1">{renderDot(1)}</div><div className="col-start-3 row-start-1">{renderDot(2)}</div><div className="col-start-2 row-start-2">{renderDot(3)}</div><div className="col-start-1 row-start-3">{renderDot(4)}</div><div className="col-start-3 row-start-3">{renderDot(5)}</div><div className="col-start-2 row-start-1">{renderDot(6)}</div><div className="col-start-2 row-start-3">{renderDot(7)}</div></div>,
-    8: <div className="grid grid-cols-2 grid-rows-4 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}</div>,
-    9: <div className="grid grid-cols-3 grid-rows-3 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}</div>,
-    10: <div className="grid grid-cols-2 grid-rows-5 gap-8 w-full h-full p-4 place-items-center">{renderDot(1)}{renderDot(2)}{renderDot(3)}{renderDot(4)}{renderDot(5)}{renderDot(6)}{renderDot(7)}{renderDot(8)}{renderDot(9)}{renderDot(10)}</div>,
+    1: (
+      <div className="flex justify-center items-center w-full h-full">
+        {renderDot(1)}
+      </div>
+    ),
+    2: (
+      <div className={`grid grid-cols-2 grid-rows-2 ${gapClass} w-full h-full p-4 place-items-center`}>
+        <div className="col-start-1 row-start-1">{renderDot(1)}</div>
+        <div className="col-start-2 row-start-2">{renderDot(2)}</div>
+      </div>
+    ),
+    3: (
+      <div className={`grid grid-cols-3 grid-rows-3 ${gapClass} w-full h-full p-4 place-items-center`}>
+        <div className="col-start-1 row-start-1">{renderDot(1)}</div>
+        <div className="col-start-2 row-start-2">{renderDot(2)}</div>
+        <div className="col-start-3 row-start-3">{renderDot(3)}</div>
+      </div>
+    ),
+    4: (
+      <div className={`grid grid-cols-2 grid-rows-2 ${gapClass} w-full h-full p-4 place-items-center`}>
+        {renderDot(1)}
+        {renderDot(2)}
+        {renderDot(3)}
+        {renderDot(4)}
+      </div>
+    ),
+    5: (
+      <div className={`grid grid-cols-3 grid-rows-3 ${gapClass} w-full h-full p-4 place-items-center`}>
+        <div className="col-start-1 row-start-1">{renderDot(1)}</div>
+        <div className="col-start-3 row-start-1">{renderDot(2)}</div>
+        <div className="col-start-2 row-start-2">{renderDot(3)}</div>
+        <div className="col-start-1 row-start-3">{renderDot(4)}</div>
+        <div className="col-start-3 row-start-3">{renderDot(5)}</div>
+      </div>
+    ),
+    6: (
+      <div className={`grid grid-cols-2 grid-rows-3 ${gapClass} w-full h-full p-4 place-items-center`}>
+        {renderDot(1)}
+        {renderDot(2)}
+        {renderDot(3)}
+        {renderDot(4)}
+        {renderDot(5)}
+        {renderDot(6)}
+      </div>
+    ),
+    7: (
+      <div className={`grid grid-cols-3 grid-rows-3 ${gapClass} w-full h-full p-4 place-items-center`}>
+        <div className="col-start-1 row-start-1">{renderDot(1)}</div>
+        <div className="col-start-3 row-start-1">{renderDot(2)}</div>
+        <div className="col-start-2 row-start-2">{renderDot(3)}</div>
+        <div className="col-start-1 row-start-3">{renderDot(4)}</div>
+        <div className="col-start-3 row-start-3">{renderDot(5)}</div>
+        <div className="col-start-2 row-start-1">{renderDot(6)}</div>
+        <div className="col-start-2 row-start-3">{renderDot(7)}</div>
+      </div>
+    ),
+    8: (
+      <div className={`grid grid-cols-2 grid-rows-4 ${gapClass} w-full h-full p-4 place-items-center`}>
+        {renderDot(1)}
+        {renderDot(2)}
+        {renderDot(3)}
+        {renderDot(4)}
+        {renderDot(5)}
+        {renderDot(6)}
+        {renderDot(7)}
+        {renderDot(8)}
+      </div>
+    ),
+    9: (
+      <div className={`grid grid-cols-3 grid-rows-3 ${gapClass} w-full h-full p-4 place-items-center`}>
+        {renderDot(1)}
+        {renderDot(2)}
+        {renderDot(3)}
+        {renderDot(4)}
+        {renderDot(5)}
+        {renderDot(6)}
+        {renderDot(7)}
+        {renderDot(8)}
+        {renderDot(9)}
+      </div>
+    ),
+    10: (
+      <div className={`grid grid-cols-2 grid-rows-5 ${gapClass} w-full h-full p-4 place-items-center`}>
+        {renderDot(1)}
+        {renderDot(2)}
+        {renderDot(3)}
+        {renderDot(4)}
+        {renderDot(5)}
+        {renderDot(6)}
+        {renderDot(7)}
+        {renderDot(8)}
+        {renderDot(9)}
+        {renderDot(10)}
+      </div>
+    ),
   };
-  return <div className="w-full h-full p-8 flex justify-center items-center">{patterns[count]}</div>;
+  return (
+    <div className="w-full h-full p-4 sm:p-8 flex justify-center items-center">
+      {patterns[count]}
+    </div>
+  );
 };
 
 // Component to handle interactive counting popping game
