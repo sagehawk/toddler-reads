@@ -32,15 +32,23 @@ export const BackgroundAnimator = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none z-[-1] overflow-hidden">
-      {/* Dynamic Gradient Background */}
-      <motion.div
-        className="absolute inset-0 w-full h-full"
-        animate={{
-          background: isDarkMode
-            ? "linear-gradient(to bottom, #0f172a 0%, #1e293b 100%)" // Dark Slate / Night
-            : "linear-gradient(to bottom, #bae6fd 0%, #f0f9ff 100%)", // Sky Blue / Day
+      {/* Dynamic Gradient Background ( twilight cross-fade layers ) */}
+      {/* Layer 1: Day Gradient (Sky Blue) */}
+      <div 
+        className="absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out"
+        style={{
+          background: "linear-gradient(to bottom, #bae6fd 0%, #f0f9ff 100%)",
+          opacity: isDarkMode ? 0 : 1
         }}
-        transition={{ duration: 1.5, ease: "easeInOut" }}
+      />
+
+      {/* Layer 2: Night Gradient (Dark Slate) stacked and cross-faded */}
+      <div 
+        className="absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out"
+        style={{
+          background: "linear-gradient(to bottom, #0f172a 0%, #1e293b 100%)",
+          opacity: isDarkMode ? 1 : 0
+        }}
       />
 
       {/* Day Elements: Clouds */}

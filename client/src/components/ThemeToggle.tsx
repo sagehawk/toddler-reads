@@ -10,6 +10,40 @@ const STARS = [
   { top: '15%', left: '48%', size: 1.5, opacity: 0.5, delay: 0.2 },
 ];
 
+// ----- Synthesize Twilight Theme Toggle Chimes -----
+const playThemeToggleChime = (toDarkMode: boolean) => {
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    if (toDarkMode) {
+      // Calming descending sweep representing twilight sunset
+      osc.frequency.setValueAtTime(320, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.25);
+    } else {
+      // Joyful ascending sweep representing a bright sunrise
+      osc.frequency.setValueAtTime(160, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(320, ctx.currentTime + 0.25);
+    }
+    
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.25);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 export const ThemeToggle = () => {
   const { isDarkMode, toggleTheme } = useTheme();
 
@@ -17,29 +51,41 @@ export const ThemeToggle = () => {
     <button
       onClick={(e) => {
         e.stopPropagation();
+        playThemeToggleChime(!isDarkMode);
         toggleTheme();
       }}
       onPointerDown={(e) => e.stopPropagation()}
-      className="relative flex items-center cursor-pointer focus:outline-none group"
+      className="relative flex items-center cursor-pointer focus:outline-none group pointer-events-auto"
       aria-label="Toggle Theme"
     >
       <motion.div
         className="relative w-[60px] h-[30px] rounded-full p-[3px] overflow-hidden"
         style={{
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)'
-            : 'linear-gradient(135deg, #38bdf8 0%, #7dd3fc 50%, #bae6fd 100%)',
           boxShadow: isDarkMode
             ? 'inset 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.3)'
             : 'inset 0 1px 3px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.1)',
         }}
-        animate={{
-          background: isDarkMode
-            ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)'
-            : 'linear-gradient(135deg, #38bdf8 0%, #7dd3fc 50%, #bae6fd 100%)',
-        }}
-        transition={{ duration: 0.4 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
       >
+        {/* Layer 1: Day/Light Mode Background (Gradient) */}
+        <div 
+          className="absolute inset-0 transition-opacity duration-500 ease-in-out"
+          style={{
+            background: 'linear-gradient(135deg, #38bdf8 0%, #7dd3fc 50%, #bae6fd 100%)',
+            opacity: isDarkMode ? 0 : 1
+          }}
+        />
+
+        {/* Layer 2: Night/Dark Mode Background (Gradient) stacked and cross-faded */}
+        <div 
+          className="absolute inset-0 transition-opacity duration-500 ease-in-out"
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+            opacity: isDarkMode ? 1 : 0
+          }}
+        />
+
         {/* Stars (night mode) — fixed positions */}
         <AnimatePresence>
           {isDarkMode && STARS.map((star, i) => (
@@ -123,8 +169,8 @@ export const ThemeToggle = () => {
           }}
           transition={{
             type: 'spring',
-            stiffness: 500,
-            damping: 28,
+            stiffness: 450,
+            damping: 24,
             mass: 0.8,
           }}
         >
