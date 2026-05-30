@@ -33,20 +33,24 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
 const isAndroid = /Android/i.test(navigator.userAgent);
 
 // Extracted component to handle animation isolation
-const AnimatedWord = ({
+const DecodableWord = ({
   text,
   ttsText,
-  onComplete,
   voice,
+  hasInteracted,
+  replayTrigger,
+  onComplete,
   isAnimatingRef,
 }: {
   text: string;
   ttsText: string;
-  onComplete: () => void;
   voice: SpeechSynthesisVoice | null;
+  hasInteracted: boolean;
+  replayTrigger: number;
+  onComplete: () => void;
   isAnimatingRef: React.MutableRefObject<boolean>;
 }) => {
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [highlightedCount, setHighlightedCount] = useState(0);
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
   const onCompleteRef = useRef(onComplete);
@@ -55,59 +59,117 @@ const AnimatedWord = ({
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Adjust font size dynamically to fit container width up to 95%
+  const adjustFontSize = useCallback(() => {
+    if (wordRef.current) {
+      const container = wordRef.current.parentElement;
+      if (container) {
+        const containerWidth = container.clientWidth;
+        wordRef.current.style.fontSize = "100px";
+        const wordWidth = wordRef.current.scrollWidth;
+        const targetWidth = containerWidth * 0.95;
+        let newFontSize = (targetWidth / wordWidth) * 100;
+        
+        // Boundaries for font size to ensure legibility and control on large viewports
+        const maxFontSize = 10 * 16; // 160px
+        const minFontSize = 4.5 * 16; // 72px
+        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
+        wordRef.current.style.fontSize = `${newFontSize}px`;
+      }
+    }
+  }, [text]);
+
+  useLayoutEffect(() => {
+    adjustFontSize();
+  }, [adjustFontSize]);
+
   useEffect(() => {
+    window.addEventListener("resize", adjustFontSize);
+    return () => {
+      window.removeEventListener("resize", adjustFontSize);
+    };
+  }, [adjustFontSize]);
+
+  // Soft synth ascending chime sounds as letters light up
+  const playLetterSound = (index: number) => {
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = "sine";
+      const baseFreq = 261.63; // C4 (Middle C)
+      const freqStep = 35; // Gentle step up for each letter
+      osc.frequency.setValueAtTime(baseFreq + index * freqStep, ctx.currentTime);
+      
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      console.error("Synth play failed:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!hasInteracted) {
+      setHighlightedCount(0);
+      isAnimatingRef.current = false;
+      return;
+    }
+
     let isCancelled = false;
     let animationInterval: NodeJS.Timeout;
 
-    const animateLetters = async () => {
-      const totalLetters = text.length;
-      let current = 1;
-      const letterDelay = 300;
-
-      if (totalLetters <= 1) return;
-
-      return new Promise<void>((resolve) => {
-        animationInterval = setInterval(() => {
-          if (isCancelled) {
-            resolve();
-            return;
-          }
-          current++;
-          setVisibleCount(current);
-          if (current >= totalLetters) {
-            clearInterval(animationInterval);
-            resolve();
-          }
-        }, letterDelay);
-      });
-    };
-
     const runSequence = async () => {
       isAnimatingRef.current = true;
+      const totalLetters = text.length;
+
+      // Start highlighting the first letter immediately
+      setHighlightedCount(1);
+      playLetterSound(0);
+
+      if (totalLetters > 1) {
+        await new Promise<void>((resolve) => {
+          let current = 1;
+          const letterDelay = 320; // Perfect toddler-friendly speed
+
+          animationInterval = setInterval(() => {
+            if (isCancelled) {
+              resolve();
+              return;
+            }
+            current++;
+            setHighlightedCount(current);
+            playLetterSound(current - 1);
+
+            if (current >= totalLetters) {
+              clearInterval(animationInterval);
+              resolve();
+            }
+          }, letterDelay);
+        });
+      }
 
       if (isCancelled) return;
 
-      // Start first letter fade immediately
-      setVisibleCount(1);
+      setHighlightedCount(totalLetters);
 
-      // 1. Animation only
-      await animateLetters();
-
+      // Short beat after spelling before TTS speaks the word
+      await new Promise((r) => setTimeout(r, 250));
       if (isCancelled) return;
 
-      // Ensure full word visible
-      setVisibleCount(text.length);
-      clearInterval(animationInterval);
-
-      await new Promise((r) => setTimeout(r, 200));
-      if (isCancelled) return;
-
-      // 2. Regular TTS
-      await speak(ttsText, { voice: voice, rate: 1.0 });
+      // Speak word with slightly slower rate for toddler decoding clarity
+      await speak(ttsText, { voice: voice, rate: 0.95 });
 
       if (!isCancelled) {
         isAnimatingRef.current = false;
-        onCompleteRef.current();
+        onCompleteRef.current(); // Reveal illustration last
       }
     };
 
@@ -116,65 +178,31 @@ const AnimatedWord = ({
     return () => {
       isCancelled = true;
       stop();
-      clearInterval(animationInterval);
+      if (animationInterval) clearInterval(animationInterval);
       isAnimatingRef.current = false;
     };
-  }, [text, ttsText, voice, speak, stop, isAnimatingRef]);
-
-  useLayoutEffect(() => {
-    if (wordRef.current) {
-      const container = wordRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        wordRef.current.style.fontSize = "100px";
-        const wordWidth = wordRef.current.scrollWidth;
-        const targetWidth = containerWidth * 0.9;
-        let newFontSize = (targetWidth / wordWidth) * 100;
-        const maxFontSize = 12 * 16;
-        const minFontSize = 4.5 * 16;
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-        wordRef.current.style.fontSize = `${newFontSize}px`;
-      }
-    }
-  }, [text]);
+  }, [text, ttsText, voice, speak, stop, hasInteracted, replayTrigger, isAnimatingRef]);
 
   return (
-    <h2 ref={wordRef} className="font-black text-center tracking-wide break-words">
-      {text.split("").map((char, index) => (
-        <span
-          key={index}
-          className={`transition-opacity duration-300 ${index < visibleCount ? "opacity-100" : "opacity-0"} ${getLetterColors(char).text}`}
-        >
-          {char}
-        </span>
-      ))}
-    </h2>
-  );
-};
+    <h2
+      ref={wordRef}
+      className="font-black text-center tracking-wide break-words select-none leading-none"
+    >
+      {text.split("").map((char, index) => {
+        const isHighlighted = index < highlightedCount;
+        const colorClass = isHighlighted
+          ? getLetterColors(char).text
+          : "text-gray-300 dark:text-gray-700"; // Always visible, neutral color in high-contrast mode
 
-const StaticWord = ({ text }: { text: string }) => {
-  const wordRef = useRef<HTMLHeadingElement>(null);
-  
-  useLayoutEffect(() => {
-    if (wordRef.current) {
-      const container = wordRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        wordRef.current.style.fontSize = "100px";
-        const wordWidth = wordRef.current.scrollWidth;
-        const targetWidth = containerWidth * 0.9;
-        let newFontSize = (targetWidth / wordWidth) * 100;
-        const maxFontSize = 12 * 16;
-        const minFontSize = 4.5 * 16;
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-        wordRef.current.style.fontSize = `${newFontSize}px`;
-      }
-    }
-  }, [text]);
-
-  return (
-    <h2 ref={wordRef} className="font-black text-center tracking-wide break-words text-gray-700 dark:text-gray-300">
-      {text}
+        return (
+          <span
+            key={index}
+            className={`transition-colors duration-200 ${colorClass}`}
+          >
+            {char}
+          </span>
+        );
+      })}
     </h2>
   );
 };
@@ -379,11 +407,11 @@ const VocabApp = () => {
         <main className="flex flex-col items-center justify-center text-center px-4 w-full h-full">
           <div className="w-full flex justify-center items-center">
             <div
-              className="relative flex flex-col items-center justify-center gap-10 w-full"
-              style={{ maxWidth: "600px", minHeight: "clamp(300px, 75vh, 600px)" }}
+              className="relative flex flex-col items-center justify-center gap-6 sm:gap-10 w-[95%] max-w-[800px] pointer-events-auto"
+              style={{ minHeight: "clamp(300px, 75vh, 600px)" }}
             >
               {/* Text Layer (Top Portion) */}
-              <div className="relative z-10 w-full flex items-center justify-center pointer-events-auto">
+              <div className="relative z-10 w-full flex items-center justify-center">
                 {!isShuffling && (
                   <div
                     onClick={(e) => {
@@ -397,26 +425,24 @@ const VocabApp = () => {
                         setReplayTrigger(prev => prev + 1);
                       }
                     }}
-                    className="cursor-pointer"
+                    className="cursor-pointer select-none"
                   >
-                    {hasInteracted ? (
-                      <AnimatedWord
-                        key={`${currentIndex}-${replayTrigger}`}
-                        text={currentItem.name}
-                        ttsText={currentItem.tts || currentItem.name}
-                        voice={femaleVoice ?? null}
-                        onComplete={handleSequenceComplete}
-                        isAnimatingRef={isAnimatingRef}
-                      />
-                    ) : (
-                      <StaticWord text={currentItem.name} />
-                    )}
+                    <DecodableWord
+                      key={`${currentIndex}-${replayTrigger}`}
+                      text={currentItem.name}
+                      ttsText={currentItem.tts || currentItem.name}
+                      voice={femaleVoice ?? null}
+                      hasInteracted={hasInteracted}
+                      replayTrigger={replayTrigger}
+                      onComplete={handleSequenceComplete}
+                      isAnimatingRef={isAnimatingRef}
+                    />
                   </div>
                 )}
               </div>
 
               {/* Image Layer (Bottom Portion) */}
-              <div className="w-full flex items-center justify-center h-48 sm:h-64 relative">
+              <div className="w-full flex items-center justify-center h-56 sm:h-80 relative">
                 <AnimatePresence>
                   {isImageVisible && (
                     <motion.div
