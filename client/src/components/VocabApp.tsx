@@ -188,6 +188,7 @@ const VocabApp = () => {
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [hasListened, setHasListened] = useState(false);
   const [isImageVisible, setIsImageVisible] = useState(false);
+  const [replayTrigger, setReplayTrigger] = useState(0);
   const [isShuffling, setIsShuffling] = useState(false);
 
   const { speak, stop, voices } = useSpeechSynthesis();
@@ -233,14 +234,10 @@ const VocabApp = () => {
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
-  // Handle image fade in/out sequence
+  // Handle image fade in/out sequence (keeps image visible)
   useEffect(() => {
     if (hasListened) {
       setIsImageVisible(true);
-      const timer = setTimeout(() => {
-        setIsImageVisible(false);
-      }, 3000); // 1s fade in + 2s hold
-      return () => clearTimeout(timer);
     }
   }, [hasListened]);
 
@@ -353,54 +350,62 @@ const VocabApp = () => {
         </div>
       </header>
 
-      <div
-        className="flex-1 flex flex-col justify-center w-full overflow-hidden relative"
-      >
-        <main
-          className="flex flex-col items-center justify-center text-center px-4 w-full h-full"
-        >
-          <div
-            className="w-full flex justify-center items-center"
-          >
+      <div className="flex-1 flex flex-col justify-center w-full overflow-hidden relative">
+        <main className="flex flex-col items-center justify-center text-center px-4 w-full h-full">
+          <div className="w-full flex justify-center items-center">
             <div
-              className="relative flex items-center justify-center"
-              style={{ width: "100%", maxWidth: "600px", height: "clamp(250px, 70vw, 500px)" }}
+              className="relative flex flex-col items-center justify-center gap-10 w-full"
+              style={{ maxWidth: "600px", minHeight: "clamp(300px, 75vh, 600px)" }}
             >
-              {/* Background Image Layer */}
-              <AnimatePresence>
-                {isImageVisible && (
-                  <motion.div
-                    key={currentIndex}
-                    className="absolute inset-0 w-full h-full"
-                    initial={{ opacity: 0, scale: 1.05 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.6 }}
-                  >
-                    <img
-                      src={currentItem.image}
-                      alt={currentItem.name}
-                      className="w-full h-full object-contain opacity-25"
-                      draggable="false"
-                      onLoad={() => { imageLoadedRef.current = true; }}
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Text Layer */}
-              <div className="relative z-10 w-full h-full flex items-center justify-center">
+              {/* Text Layer (Top Portion) */}
+              <div className="relative z-10 w-full flex items-center justify-center pointer-events-auto">
                 {!isShuffling && (
-                  <AnimatedWord
-                    key={currentIndex}
-                    text={currentItem.name}
-                    ttsText={currentItem.tts || currentItem.name}
-                    voice={femaleVoice ?? null}
-                    onComplete={handleSequenceComplete}
-                    isAnimatingRef={isAnimatingRef}
-                  />
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHasListened(false);
+                      setIsImageVisible(false);
+                      setReplayTrigger(prev => prev + 1);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <AnimatedWord
+                      key={`${currentIndex}-${replayTrigger}`}
+                      text={currentItem.name}
+                      ttsText={currentItem.tts || currentItem.name}
+                      voice={femaleVoice ?? null}
+                      onComplete={handleSequenceComplete}
+                      isAnimatingRef={isAnimatingRef}
+                    />
+                  </div>
                 )}
+              </div>
+
+              {/* Image Layer (Bottom Portion) */}
+              <div className="w-full flex items-center justify-center h-48 sm:h-64 relative">
+                <AnimatePresence>
+                  {isImageVisible && (
+                    <motion.div
+                      key={currentIndex}
+                      className="w-full h-full flex items-center justify-center"
+                      initial={{ opacity: 0, scale: 0.8, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: -15 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+                    >
+                      <img
+                        src={currentItem.image}
+                        alt={currentItem.name}
+                        className="max-w-full max-h-full object-contain drop-shadow-lg"
+                        draggable="false"
+                        onLoad={() => {
+                          imageLoadedRef.current = true;
+                        }}
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
