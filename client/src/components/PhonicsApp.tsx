@@ -7,13 +7,13 @@ import { useSwipe } from '@/hooks/useSwipe';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { getSharedAudioContext } from '../lib/sharedAudioContext';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playCardTransitionChime = () => {
+  const ctx = getSharedAudioContext();
+  if (!ctx) return;
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     

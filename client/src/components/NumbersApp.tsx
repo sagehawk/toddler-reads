@@ -10,12 +10,13 @@ import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { getSharedAudioContext as getAudioCtx } from '../lib/sharedAudioContext';
+
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playVocabTapPop = () => {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -36,10 +37,9 @@ const playVocabTapPop = () => {
 };
 
 const playCardTransitionChime = () => {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -56,6 +56,24 @@ const playCardTransitionChime = () => {
     
     osc.start();
     osc.stop(ctx.currentTime + 0.22);
+  } catch (e) {}
+};
+
+const playDotPop = () => {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
   } catch (e) {}
 };
 
@@ -261,23 +279,8 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
   const handlePopCircle = useCallback(async (index: number) => {
     if (poppedSet.has(index)) return; // Already popped
 
-    // Play a satisfying pop sound using Web Audio API!
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
-    } catch (e) {
-      console.warn("Web Audio API Pop failed", e);
-    }
+    // Play a satisfying pop sound using shared AudioContext
+    playDotPop();
 
     const newSet = new Set(poppedSet);
     newSet.add(index);

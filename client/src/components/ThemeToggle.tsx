@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/useTheme";
 import { motion, AnimatePresence } from "framer-motion";
+import { getSharedAudioContext } from '../lib/sharedAudioContext';
 
 // Fixed star positions so they never shift around
 const STARS = [
@@ -12,10 +13,9 @@ const STARS = [
 
 // ----- Synthesize Twilight Theme Toggle Chimes -----
 const playThemeToggleChime = (toDarkMode: boolean) => {
+  const ctx = getSharedAudioContext();
+  if (!ctx) return;
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
