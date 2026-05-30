@@ -512,7 +512,27 @@ const NumbersApp = () => {
                     const celebrationDuration = 400 + currentNumber * 200; // ms
                     triggerCelebration(currentNumber);
                     setTimeout(() => {
+                      playCardTransitionChime();
                       setIsFlipped(false);
+                      // Advance to the next shuffled number instead of showing the same one
+                      if (shuffledIndex >= shuffledIndices.length) {
+                        // Re-shuffle and pick the first, ensuring it's different from current
+                        const indices = numbersData.map((_, i) => i);
+                        for (let i = indices.length - 1; i > 0; i--) {
+                          const j = Math.floor(Math.random() * (i + 1));
+                          [indices[i], indices[j]] = [indices[j], indices[i]];
+                        }
+                        // If the first in the new shuffle is the same as current, swap it
+                        if (indices[0] === currentIndex && indices.length > 1) {
+                          [indices[0], indices[1]] = [indices[1], indices[0]];
+                        }
+                        setShuffledIndices(indices);
+                        setCurrentIndex(indices[0]);
+                        setShuffledIndex(1);
+                      } else {
+                        setCurrentIndex(shuffledIndices[shuffledIndex]);
+                        setShuffledIndex(prev => prev + 1);
+                      }
                     }, celebrationDuration + 600); // 600ms buffer to let the confetti fall beautifully
                   }}
                 />
