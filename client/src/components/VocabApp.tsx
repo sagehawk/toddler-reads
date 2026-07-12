@@ -561,9 +561,13 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     }, 150);
   }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
 
-  const handleInteraction = useCallback(async () => {
+  const handleInteraction = useCallback(() => {
+    // Little palms brush the background while tapping the sound buttons —
+    // background taps only advance once the word's job is done (image shown).
+    // Swipes and arrow keys still work as the grown-up escape hatch.
+    if (!hasListened) return;
     handleShuffle();
-  }, [handleShuffle]);
+  }, [handleShuffle, hasListened]);
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);

@@ -5,7 +5,7 @@ import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSwipe } from '@/hooks/useSwipe';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
@@ -259,6 +259,10 @@ export default function PhonicsApp() {
   // any in-flight autoplay narration without tearing down fresh audio.
   const sequenceTokenRef = useRef(0);
 
+  // True while a letter's sound+name narration is playing — background taps
+  // must not skip the letter mid-listen (little palms brush the screen).
+  const isNarratingRef = useRef(false);
+
   // Latest voice without retriggering the narration effect when voices load
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   voiceRef.current = preferredVoice ?? null;
@@ -444,7 +448,13 @@ export default function PhonicsApp() {
       markLetterHeard(letterInfo.letter);
     };
 
-    runSequence();
+    isNarratingRef.current = true;
+    runSequence().finally(() => {
+      // Token check: don't let a stale, cancelled run unlock the next card's narration
+      if (isLive()) {
+        isNarratingRef.current = false;
+      }
+    });
 
     return () => {
       // Invalidate this run and silence anything it left playing
@@ -510,6 +520,9 @@ export default function PhonicsApp() {
   });
 
   const handleInteraction = () => {
+    // Card's job isn't done until the narration has played out — stray palm
+    // taps on the background must not skip the letter mid-listen.
+    if (isNarratingRef.current) return;
     handleShuffle();
   };
 
@@ -604,15 +617,17 @@ export default function PhonicsApp() {
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden w-full">
         <main className="flex flex-col items-center justify-center w-full h-full">
-          <AnimatePresence mode="wait">
-            {currentIndex !== null && currentDisplayData && (
+          {/* Keyed remount with enter-only animation. Deliberately NOT
+              AnimatePresence mode="wait": this page re-renders mid-transition
+              (narration state), which interrupted the exit animation and left
+              orphaned cards wedged at opacity 0, freezing the whole page. */}
+          {currentIndex !== null && currentDisplayData && (
               <motion.div
                 key={`${currentIndex}-${quizData ? 'quiz' : 'learn'}`}
                 className="w-full flex justify-center items-center"
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeInOut" }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
               >
                 {quizData ? (
                   <LetterQuiz
@@ -625,9 +640,11 @@ export default function PhonicsApp() {
                   <div className="flex items-center justify-center" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
                     <motion.h2
                       onClick={replaySound}
-                      className={`font-black cursor-pointer pointer-events-auto select-none flex items-baseline ${getLetterColors(currentDisplayData.letter).text}`}
-                      animate={isPulsing ? { scale: 1.25 } : { scale: [1, 1.04, 1] }}
-                      transition={isPulsing ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                      className={`font-black cursor-pointer pointer-events-auto select-none flex items-baseline ${
+                        isPulsing ? '' : 'animate-breathe'
+                      } ${getLetterColors(currentDisplayData.letter).text}`}
+                      animate={isPulsing ? { scale: 1.25 } : { scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 10 }}
                       whileTap={{ scale: 0.95 }}
                       style={{
                         fontSize: 'clamp(9rem, 40vmin, 16rem)',
@@ -646,7 +663,6 @@ export default function PhonicsApp() {
                 )}
               </motion.div>
             )}
-          </AnimatePresence>
         </main>
       </div>
     </div>

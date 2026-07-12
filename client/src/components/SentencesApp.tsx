@@ -409,9 +409,13 @@ const SentencesApp = () => {
     }, 150);
   }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
 
-  const handleInteraction = useCallback(async () => {
+  const handleInteraction = useCallback(() => {
+    // Little palms brush the background while finger-point reading —
+    // background taps only advance once the sentence has been read out.
+    // Swipes and arrow keys still work as the grown-up escape hatch.
+    if (!hasListened) return;
     handleShuffle();
-  }, [handleShuffle]);
+  }, [handleShuffle, hasListened]);
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);

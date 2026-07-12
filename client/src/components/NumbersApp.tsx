@@ -509,13 +509,15 @@ const NumbersApp = () => {
 
   const numberColor = getLetterColors(String(currentNumber === 10 ? 0 : currentNumber));
 
+  // No background-tap shuffle on this page: little palms brush the screen
+  // while aiming for the number and the dots. Swipe, arrows, space, and
+  // finishing the dot board are the ways to move on.
   return (
     <div
       className="fixed inset-0 select-none flex flex-col justify-between overflow-hidden touchable-area bg-[#FFFDF9] dark:bg-[#000000]"
       onTouchStart={(e) => swipeHandlers.onTouchStart(e)}
       onTouchMove={(e) => swipeHandlers.onTouchMove(e)}
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
-      onClick={handleShuffle}
     >
 
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
