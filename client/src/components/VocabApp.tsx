@@ -125,8 +125,9 @@ const makeLetterSoundPlayer = (activeAudiosRef: React.MutableRefObject<Set<HTMLA
  * dots. Only the leftmost un-tapped button glows; tapping it (or its letter)
  * says that letter's sound and lights the letter. Out-of-order taps nudge the
  * child back to the glowing button — the left-to-right order IS the game.
- * After the last sound, a line sweeps under the word while the voice blends
- * it whole ("now say it fast!"), then the picture confirms the meaning.
+ * The LAST tap is the payoff, Numbers-style: confetti fires immediately
+ * (via onComplete) and the voice says the whole word plus praise — no sweep
+ * animation, no ceremony between the child's action and the reward.
  */
 const TapDecodeWord = ({
   text,
@@ -140,14 +141,12 @@ const TapDecodeWord = ({
   onComplete: () => void;
 }) => {
   const [tappedCount, setTappedCount] = useState(0);
-  const [isBlending, setIsBlending] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [nudge, setNudge] = useState(0);
   const { speak, stop } = useSpeechSynthesis();
   const wordRef = useRef<HTMLHeadingElement>(null);
   const activeAudiosRef = useRef<Set<HTMLAudioElement>>(new Set());
   const tappedRef = useRef(0);
-  const blendingRef = useRef(false);
   const doneRef = useRef(false);
   const cancelledRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -176,19 +175,16 @@ const TapDecodeWord = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const beginBlend = async (lastLetterSound: Promise<void>) => {
-    blendingRef.current = true;
-    await lastLetterSound;
-    if (cancelledRef.current) return;
-    await sleep(350);
-    if (cancelledRef.current) return;
-    setIsBlending(true); // sweep line + letter cascade start now
-    await speak(ttsText, { voice, rate: 0.95 });
-    if (cancelledRef.current) return;
+  const finishWord = async (lastLetterSound: Promise<void>) => {
+    // Reward hits ON the last tap, like the Numbers dots: confetti and the
+    // advance timer start now (parent), while the voice wraps up the audio.
     doneRef.current = true;
-    blendingRef.current = false;
     setIsDone(true);
     onCompleteRef.current();
+    await lastLetterSound;
+    if (cancelledRef.current) return;
+    stop();
+    speak(`${ttsText}! ${randomPraise()}`, { voice, rate: 1.0 });
   };
 
   const handleLetterTap = (index: number) => {
@@ -199,7 +195,6 @@ const TapDecodeWord = ({
       speak(ttsText, { voice, rate: 1.0 });
       return;
     }
-    if (blendingRef.current) return;
 
     if (index < tappedRef.current) {
       // Revisiting an already-sounded letter is always allowed
@@ -218,7 +213,7 @@ const TapDecodeWord = ({
     setTappedCount(tappedRef.current);
     const soundPromise = playLetterSound(text[index]);
     if (tappedRef.current === text.length) {
-      beginBlend(soundPromise);
+      finishWord(soundPromise);
     }
   };
 
@@ -232,7 +227,6 @@ const TapDecodeWord = ({
           const colors = getLetterColors(char);
           const isLit = index < tappedCount;
           const isActive = index === tappedCount && !isDone;
-          const dotColorVar = colors.background.replace("bg-", "");
 
           return (
             <span
@@ -249,17 +243,11 @@ const TapDecodeWord = ({
                   isLit ? colors.text : "text-slate-700 dark:text-slate-200"
                 }`}
                 animate={
-                  isBlending
-                    ? { scale: [1, 1.18, 1] }
-                    : isLit && index === tappedCount - 1
+                  isLit && index === tappedCount - 1
                     ? { scale: [1, 1.15, 1] }
                     : { scale: 1 }
                 }
-                transition={
-                  isBlending
-                    ? { duration: 0.45, delay: index * 0.09 }
-                    : { duration: 0.35 }
-                }
+                transition={{ duration: 0.35 }}
               >
                 {char}
               </motion.span>
@@ -316,18 +304,6 @@ const TapDecodeWord = ({
             </span>
           );
         })}
-
-        {/* Blend sweep: a line travels left→right under the letters as the word is said whole */}
-        {isBlending && (
-          <motion.span
-            className="absolute left-0 right-0 rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-500"
-            style={{ top: "1.02em", height: "0.08em", transformOrigin: "left center" }}
-            initial={{ scaleX: 0, opacity: 1 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 0.7, ease: "easeInOut" }}
-            aria-hidden
-          />
-        )}
       </h2>
     </div>
   );
@@ -366,9 +342,9 @@ const SightWord = ({
       // The beat where the child gets to say it first — the whole point
       await sleep(1400);
       if (cancelled) return;
-      await speak(ttsText, { voice, rate: 1.0 });
-      if (cancelled) return;
+      // Confetti + advance timer (parent) land WITH the confirming voice
       onCompleteRef.current();
+      speak(`${ttsText}! ${randomPraise()}`, { voice, rate: 1.0 });
     })();
     return () => {
       cancelled = true;
@@ -454,6 +430,137 @@ const SIGHT_THRESHOLD = 3;
 // Even mastered words still get an occasional full decode round to stay sharp.
 const SIGHT_MODE_CHANCE = 0.75;
 
+/**
+ * FIND-THE-PICTURE MODE — receptive vocabulary as a game, mirroring the
+ * phonics "find the sound" quiz. The word appears fully colored and is
+ * spoken; three pictures show up; the child taps the one it names. Wrong
+ * picks thud, dim, and replay the word — unlimited tries, no fail state.
+ */
+const PictureQuiz = ({
+  item,
+  choices,
+  voice,
+  onSolved,
+}: {
+  item: VocabItem;
+  choices: VocabItem[];
+  voice: SpeechSynthesisVoice | null;
+  onSolved: () => void;
+}) => {
+  const [wrongPicks, setWrongPicks] = useState<Set<string>>(new Set());
+  const [solved, setSolved] = useState(false);
+  const { speak, stop } = useSpeechSynthesis();
+  const wordRef = useRef<HTMLHeadingElement>(null);
+  const solvedRef = useRef(false);
+  const cancelledRef = useRef(false);
+
+  useAutoFitFont(wordRef, item.name, 9 * 16, 4 * 16);
+
+  const sayWord = useCallback(() => {
+    stop();
+    speak(item.tts || item.name, { voice, rate: 1.0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item, voice]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!cancelledRef.current) sayWord();
+    }, 600);
+    return () => {
+      cancelledRef.current = true;
+      clearTimeout(timer);
+      stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePick = (choice: VocabItem) => {
+    if (solvedRef.current) return;
+    if (choice.name === item.name) {
+      solvedRef.current = true;
+      setSolved(true);
+      if (navigator.vibrate) navigator.vibrate(15);
+      stop();
+      speak(randomPraise(), { voice });
+      onSolved(); // parent: confetti + auto-advance
+    } else {
+      if (wrongPicks.has(choice.name)) return;
+      playWrongTapThud();
+      setWrongPicks((prev) => new Set(prev).add(choice.name));
+      // Fresh ears for the next try
+      setTimeout(() => {
+        if (!cancelledRef.current) sayWord();
+      }, 450);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-6 sm:gap-10 w-full">
+      {/* The word — tap to hear it again */}
+      <div
+        className="w-full flex justify-center cursor-pointer pointer-events-auto"
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          playVocabTapPop();
+          sayWord();
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2
+          ref={wordRef}
+          className="font-black text-center tracking-wide select-none leading-none inline-block whitespace-nowrap"
+        >
+          {item.name.split("").map((char, index) => (
+            <span key={index} className={getLetterColors(char).text}>
+              {char}
+            </span>
+          ))}
+        </h2>
+      </div>
+
+      {/* The picture choices */}
+      <div className="flex flex-row flex-wrap items-center justify-center gap-4 sm:gap-8">
+        {choices.map((choice) => {
+          const isWrong = wrongPicks.has(choice.name);
+          const isWinner = solved && choice.name === item.name;
+
+          return (
+            <motion.button
+              key={choice.name}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handlePick(choice);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isWrong}
+              className={`flex items-center justify-center w-28 h-28 sm:w-44 sm:h-44 rounded-[2rem] bg-white dark:bg-zinc-900 shadow-xl border-4 border-slate-200 dark:border-zinc-700 p-2 sm:p-3 focus:outline-none pointer-events-auto select-none ${
+                isWrong ? "opacity-25 grayscale" : ""
+              }`}
+              style={{ transition: "opacity 250ms ease-out, filter 250ms ease-out" }}
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={isWinner ? { scale: [1, 1.2, 1.1], opacity: 1 } : { scale: 1, opacity: 1 }}
+              transition={
+                isWinner
+                  ? { duration: 0.5 }
+                  : { type: "spring", stiffness: 300, damping: 20 }
+              }
+              whileTap={solved || isWrong ? {} : { scale: 0.92 }}
+            >
+              <img
+                src={choice.image}
+                alt=""
+                className="max-w-full max-h-full object-contain"
+                draggable="false"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Each card plays like the Numbers page the little ones love:
 // picture first → tap it → build the word → confetti + praise → next card.
 type CardStage = "image" | "word" | "done";
@@ -486,16 +593,48 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
 
   const currentItem = filteredVocab[currentIndex];
 
-  // Decide how this card plays, once per card (stable across re-renders)
-  const cardMode = useMemo<"decode" | "sight">(() => {
-    const name = filteredVocab[currentIndex]?.name;
-    const mastery = name ? wordMastery[name] ?? 0 : 0;
-    return mastery >= SIGHT_THRESHOLD && Math.random() < SIGHT_MODE_CHANCE
-      ? "sight"
-      : "decode";
+  // Decide how this card plays, once per card (stable across re-renders).
+  // Three round types keep the game from feeling repetitive:
+  //  - decode: build the word from its sound buttons (teaches; earns mastery)
+  //  - pickImage: hear/see the word, tap the right picture (recognition game)
+  //  - sight: word alone, beat to say it, voice confirms (fast retrieval)
+  const cardPlan = useMemo<{
+    mode: "decode" | "sight" | "pickImage";
+    quizChoices: VocabItem[];
+  }>(() => {
+    const item = filteredVocab[currentIndex];
+    if (!item) return { mode: "decode", quizChoices: [] };
+    const mastery = wordMastery[item.name] ?? 0;
+    const r = Math.random();
+
+    let mode: "decode" | "sight" | "pickImage" = "decode";
+    if (filteredVocab.length >= 3) {
+      if (mastery >= SIGHT_THRESHOLD) {
+        mode = r < 0.45 ? "sight" : r < 0.8 ? "pickImage" : "decode";
+      } else if (mastery >= 1) {
+        mode = r < 0.35 ? "pickImage" : "decode";
+      }
+    } else if (mastery >= SIGHT_THRESHOLD && r < SIGHT_MODE_CHANCE) {
+      mode = "sight";
+    }
+    if (mode !== "pickImage") return { mode, quizChoices: [] };
+
+    // Two distractor pictures, then shuffle the three choices
+    const others = filteredVocab.filter((v) => v.name !== item.name);
+    for (let i = others.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [others[i], others[j]] = [others[j], others[i]];
+    }
+    const quizChoices = [item, others[0], others[1]];
+    for (let i = quizChoices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [quizChoices[i], quizChoices[j]] = [quizChoices[j], quizChoices[i]];
+    }
+    return { mode: "pickImage", quizChoices };
     // Intentionally keyed to the card only — mode must not flip mid-card
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
+  const cardMode = cardPlan.mode;
 
   const shuffleItems = useCallback(
     (shouldSetFirst = false) => {
@@ -536,10 +675,12 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fresh card: back to the inviting picture
+  // Fresh card: back to the inviting picture — except picture-quiz rounds,
+  // which must not show the answer first
   useEffect(() => {
-    setStage("image");
+    setStage(cardMode === "pickImage" ? "word" : "image");
     clearAdvanceTimer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, clearAdvanceTimer]);
 
   // Never leave a stray auto-advance behind on unmount
@@ -591,16 +732,15 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
 
   const handleSequenceComplete = useCallback(() => {
     setStage("done");
-    // The Numbers-page payoff the little ones love: confetti, spoken
-    // praise, then on to the next card by itself.
+    // The Numbers-page payoff, the instant the child earns it: confetti NOW
+    // (each round component speaks its own word + praise concurrently).
     confetti({
       particleCount: 55,
       spread: 70,
       origin: { y: 0.7 },
       colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
     });
-    speak(randomPraise(), { voice: preferredVoice ?? null });
-    // Only full decodes build mastery; sight rounds maintain it
+    // Only full decodes build mastery; sight/quiz rounds maintain it
     if (cardMode === "decode" && currentItem) {
       setWordMastery((prev) => ({
         ...prev,
@@ -608,11 +748,14 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
       }));
     }
     clearAdvanceTimer();
+    // Decode fires completion at the last tap, so its word+praise audio is
+    // still ahead of it; the other rounds complete as their audio starts.
+    const advanceDelay = cardMode === "decode" ? 2600 : 1800;
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
       handleShuffleRef.current();
-    }, 2100);
-  }, [cardMode, currentItem, setWordMastery, speak, preferredVoice, clearAdvanceTimer]);
+    }, advanceDelay);
+  }, [cardMode, currentItem, setWordMastery, clearAdvanceTimer]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -698,10 +841,22 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
               className="relative flex flex-col items-center justify-center gap-6 sm:gap-10 w-[95%] max-w-[800px] pointer-events-auto"
               style={{ minHeight: "clamp(300px, 75vh, 600px)" }}
             >
+              {/* Picture-quiz rounds skip the stages entirely — showing the
+                  picture first would hand over the answer */}
+              {!isShuffling && cardMode === "pickImage" && (
+                <PictureQuiz
+                  key={currentIndex}
+                  item={currentItem}
+                  choices={cardPlan.quizChoices}
+                  voice={preferredVoice ?? null}
+                  onSolved={handleSequenceComplete}
+                />
+              )}
+
               {/* Stage 1 — the picture is the star: big, breathing, tap me!
                   (No opacity in this entrance: if animation frames ever
                   stall, a frozen first frame must still be visible.) */}
-              {!isShuffling && stage === "image" && (
+              {!isShuffling && cardMode !== "pickImage" && stage === "image" && (
                 <motion.div
                   key={`peek-${currentIndex}`}
                   className="relative flex flex-col items-center justify-center gap-6"
@@ -737,7 +892,7 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
               )}
 
               {/* Stage 2 — picture docks up top, the word gets built below */}
-              {!isShuffling && stage !== "image" && (
+              {!isShuffling && cardMode !== "pickImage" && stage !== "image" && (
                 <div className="flex flex-col items-center justify-center gap-4 sm:gap-8 w-full">
                   <motion.div
                     key={`dock-${currentIndex}`}
