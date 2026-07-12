@@ -13,11 +13,11 @@ import { vocabData, VocabItem } from "../data/vocabData";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { AnimalsVocab } from "./AnimalsVocab";
 import { useSwipe } from "@/hooks/useSwipe";
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
-import { playWrongTapThud, sleep } from '../lib/uiSounds';
+import { playWrongTapThud, randomPraise, sleep } from '../lib/uiSounds';
 import { useAutoFitFont } from '@/hooks/useAutoFitFont';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
@@ -454,13 +454,16 @@ const SIGHT_THRESHOLD = 3;
 // Even mastered words still get an occasional full decode round to stay sharp.
 const SIGHT_MODE_CHANCE = 0.75;
 
+// Each card plays like the Numbers page the little ones love:
+// picture first → tap it → build the word → confetti + praise → next card.
+type CardStage = "image" | "word" | "done";
+
 const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
   const filteredVocab = items;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [hasListened, setHasListened] = useState(false);
-  const [isImageVisible, setIsImageVisible] = useState(false);
+  const [stage, setStage] = useState<CardStage>("image");
   const [isShuffling, setIsShuffling] = useState(false);
 
   // Per-word progress, persisted on the device: how many times each word has
@@ -470,10 +473,16 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     {},
   );
 
-  const { stop, preferredVoice } = useSpeechSynthesis();
+  const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
-  // Ref to track image loading
-  const imageLoadedRef = useRef(false);
+  // Pending auto-advance to the next card after a celebration
+  const advanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
 
   const currentItem = filteredVocab[currentIndex];
 
@@ -527,22 +536,18 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reset listened state and image loaded ref when index changes
+  // Fresh card: back to the inviting picture
   useEffect(() => {
-    setHasListened(false);
-    setIsImageVisible(false);
-    imageLoadedRef.current = false;
-  }, [currentIndex]);
+    setStage("image");
+    clearAdvanceTimer();
+  }, [currentIndex, clearAdvanceTimer]);
 
-  // Handle image fade in/out sequence (keeps image visible)
-  useEffect(() => {
-    if (hasListened) {
-      setIsImageVisible(true);
-    }
-  }, [hasListened]);
+  // Never leave a stray auto-advance behind on unmount
+  useEffect(() => clearAdvanceTimer, [clearAdvanceTimer]);
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     playCardTransitionChime();
     setIsShuffling(true);
@@ -552,32 +557,49 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
       if (nextIndex >= shuffledIndices.length) {
         shuffleItems(true);
       } else {
-        setHasListened(false); // Reset immediately
-        setIsImageVisible(false);
+        setStage("image"); // Reset immediately
         setCurrentIndex(shuffledIndices[nextIndex]);
         setShuffledIndex((prev) => prev + 1);
       }
       setIsShuffling(false);
     }, 150);
-  }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
+  }, [shuffledIndex, shuffledIndices, shuffleItems, stop, clearAdvanceTimer]);
+
+  // The auto-advance timer must always fire the freshest handleShuffle
+  const handleShuffleRef = useRef(handleShuffle);
+  handleShuffleRef.current = handleShuffle;
 
   const handleInteraction = useCallback(() => {
     // Little palms brush the background while tapping the sound buttons —
-    // background taps only advance once the word's job is done (image shown).
+    // background taps only advance once the word's job is done.
     // Swipes and arrow keys still work as the grown-up escape hatch.
-    if (!hasListened) return;
+    if (stage !== "done") return;
     handleShuffle();
-  }, [handleShuffle, hasListened]);
+  }, [handleShuffle, stage]);
+
+  // Picture tapped! Decode cards hear the word first (the model to build);
+  // sight cards keep it quiet so the child reads the word themselves.
+  const handleImageTap = useCallback(() => {
+    if (navigator.vibrate) navigator.vibrate(5);
+    playVocabTapPop();
+    if (cardMode === "decode" && currentItem) {
+      stop();
+      speak(currentItem.tts || currentItem.name, { voice: preferredVoice ?? null });
+    }
+    setStage("word");
+  }, [cardMode, currentItem, speak, stop, preferredVoice]);
 
   const handleSequenceComplete = useCallback(() => {
-    setHasListened(true);
-    // A small burst — finishing a word is a win
+    setStage("done");
+    // The Numbers-page payoff the little ones love: confetti, spoken
+    // praise, then on to the next card by itself.
     confetti({
-      particleCount: 40,
-      spread: 65,
+      particleCount: 55,
+      spread: 70,
       origin: { y: 0.7 },
       colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
     });
+    speak(randomPraise(), { voice: preferredVoice ?? null });
     // Only full decodes build mastery; sight rounds maintain it
     if (cardMode === "decode" && currentItem) {
       setWordMastery((prev) => ({
@@ -585,30 +607,35 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
         [currentItem.name]: (prev[currentItem.name] ?? 0) + 1,
       }));
     }
-  }, [cardMode, currentItem, setWordMastery]);
+    clearAdvanceTimer();
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      handleShuffleRef.current();
+    }, 2100);
+  }, [cardMode, currentItem, setWordMastery, speak, preferredVoice, clearAdvanceTimer]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     setTimeout(() => {
-      setHasListened(false); // Reset immediately
-      setIsImageVisible(false);
+      setStage("image"); // Reset immediately
       setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredVocab.length);
     }, 150);
-  }, [filteredVocab.length, stop]);
+  }, [filteredVocab.length, stop, clearAdvanceTimer]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     setTimeout(() => {
-      setHasListened(false); // Reset immediately
-      setIsImageVisible(false);
+      setStage("image"); // Reset immediately
       setCurrentIndex(
         (prevIndex) =>
           (prevIndex - 1 + filteredVocab.length) % filteredVocab.length,
       );
     }, 150);
-  }, [filteredVocab.length, stop]);
+  }, [filteredVocab.length, stop, clearAdvanceTimer]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -622,8 +649,7 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
           item.name.toLowerCase().startsWith(e.key),
         );
         if (newIndex !== -1) {
-          setHasListened(false); // Reset immediately
-          setIsImageVisible(false);
+          setStage("image"); // Reset immediately
           setCurrentIndex(newIndex);
         }
       } else if (e.key === "ArrowLeft") {
@@ -672,54 +698,83 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
               className="relative flex flex-col items-center justify-center gap-6 sm:gap-10 w-[95%] max-w-[800px] pointer-events-auto"
               style={{ minHeight: "clamp(300px, 75vh, 600px)" }}
             >
-              {/* Text Layer (Top Portion) */}
-              <div className="relative z-10 w-full flex items-center justify-center">
-                {!isShuffling &&
-                  (cardMode === "sight" ? (
-                    <SightWord
-                      key={currentIndex}
-                      text={currentItem.name}
-                      ttsText={currentItem.tts || currentItem.name}
-                      voice={preferredVoice ?? null}
-                      onComplete={handleSequenceComplete}
+              {/* Stage 1 — the picture is the star: big, breathing, tap me!
+                  (No opacity in this entrance: if animation frames ever
+                  stall, a frozen first frame must still be visible.) */}
+              {!isShuffling && stage === "image" && (
+                <motion.div
+                  key={`peek-${currentIndex}`}
+                  className="relative flex flex-col items-center justify-center gap-6"
+                  initial={{ scale: 0.85 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                >
+                  <div
+                    className="animate-breathe cursor-pointer pointer-events-auto"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      handleImageTap();
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <img
+                      src={currentItem.image}
+                      alt=""
+                      className="max-h-[42vh] max-w-[82vw] object-contain drop-shadow-xl"
+                      draggable="false"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
                     />
-                  ) : (
-                    <TapDecodeWord
-                      key={currentIndex}
-                      text={currentItem.name}
-                      ttsText={currentItem.tts || currentItem.name}
-                      voice={preferredVoice ?? null}
-                      onComplete={handleSequenceComplete}
-                    />
-                  ))}
-              </div>
+                  </div>
+                  <motion.div
+                    className="text-5xl pointer-events-none select-none"
+                    animate={{ y: [0, -12, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                    aria-hidden
+                  >
+                    👆
+                  </motion.div>
+                </motion.div>
+              )}
 
-              {/* Image Layer (Bottom Portion) */}
-              <div className="w-full flex items-center justify-center h-56 sm:h-80 relative">
-                <AnimatePresence>
-                  {isImageVisible && (
-                    <motion.div
-                      key={currentIndex}
-                      className="w-full h-full flex items-center justify-center"
-                      initial={{ opacity: 0, scale: 0.8, y: 15 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: -15 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-                    >
-                      <img
-                        src={currentItem.image}
-                        alt={currentItem.name}
-                        className="max-w-full max-h-full object-contain drop-shadow-lg"
-                        draggable="false"
-                        onLoad={() => {
-                          imageLoadedRef.current = true;
-                        }}
-                        onError={(e) => (e.currentTarget.style.display = "none")}
+              {/* Stage 2 — picture docks up top, the word gets built below */}
+              {!isShuffling && stage !== "image" && (
+                <div className="flex flex-col items-center justify-center gap-4 sm:gap-8 w-full">
+                  <motion.div
+                    key={`dock-${currentIndex}`}
+                    className="h-32 sm:h-44 flex items-center justify-center"
+                    initial={{ scale: 1.6, y: 40 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 22 }}
+                  >
+                    <img
+                      src={currentItem.image}
+                      alt={currentItem.name}
+                      className="max-h-full max-w-[60vw] object-contain drop-shadow-lg"
+                      draggable="false"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  </motion.div>
+                  <div className="relative z-10 w-full flex items-center justify-center">
+                    {cardMode === "sight" ? (
+                      <SightWord
+                        key={currentIndex}
+                        text={currentItem.name}
+                        ttsText={currentItem.tts || currentItem.name}
+                        voice={preferredVoice ?? null}
+                        onComplete={handleSequenceComplete}
                       />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    ) : (
+                      <TapDecodeWord
+                        key={currentIndex}
+                        text={currentItem.name}
+                        ttsText={currentItem.tts || currentItem.name}
+                        voice={preferredVoice ?? null}
+                        onComplete={handleSequenceComplete}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
