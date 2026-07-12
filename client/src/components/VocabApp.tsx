@@ -2,22 +2,23 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
-  useLayoutEffect,
 } from "react";
-import { Link, useRoute, useLocation } from "wouter";
+import confetti from "canvas-confetti";
+import { useRoute, useLocation } from "wouter";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { Volume2, VolumeX } from "lucide-react";
 import { getLetterColors } from "../lib/colorUtils";
 import { vocabData, VocabItem } from "../data/vocabData";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { AnimalsVocab } from "./AnimalsVocab";
-import confetti from "canvas-confetti";
 import { useSwipe } from "@/hooks/useSwipe";
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
+import { playWrongTapThud, sleep } from '../lib/uiSounds';
+import { useAutoFitFont } from '@/hooks/useAutoFitFont';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playVocabTapPop = () => {
@@ -77,10 +78,6 @@ const sortedVocabData = [...vocabData].sort((a, b) => {
   return a.name.localeCompare(b.name);
 });
 
-// Helper to detect Android
-const isAndroid = /Android/i.test(navigator.userAgent);
-
-// Extracted component to handle animation isolation
 // Helper to get letter sound file path from Phonics audio assets
 const getLetterSoundFile = (char: string): string | null => {
   const code = char.toLowerCase().charCodeAt(0);
@@ -92,160 +89,81 @@ const getLetterSoundFile = (char: string): string | null => {
   return null;
 };
 
-// Extracted component to handle animation isolation
-const DecodableWord = ({
-  text,
-  ttsText,
-  voice,
-  hasInteracted,
-  replayTrigger,
-  onComplete,
-  isAnimatingRef,
-}: {
-  text: string;
-  ttsText: string;
-  voice: SpeechSynthesisVoice | null;
-  hasInteracted: boolean;
-  replayTrigger: number;
-  onComplete: () => void;
-  isAnimatingRef: React.MutableRefObject<boolean>;
-}) => {
-  const [highlightedCount, setHighlightedCount] = useState(0);
-  const { speak, stop } = useSpeechSynthesis();
-  const wordRef = useRef<HTMLHeadingElement>(null);
-  const onCompleteRef = useRef(onComplete);
-  
-  // Track multiple concurrent active audios during rapid blending phase to prevent memory/sensory leaks
-  const activeAudiosRef = useRef<Set<HTMLAudioElement>>(new Set());
-
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
-  // Adjust font size dynamically to fit container width up to 95%
-  const adjustFontSize = useCallback(() => {
-    if (wordRef.current) {
-      const container = wordRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        wordRef.current.style.fontSize = "100px";
-        const wordWidth = wordRef.current.scrollWidth;
-        const targetWidth = containerWidth * 0.95;
-        let newFontSize = (targetWidth / wordWidth) * 100;
-        
-        // Boundaries for font size to ensure legibility and control on large viewports
-        const maxFontSize = 18 * 16; // 288px
-        const minFontSize = 8.5 * 16; // 136px
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-        wordRef.current.style.fontSize = `${newFontSize}px`;
-      }
-    }
-  }, [text]);
-
-  useLayoutEffect(() => {
-    adjustFontSize();
-  }, [adjustFontSize]);
-
-  useEffect(() => {
-    window.addEventListener("resize", adjustFontSize);
-    return () => {
-      window.removeEventListener("resize", adjustFontSize);
-    };
-  }, [adjustFontSize]);
-
-  // Play real human-recorded phonics MP3 letter sound sequentially
-  const playLetterSound = (char: string): Promise<void> => {
-    return new Promise<void>((resolve) => {
+// Play a real human-recorded phonics MP3 letter sound; resolves when it ends
+const makeLetterSoundPlayer = (activeAudiosRef: React.MutableRefObject<Set<HTMLAudioElement>>) =>
+  (char: string): Promise<void> =>
+    new Promise<void>((resolve) => {
       const soundFile = getLetterSoundFile(char);
       if (!soundFile) {
         resolve();
         return;
       }
-      
       const audio = new Audio(soundFile);
       activeAudiosRef.current.add(audio);
-      
-      audio.onended = () => {
+      const finish = () => {
         activeAudiosRef.current.delete(audio);
         resolve();
       };
-      
-      audio.onerror = () => {
-        activeAudiosRef.current.delete(audio);
-        resolve();
-      };
-      
+      audio.onended = finish;
+      audio.onerror = finish;
       // Safety backup timeout of 1.2s to prevent getting stuck
-      const timeout = setTimeout(() => {
-        activeAudiosRef.current.delete(audio);
-        resolve();
-      }, 1200);
-      
-      audio.play()
-        .then(() => {})
-        .catch((err) => {
+      const timeout = setTimeout(finish, 1200);
+      audio.play().catch((err) => {
+        // AbortError just means a newer tap cancelled this sound — normal use
+        if (err?.name !== "AbortError" && err?.name !== "NotAllowedError") {
           console.error("Audio playback error:", err);
-          clearTimeout(timeout);
-          activeAudiosRef.current.delete(audio);
-          resolve();
-        });
+        }
+        clearTimeout(timeout);
+        finish();
+      });
     });
-  };
+
+/**
+ * DECODE MODE — the child sounds the word out *themselves*, in order.
+ *
+ * Each letter gets a "sound button" beneath it, exactly like the Numbers
+ * dots. Only the leftmost un-tapped button glows; tapping it (or its letter)
+ * says that letter's sound and lights the letter. Out-of-order taps nudge the
+ * child back to the glowing button — the left-to-right order IS the game.
+ * After the last sound, a line sweeps under the word while the voice blends
+ * it whole ("now say it fast!"), then the picture confirms the meaning.
+ */
+const TapDecodeWord = ({
+  text,
+  ttsText,
+  voice,
+  onComplete,
+}: {
+  text: string;
+  ttsText: string;
+  voice: SpeechSynthesisVoice | null;
+  onComplete: () => void;
+}) => {
+  const [tappedCount, setTappedCount] = useState(0);
+  const [isBlending, setIsBlending] = useState(false);
+  const [isDone, setIsDone] = useState(false);
+  const [nudge, setNudge] = useState(0);
+  const { speak, stop } = useSpeechSynthesis();
+  const wordRef = useRef<HTMLHeadingElement>(null);
+  const activeAudiosRef = useRef<Set<HTMLAudioElement>>(new Set());
+  const tappedRef = useRef(0);
+  const blendingRef = useRef(false);
+  const doneRef = useRef(false);
+  const cancelledRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
-    if (!hasInteracted) {
-      setHighlightedCount(0);
-      isAnimatingRef.current = false;
-      return;
-    }
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
-    let isCancelled = false;
+  useAutoFitFont(wordRef, text, 14 * 16, 6 * 16);
 
-    const runSequence = async () => {
-      isAnimatingRef.current = true;
-      const totalLetters = text.length;
+  const playLetterSound = makeLetterSoundPlayer(activeAudiosRef);
 
-      // ==========================================
-      // STAGE 1: DECODING (Slow Spelling)
-      // ==========================================
-      setHighlightedCount(1);
-      await playLetterSound(text[0]);
-
-      if (totalLetters > 1) {
-        for (let current = 2; current <= totalLetters; current++) {
-          if (isCancelled) return;
-          
-          // Gentle, slow spelling delay (250ms) for letter recognition
-          await new Promise((r) => setTimeout(r, 250));
-          if (isCancelled) return;
-          
-          setHighlightedCount(current);
-          await playLetterSound(text[current - 1]);
-        }
-      }
-
-      if (isCancelled) return;
-
-      // Toddler beat: Pause after slow spelling (800ms) to let them think before the TTS voice does
-      await new Promise((r) => setTimeout(r, 800));
-      if (isCancelled) return;
-
-      // Speak word with slightly slower rate for toddler decoding clarity
-      await speak(ttsText, { voice: voice, rate: 0.95 });
-
-      if (!isCancelled) {
-        isAnimatingRef.current = false;
-        onCompleteRef.current(); // Reveal illustration last
-      }
-    };
-
-    runSequence();
-
+  useEffect(() => {
     return () => {
-      isCancelled = true;
+      cancelledRef.current = true;
       stop();
-      
-      // Stop and clear all active letter audio objects instantly
       activeAudiosRef.current.forEach((audio) => {
         try {
           audio.pause();
@@ -254,43 +172,249 @@ const DecodableWord = ({
         }
       });
       activeAudiosRef.current.clear();
-      
-      isAnimatingRef.current = false;
     };
-  }, [text, ttsText, voice, speak, stop, hasInteracted, replayTrigger, isAnimatingRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const beginBlend = async (lastLetterSound: Promise<void>) => {
+    blendingRef.current = true;
+    await lastLetterSound;
+    if (cancelledRef.current) return;
+    await sleep(350);
+    if (cancelledRef.current) return;
+    setIsBlending(true); // sweep line + letter cascade start now
+    await speak(ttsText, { voice, rate: 0.95 });
+    if (cancelledRef.current) return;
+    doneRef.current = true;
+    blendingRef.current = false;
+    setIsDone(true);
+    onCompleteRef.current();
+  };
+
+  const handleLetterTap = (index: number) => {
+    if (doneRef.current) {
+      // Finished — tapping the word repeats it whole (fast recognition practice)
+      playVocabTapPop();
+      stop();
+      speak(ttsText, { voice, rate: 1.0 });
+      return;
+    }
+    if (blendingRef.current) return;
+
+    if (index < tappedRef.current) {
+      // Revisiting an already-sounded letter is always allowed
+      playLetterSound(text[index]);
+      return;
+    }
+    if (index > tappedRef.current) {
+      // Skipped ahead — nudge them back to the glowing button
+      playWrongTapThud();
+      setNudge((n) => n + 1);
+      return;
+    }
+    // The correct next letter, left to right
+    if (navigator.vibrate) navigator.vibrate(8);
+    tappedRef.current += 1;
+    setTappedCount(tappedRef.current);
+    const soundPromise = playLetterSound(text[index]);
+    if (tappedRef.current === text.length) {
+      beginBlend(soundPromise);
+    }
+  };
 
   return (
-    <motion.div
-      animate={isAnimatingRef.current ? { scale: 1 } : { scale: [1, 1.03, 1] }}
-      transition={isAnimatingRef.current ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-      whileTap={{ scale: 0.95 }}
-    >
+    <div className="relative w-full flex justify-center">
       <h2
         ref={wordRef}
-        className="font-black text-center tracking-wide break-words select-none leading-none"
+        className="relative font-black text-center tracking-wide select-none leading-none inline-block whitespace-nowrap"
       >
         {text.split("").map((char, index) => {
-          const isHighlighted = index < highlightedCount;
-          const colorClass = isHighlighted
-            ? getLetterColors(char).text
-            : "text-slate-700 dark:text-slate-200"; // Extremely high contrast legibility in both light & dark modes!
+          const colors = getLetterColors(char);
+          const isLit = index < tappedCount;
+          const isActive = index === tappedCount && !isDone;
+          const dotColorVar = colors.background.replace("bg-", "");
 
           return (
             <span
               key={index}
-              className={`transition-colors duration-200 ${colorClass}`}
+              className="relative inline-flex flex-col items-center cursor-pointer pointer-events-auto"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handleLetterTap(index);
+              }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {char}
+              <motion.span
+                className={`transition-colors duration-200 ${
+                  isLit ? colors.text : "text-slate-700 dark:text-slate-200"
+                }`}
+                animate={
+                  isBlending
+                    ? { scale: [1, 1.18, 1] }
+                    : isLit && index === tappedCount - 1
+                    ? { scale: [1, 1.15, 1] }
+                    : { scale: 1 }
+                }
+                transition={
+                  isBlending
+                    ? { duration: 0.45, delay: index * 0.09 }
+                    : { duration: 0.35 }
+                }
+              >
+                {char}
+              </motion.span>
+
+              {/* Sound button under the letter — same language as the Numbers dots.
+                  Outer span replays a one-shot wiggle whenever a wrong-order tap
+                  bumps `nudge`; inner span holds the steady active pulse. */}
+              <motion.span
+                key={`wiggle-${nudge}`}
+                className="block"
+                initial={false}
+                animate={
+                  isActive && nudge > 0
+                    ? { x: [0, "-0.07em", "0.07em", "-0.045em", "0.045em", 0] }
+                    : { x: 0 }
+                }
+                transition={{ duration: 0.4 }}
+              >
+                <motion.span
+                  className={`block rounded-full ${isLit ? colors.background : isActive ? colors.text : ""}`}
+                  style={{
+                    width: "0.26em",
+                    height: "0.26em",
+                    marginTop: "0.14em",
+                    border: isActive
+                      ? "0.035em dashed currentColor"
+                      : isLit
+                      ? "0.035em solid transparent"
+                      : "0.035em solid rgba(156, 163, 175, 0.35)",
+                    backgroundColor: isLit ? undefined : "rgba(156, 163, 175, 0.12)",
+                    transition: "background-color 120ms ease-out, border-color 120ms ease-out",
+                  }}
+                  animate={isActive ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  transition={
+                    isActive
+                      ? { repeat: Infinity, duration: 1.1, ease: "easeInOut" }
+                      : { duration: 0.2 }
+                  }
+                />
+              </motion.span>
+
+              {/* Bouncing finger on the very first sound button */}
+              {isActive && tappedCount === 0 && (
+                <motion.span
+                  className="absolute top-full pointer-events-none select-none"
+                  style={{ fontSize: "0.4em", marginTop: "0.05em" }}
+                  animate={{ y: [0, "-0.25em", 0] }}
+                  transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut" }}
+                  aria-hidden
+                >
+                  👆
+                </motion.span>
+              )}
             </span>
           );
         })}
+
+        {/* Blend sweep: a line travels left→right under the letters as the word is said whole */}
+        {isBlending && (
+          <motion.span
+            className="absolute left-0 right-0 rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-500"
+            style={{ top: "1.02em", height: "0.08em", transformOrigin: "left center" }}
+            initial={{ scaleX: 0, opacity: 1 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.7, ease: "easeInOut" }}
+            aria-hidden
+          />
+        )}
       </h2>
-    </motion.div>
+    </div>
+  );
+};
+
+/**
+ * SIGHT MODE — fast whole-word recognition for words the child has already
+ * decoded several times. The word appears alone, fully colored, with a quiet
+ * beat for the child to say it first; then the voice confirms it and the
+ * picture appears. Tapping the word repeats it.
+ */
+const SightWord = ({
+  text,
+  ttsText,
+  voice,
+  onComplete,
+}: {
+  text: string;
+  ttsText: string;
+  voice: SpeechSynthesisVoice | null;
+  onComplete: () => void;
+}) => {
+  const { speak, stop } = useSpeechSynthesis();
+  const wordRef = useRef<HTMLHeadingElement>(null);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useAutoFitFont(wordRef, text, 14 * 16, 6 * 16);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // The beat where the child gets to say it first — the whole point
+      await sleep(1400);
+      if (cancelled) return;
+      await speak(ttsText, { voice, rate: 1.0 });
+      if (cancelled) return;
+      onCompleteRef.current();
+    })();
+    return () => {
+      cancelled = true;
+      stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+
+  return (
+    <div className="relative w-full flex justify-center">
+      <motion.div
+        className="relative cursor-pointer pointer-events-auto"
+        onClick={(e) => {
+          e.stopPropagation();
+          playVocabTapPop();
+          stop();
+          speak(ttsText, { voice, rate: 1.0 });
+        }}
+        animate={{ scale: [1, 1.03, 1] }}
+        transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {/* Mastered-word star so parents can see this is a quick flash round */}
+        <span className="absolute -top-6 -right-6 text-3xl select-none" aria-hidden>
+          ⭐
+        </span>
+        <h2
+          ref={wordRef}
+          className="font-black text-center tracking-wide select-none leading-none inline-block whitespace-nowrap"
+        >
+          {text.split("").map((char, index) => (
+            <span key={index} className={getLetterColors(char).text}>
+              {char}
+            </span>
+          ))}
+        </h2>
+      </motion.div>
+    </div>
   );
 };
 
 import { usePreventBackExit } from "@/hooks/usePreventBackExit";
 
+// Thin router wrapper. All flashcard state lives in VocabFlashcards below so the
+// early return for the animals flow never changes this component's hook order
+// (returning before hooks crashed React when switching between categories).
 const VocabApp = () => {
   usePreventBackExit();
   const [match, params] = useRoute("/vocab/:category?");
@@ -320,56 +444,93 @@ const VocabApp = () => {
     );
   }
 
+  // Key by category so switching categories remounts with fresh state
+  return <VocabFlashcards key={category ?? "all"} items={filteredVocab} />;
+};
+
+// After this many completed decodes, a word starts appearing as a fast
+// "sight word" flash card (word alone → child says it → voice confirms).
+const SIGHT_THRESHOLD = 3;
+// Even mastered words still get an occasional full decode round to stay sharp.
+const SIGHT_MODE_CHANCE = 0.75;
+
+const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
+  const filteredVocab = items;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const [hasListened, setHasListened] = useState(false);
   const [isImageVisible, setIsImageVisible] = useState(false);
-  const [replayTrigger, setReplayTrigger] = useState(0);
   const [isShuffling, setIsShuffling] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
 
-  const { speak, stop, voices } = useSpeechSynthesis();
-  const femaleVoice =
-    voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
-    voices?.find((v) => v.lang.startsWith("en"));
-  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Per-word progress, persisted on the device: how many times each word has
+  // been fully sounded out. Drives sight-mode graduation and shuffle weighting.
+  const [wordMastery, setWordMastery] = useLocalStorage<Record<string, number>>(
+    "wordMastery",
+    {},
+  );
 
-  // Ref to track animation status across the extracted component
-  const isAnimatingRef = useRef(false);
+  const { stop, preferredVoice } = useSpeechSynthesis();
 
   // Ref to track image loading
   const imageLoadedRef = useRef(false);
 
   const currentItem = filteredVocab[currentIndex];
 
+  // Decide how this card plays, once per card (stable across re-renders)
+  const cardMode = useMemo<"decode" | "sight">(() => {
+    const name = filteredVocab[currentIndex]?.name;
+    const mastery = name ? wordMastery[name] ?? 0 : 0;
+    return mastery >= SIGHT_THRESHOLD && Math.random() < SIGHT_MODE_CHANCE
+      ? "sight"
+      : "decode";
+    // Intentionally keyed to the card only — mode must not flip mid-card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
   const shuffleItems = useCallback(
     (shouldSetFirst = false) => {
-      const indices = filteredVocab.map((_, i) => i);
-      for (let i = indices.length - 1; i > 0; i--) {
+      // Weighted bag: words not yet mastered appear twice per cycle so the
+      // child gets more practice exactly where recognition is weakest.
+      const bag: number[] = [];
+      filteredVocab.forEach((item, i) => {
+        bag.push(i);
+        if ((wordMastery[item.name] ?? 0) < SIGHT_THRESHOLD) {
+          bag.push(i);
+        }
+      });
+      for (let i = bag.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
+        [bag[i], bag[j]] = [bag[j], bag[i]];
       }
-      setShuffledIndices(indices);
-      if (shouldSetFirst && indices.length > 0) {
-        setCurrentIndex(indices[0]);
+      // Never show the same word twice in a row
+      for (let i = 1; i < bag.length; i++) {
+        if (bag[i] === bag[i - 1]) {
+          const k = bag.findIndex((v, idx) => idx > i && v !== bag[i]);
+          if (k !== -1) [bag[i], bag[k]] = [bag[k], bag[i]];
+        }
+      }
+      setShuffledIndices(bag);
+      if (shouldSetFirst && bag.length > 0) {
+        setCurrentIndex(bag[0]);
         setShuffledIndex(1);
       } else {
         setShuffledIndex(0);
       }
     },
-    [filteredVocab],
+    [filteredVocab, wordMastery],
   );
 
   useEffect(() => {
     shuffleItems(true);
-  }, [category]);
+    // Mount-only: the parent remounts this component (via key) when the category changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset listened state and image loaded ref when index changes
   useEffect(() => {
     setHasListened(false);
     setIsImageVisible(false);
-    setHasInteracted(false);
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
@@ -406,7 +567,21 @@ const VocabApp = () => {
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
-  }, []);
+    // A small burst — finishing a word is a win
+    confetti({
+      particleCount: 40,
+      spread: 65,
+      origin: { y: 0.7 },
+      colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
+    });
+    // Only full decodes build mastery; sight rounds maintain it
+    if (cardMode === "decode" && currentItem) {
+      setWordMastery((prev) => ({
+        ...prev,
+        [currentItem.name]: (prev[currentItem.name] ?? 0) + 1,
+      }));
+    }
+  }, [cardMode, currentItem, setWordMastery]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -495,34 +670,24 @@ const VocabApp = () => {
             >
               {/* Text Layer (Top Portion) */}
               <div className="relative z-10 w-full flex items-center justify-center">
-                {!isShuffling && (
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playVocabTapPop();
-                      stop();
-                      if (!hasInteracted) {
-                        setHasInteracted(true);
-                      } else {
-                        setHasListened(false);
-                        setIsImageVisible(false);
-                        setReplayTrigger(prev => prev + 1);
-                      }
-                    }}
-                    className="cursor-pointer select-none"
-                  >
-                    <DecodableWord
-                      key={`${currentIndex}-${replayTrigger}`}
+                {!isShuffling &&
+                  (cardMode === "sight" ? (
+                    <SightWord
+                      key={currentIndex}
                       text={currentItem.name}
                       ttsText={currentItem.tts || currentItem.name}
-                      voice={femaleVoice ?? null}
-                      hasInteracted={hasInteracted}
-                      replayTrigger={replayTrigger}
+                      voice={preferredVoice ?? null}
                       onComplete={handleSequenceComplete}
-                      isAnimatingRef={isAnimatingRef}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <TapDecodeWord
+                      key={currentIndex}
+                      text={currentItem.name}
+                      ttsText={currentItem.tts || currentItem.name}
+                      voice={preferredVoice ?? null}
+                      onComplete={handleSequenceComplete}
+                    />
+                  ))}
               </div>
 
               {/* Image Layer (Bottom Portion) */}

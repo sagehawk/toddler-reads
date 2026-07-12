@@ -2,14 +2,14 @@ import { useLocation } from "wouter";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
 import { BackgroundAnimator } from "@/components/BackgroundAnimator";
+import { getSharedAudioContext } from "../lib/sharedAudioContext";
 
 // ----- Synthesize Bubbly Pop Sound for Card Taps -----
 const playBubblePop = () => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -66,11 +66,39 @@ const SparklesIcon = ({ size = 96 }: { size?: number }) => (
     <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
       📖
     </span>
-    <span 
-      style={{ fontSize: `${size * 0.45}px` }} 
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
       className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
     >
       ✨
+    </span>
+  </div>
+);
+
+const SentencesIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      💬
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.28}px` }}
+      className="absolute text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] font-nunito select-none top-[28%]"
+    >
+      abc
+    </span>
+  </div>
+);
+
+const StoriesIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      📚
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
+    >
+      🌟
     </span>
   </div>
 );
@@ -112,6 +140,24 @@ const LOBBY_CARDS: LobbyCardItem[] = [
     href: "/vocab",
     gradient: "from-indigo-400 to-violet-500",
     shadowColor: "shadow-violet-400/30 dark:shadow-violet-950/40",
+  },
+  {
+    id: "sentences",
+    title: "Sentences",
+    subtitle: "First Sentences",
+    Icon: SentencesIcon,
+    href: "/sentences",
+    gradient: "from-rose-400 to-pink-500",
+    shadowColor: "shadow-pink-400/30 dark:shadow-pink-950/40",
+  },
+  {
+    id: "stories",
+    title: "Stories",
+    subtitle: "Picture Stories",
+    Icon: StoriesIcon,
+    href: "/story/all",
+    gradient: "from-sky-400 to-blue-500",
+    shadowColor: "shadow-blue-400/30 dark:shadow-blue-950/40",
   },
 ];
 
@@ -176,7 +222,7 @@ export default function Dashboard() {
       <div className="w-full max-w-4xl flex flex-col items-center justify-center z-10">
         {/* Animated Bobbing Logo */}
         <motion.h1
-          className="font-black text-center text-4xl sm:text-6xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-500 dark:from-amber-300 dark:via-emerald-300 dark:to-indigo-300 pb-12 sm:pb-16 font-nunito filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.1)] select-none"
+          className="font-black text-center text-4xl sm:text-6xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-emerald-400 to-indigo-500 dark:from-amber-300 dark:via-emerald-300 dark:to-indigo-300 pb-8 sm:pb-14 font-nunito filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.1)] select-none"
           initial={{ y: -50, opacity: 0 }}
           animate={{ 
             opacity: 1,
@@ -191,12 +237,12 @@ export default function Dashboard() {
         </motion.h1>
 
         {/* 3D Claymorphic Cards Container */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-10 w-full max-w-2xl px-4">
+        <div className="flex flex-row flex-wrap items-center justify-center gap-5 sm:gap-8 w-full max-w-3xl px-2">
           {LOBBY_CARDS.map((card, idx) => (
             <motion.button
               key={card.id}
               onClick={() => handleCardClick(card.href)}
-              className={`relative flex flex-col items-center justify-center w-40 h-40 sm:w-48 sm:h-48 rounded-[2.5rem] text-white focus:outline-none bg-gradient-to-br ${card.gradient} shadow-2xl ${card.shadowColor}`}
+              className={`relative flex flex-col items-center justify-center w-36 h-36 sm:w-44 sm:h-44 rounded-[2.5rem] text-white focus:outline-none bg-gradient-to-br ${card.gradient} shadow-2xl ${card.shadowColor}`}
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ 
                 scale: 1, 
@@ -216,12 +262,12 @@ export default function Dashboard() {
               }}
             >
               {/* Icon Container */}
-              <div className="transform-gpu transition-transform hover:scale-105 duration-200 mb-2">
-                <card.Icon size={96} />
+              <div className="transform-gpu transition-transform hover:scale-105 duration-200 mb-3">
+                <card.Icon size={84} />
               </div>
 
               {/* Game Text Label */}
-              <span className="absolute bottom-5 font-black tracking-widest text-sm sm:text-base font-nunito uppercase select-none text-white/90 drop-shadow-sm">
+              <span className="absolute bottom-4 font-black tracking-widest text-sm sm:text-base font-nunito uppercase select-none text-white/90 drop-shadow-sm">
                 {card.title}
               </span>
             </motion.button>

@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSharedAudioContext } from '../lib/sharedAudioContext';
 
 // ----- Web Audio API Playful Menu Chimes -----
 const playOpenChime = () => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
+
     // Ascending C major pentatonic sweep for a magical "tada!" entrance feel
     const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
     notes.forEach((freq, idx) => {
@@ -33,10 +33,9 @@ const playOpenChime = () => {
 
 const playCloseChime = () => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
+
     // Smooth descending sweep for exit
     const notes = [659.25, 523.25, 392.00, 329.63, 261.63];
     notes.forEach((freq, idx) => {
@@ -93,8 +92,8 @@ const BookIcon = ({ size = 64 }: { size?: number }) => (
     <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
       📖
     </span>
-    <span 
-      style={{ fontSize: `${size * 0.45}px` }} 
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
       className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
     >
       ✨
@@ -102,13 +101,40 @@ const BookIcon = ({ size = 64 }: { size?: number }) => (
   </div>
 );
 
+const SentencesIcon = ({ size = 64 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      💬
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.28}px` }}
+      className="absolute text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] font-nunito select-none top-[28%]"
+    >
+      abc
+    </span>
+  </div>
+);
+
+const StoriesIcon = ({ size = 64 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      📚
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
+    >
+      🌟
+    </span>
+  </div>
+);
+
 // ----- Real-time Bubbly Sound Synthesis for Card Taps -----
 const playBubblePop = () => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    
+    const ctx = getSharedAudioContext();
+    if (!ctx) return;
+
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
@@ -133,6 +159,7 @@ const playBubblePop = () => {
 interface TrayMenuItem {
   id: string;
   label: string;
+  shortLabel: string;
   Icon: React.FC<{ size?: number }>;
   href: string;
   gradient: string;
@@ -140,12 +167,14 @@ interface TrayMenuItem {
 }
 
 const TRAY_ITEMS: TrayMenuItem[] = [
-  { id: 'phonics', label: 'ABC Phonics', Icon: LettersIcon, href: '/phonics', gradient: 'from-emerald-400 to-teal-500', activeColor: 'shadow-teal-400/50' },
-  { id: 'numbers', label: '123 Numbers', Icon: NumbersIcon, href: '/numbers', gradient: 'from-amber-400 to-orange-500', activeColor: 'shadow-orange-400/50' },
-  { id: 'vocab', label: 'Words Vocabulary', Icon: BookIcon, href: '/vocab', gradient: 'from-indigo-400 to-violet-500', activeColor: 'shadow-violet-400/50' },
+  { id: 'phonics', label: 'ABC Phonics', shortLabel: 'Letters', Icon: LettersIcon, href: '/phonics', gradient: 'from-emerald-400 to-teal-500', activeColor: 'shadow-teal-400/50' },
+  { id: 'numbers', label: '123 Numbers', shortLabel: 'Numbers', Icon: NumbersIcon, href: '/numbers', gradient: 'from-amber-400 to-orange-500', activeColor: 'shadow-orange-400/50' },
+  { id: 'vocab', label: 'Words Vocabulary', shortLabel: 'Words', Icon: BookIcon, href: '/vocab', gradient: 'from-indigo-400 to-violet-500', activeColor: 'shadow-violet-400/50' },
+  { id: 'sentences', label: 'Simple Sentences', shortLabel: 'Sentences', Icon: SentencesIcon, href: '/sentences', gradient: 'from-rose-400 to-pink-500', activeColor: 'shadow-pink-400/50' },
+  { id: 'stories', label: 'Picture Stories', shortLabel: 'Stories', Icon: StoriesIcon, href: '/story/all', gradient: 'from-sky-400 to-blue-500', activeColor: 'shadow-blue-400/50' },
 ];
 
-export type TrayPageId = 'phonics' | 'numbers' | 'vocab';
+export type TrayPageId = 'phonics' | 'numbers' | 'vocab' | 'sentences' | 'stories';
 
 export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -315,7 +344,7 @@ export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
 
                     {/* Text Label */}
                     <span className="absolute bottom-4 font-black tracking-wide text-sm sm:text-base opacity-90 font-nunito uppercase select-none">
-                      {item.id === 'phonics' ? 'Letters' : item.id === 'numbers' ? 'Numbers' : item.id === 'vocab' ? 'Words' : 'Home'}
+                      {item.shortLabel}
                     </span>
                   </motion.button>
                 );

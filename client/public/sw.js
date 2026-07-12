@@ -1,60 +1,66 @@
-const CACHE_NAME = 'toddler-reads-cache-v1';
-const urlsToCache = [
-  '/',
-  '/site.webmanifest',
-];
+const CACHE_NAME = 'toddler-reads-cache-v2';
+const PRECACHE_URLS = ['/', '/site.webmanifest'];
 
-self.addEventListener('install', event => {
+self.addEventListener('install', (event) => {
   self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)));
+});
+
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              return caches.delete(cacheName);
+            }
+          })
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // App shell (SPA navigations): network-first so new deploys are picked up,
+  // cached copy as the offline fallback.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
           }
+          return response;
         })
-      );
-    })
-  );
-});
-
-self.addEventListener('fetch', event => {
-  if (event.request.url.startsWith('chrome-extension://')) {
+        .catch(() => caches.match('/'))
+    );
     return;
   }
 
+  // Static assets (hashed bundles, phonics MP3s, story pages, images):
+  // serve from cache instantly, refresh the copy in the background.
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).then(
-          response => {
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
+    caches.match(request).then((cached) => {
+      const networkFetch = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           }
-        );
-      })
+          return response;
+        })
+        .catch(() => cached);
+      return cached || networkFetch;
+    })
   );
 });

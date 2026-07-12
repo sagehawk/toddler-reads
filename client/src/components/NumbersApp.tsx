@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLocation } from 'wouter';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { numbersData } from '../data/numbersData';
 import { getLetterColors } from '../lib/colorUtils';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import confetti from 'canvas-confetti';
 import { useSwipe } from '@/hooks/useSwipe';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,9 +75,6 @@ const playDotPop = () => {
   } catch (e) {}
 };
 
-// Helper to detect Android
-const isAndroid = /Android/i.test(navigator.userAgent);
-
 // Actual CSS color values for dots (Tailwind classes don't work in inline styles)
 const dotColors: { [key: number]: string } = {
   1: '#f87171', // red-400
@@ -97,32 +92,44 @@ const dotColors: { [key: number]: string } = {
 const Dot = ({
   color,
   visible,
-  onClick,
+  onPop,
   sizeClass,
 }: {
   color: string;
   visible: boolean;
-  onClick: (e: React.MouseEvent) => void;
+  onPop: () => void;
   sizeClass: string;
 }) => (
+  // Outer wrapper adds an invisible tap halo so near-miss taps still land,
+  // and fires on pointer-down: the instant the finger touches, before the
+  // press animation can shrink the dot out from under an edge tap, and
+  // immune to the finger slop that cancels synthetic click events.
   <motion.div
-    onClick={(e) => {
-      e.stopPropagation(); // Crucial: Stop click event propagation so the page doesn't advance!
-      onClick(e);
+    onPointerDown={(e) => {
+      e.stopPropagation();
+      onPop();
     }}
-    className={`${sizeClass} rounded-full cursor-pointer pointer-events-auto flex items-center justify-center relative`}
-    style={{
-      backgroundColor: visible ? color : 'rgba(156, 163, 175, 0.1)',
-      border: `4px dashed ${visible ? 'transparent' : color}`,
-      boxShadow: visible ? `0 4px 12px ${color}55` : 'none',
-    }}
-    animate={{
-      scale: visible ? [0.8, 1.25, 1.2] : 1,
-    }}
-    whileHover={{ scale: visible ? 1.2 : 1.1 }}
+    onClick={(e) => e.stopPropagation()}
+    className="p-3 sm:p-4 -m-3 sm:-m-4 rounded-full cursor-pointer pointer-events-auto"
+    style={{ touchAction: 'none' }}
     whileTap={{ scale: 0.9 }}
-    transition={{ type: 'spring', stiffness: 350, damping: 10 }}
-  />
+  >
+    <motion.div
+      className={`${sizeClass} rounded-full flex items-center justify-center relative`}
+      style={{
+        backgroundColor: visible ? color : 'rgba(156, 163, 175, 0.1)',
+        border: `4px dashed ${visible ? 'transparent' : color}`,
+        boxShadow: visible ? `0 4px 12px ${color}55` : 'none',
+        // Beat the global 1s theme transition so the fill lands instantly.
+        transition:
+          'background-color 120ms ease-out, border-color 120ms ease-out, box-shadow 120ms ease-out',
+      }}
+      animate={{
+        scale: visible ? [0.8, 1.25, 1.2] : 1,
+      }}
+      transition={{ type: 'spring', stiffness: 350, damping: 10 }}
+    />
+  </motion.div>
 );
 
 const DieFace = ({
@@ -160,9 +167,10 @@ const DieFace = ({
 
   const renderDot = (index: number) => (
     <Dot
+      key={index}
       color={color}
       visible={poppedSet.has(index)}
-      onClick={() => onPopCircle(index)}
+      onPop={() => onPopCircle(index)}
       sizeClass={sizeClass}
     />
   );
@@ -276,11 +284,12 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
   const [poppedSet, setPoppedSet] = useState<Set<number>>(new Set());
   const { speak, stop } = useSpeechSynthesis();
 
-  const handlePopCircle = useCallback(async (index: number) => {
+  const handlePopCircle = useCallback((index: number) => {
     if (poppedSet.has(index)) return; // Already popped
 
     // Play a satisfying pop sound using shared AudioContext
     playDotPop();
+    if (navigator.vibrate) navigator.vibrate(8);
 
     const newSet = new Set(poppedSet);
     newSet.add(index);
@@ -304,18 +313,23 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
 
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 
+// Short, rotating praise lines spoken when the child finishes counting a number.
+const PRAISE_LINES = ['Great job!', 'Hooray!', 'You did it!', 'Amazing!', 'Well done!'];
+
 const NumbersApp = () => {
   usePreventBackExit();
-  const [, setLocation] = useLocation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isQuietMode, setIsQuietMode] = useLocalStorage('numbersQuietMode', false);
-  const { speak, stop, voices } = useSpeechSynthesis();
-  const femaleVoice = voices?.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices?.find(v => v.lang.startsWith('en'));
-  const audioTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
   const currentNumber = numbersData[currentIndex];
+
+  // Mirror of currentIndex so async handlers can tell if the card changed under them
+  const currentIndexRef = useRef(currentIndex);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   const shuffleItems = useCallback((shouldSetFirst = false) => {
     const indices = numbersData.map((_, i) => i);
@@ -340,51 +354,55 @@ const NumbersApp = () => {
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
     stop();
     setIsFlipped(false);
     setCurrentIndex((prevIndex) => (prevIndex + 1) % numbersData.length);
-  }, [numbersData.length, stop]);
+  }, [stop]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
     stop();
     setIsFlipped(false);
     setCurrentIndex((prevIndex) => (prevIndex - 1 + numbersData.length) % numbersData.length);
-  }, [numbersData.length, stop]);
+  }, [stop]);
 
-  const handleShuffle = () => {
-    if (isFlipped) return; // Safeguard: Prevent background misclicks from shuffling the card while the board is flipped open!
-    if (navigator.vibrate) navigator.vibrate(10);
-    if (audioTimeoutRef.current) {
-      clearTimeout(audioTimeoutRef.current);
-    }
-    stop();
-    playCardTransitionChime();
-    setIsFlipped(false);
+  // Advance to the next number in the shuffle bag, re-shuffling a fresh bag
+  // (never repeating the current number back-to-back) when it runs out.
+  const advanceShuffled = useCallback(() => {
     if (shuffledIndex >= shuffledIndices.length) {
-      shuffleItems();
-      setCurrentIndex(shuffledIndices[0]);
+      const indices = numbersData.map((_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      if (indices[0] === currentIndex && indices.length > 1) {
+        [indices[0], indices[1]] = [indices[1], indices[0]];
+      }
+      setShuffledIndices(indices);
+      setCurrentIndex(indices[0]);
       setShuffledIndex(1);
     } else {
       setCurrentIndex(shuffledIndices[shuffledIndex]);
       setShuffledIndex(shuffledIndex + 1);
     }
-  };
+  }, [shuffledIndex, shuffledIndices, currentIndex]);
+
+  const handleShuffle = useCallback(() => {
+    if (isFlipped) return; // Safeguard: Prevent background misclicks from shuffling the card while the board is flipped open!
+    if (navigator.vibrate) navigator.vibrate(10);
+    stop();
+    playCardTransitionChime();
+    setIsFlipped(false);
+    advanceShuffled();
+  }, [isFlipped, stop, advanceShuffled]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
+    // While the counting board is open, sloppy dot-taps must never turn the page.
+    // Parents can still switch via the menu or keyboard.
+    enabled: !isFlipped,
   });
-
-  const handleInteraction = () => {
-    handleShuffle();
-  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -392,6 +410,8 @@ const NumbersApp = () => {
         const number = parseInt(e.key, 10);
         const index = numbersData.indexOf(number === 0 ? 10 : number);
         if (index !== -1) {
+          stop();
+          setIsFlipped(false);
           setCurrentIndex(index);
         }
       } else if (e.key === 'ArrowLeft') {
@@ -409,7 +429,7 @@ const NumbersApp = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePrevious, handleNext, handleShuffle]);
+  }, [handlePrevious, handleNext, handleShuffle, stop]);
 
   const triggerCelebration = (num: number) => {
     // Proportional duration: 400ms base + 200ms per number magnitude (from 600ms to 2400ms)
@@ -443,6 +463,44 @@ const NumbersApp = () => {
       }
     };
     frame();
+  };
+
+  // Forgiving tap detection for the big number. Pointer events get implicit
+  // capture on touch, so the release still lands here even if the finger
+  // drifts or the press animation shrinks the element — the two ways toddler
+  // taps get dropped by synthetic click events.
+  const numberTapStartRef = useRef<{ x: number; y: number } | null>(null);
+  const isRevealingRef = useRef(false);
+
+  const handleNumberPointerDown = (e: React.PointerEvent) => {
+    numberTapStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleNumberPointerUp = async (e: React.PointerEvent) => {
+    const start = numberTapStartRef.current;
+    numberTapStartRef.current = null;
+    if (!start) return;
+    // Anything under 40px of drift still counts as a tap; bigger movements
+    // are drags/swipes and are left to the swipe handler.
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 40) return;
+    if (isRevealingRef.current) return;
+
+    isRevealingRef.current = true;
+    const tappedIndex = currentIndexRef.current;
+    try {
+      playVocabTapPop();
+      stop();
+      // Await the TTS speak promise to fully finish pronouncing the number first!
+      await speak(String(currentNumber), { voice: preferredVoice ?? null });
+      // Natural 150ms beat to allow natural audio decay before transitioning
+      await new Promise(r => setTimeout(r, 150));
+      // Only flip if we are still on the number that was tapped
+      if (currentIndexRef.current === tappedIndex) {
+        setIsFlipped(true);
+      }
+    } finally {
+      isRevealingRef.current = false;
+    }
   };
 
   if (currentNumber === undefined) {
@@ -482,16 +540,9 @@ const NumbersApp = () => {
             >
               {!isFlipped ? (
                 <motion.h2
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    playVocabTapPop();
-                    stop();
-                    // Await the TTS speak promise to fully finish pronouncing the number first!
-                    await speak(String(currentNumber), { voice: femaleVoice ?? null });
-                    // Natural 150ms beat to allow natural audio decay before transitioning
-                    await new Promise(r => setTimeout(r, 150));
-                    setIsFlipped(true);
-                  }}
+                  onPointerDown={handleNumberPointerDown}
+                  onPointerUp={handleNumberPointerUp}
+                  onClick={(e) => e.stopPropagation()}
                   className={`font-black tracking-widest cursor-pointer pointer-events-auto ${numberColor.text}`}
                   animate={{ scale: [1, 1.04, 1] }}
                   transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
@@ -510,33 +561,21 @@ const NumbersApp = () => {
                   key={currentIndex}
                   count={currentNumber}
                   color={dotColors[currentNumber] || '#60a5fa'}
-                  voice={femaleVoice ?? null}
+                  voice={preferredVoice ?? null}
                   onComplete={() => {
                     const celebrationDuration = 400 + currentNumber * 200; // ms
                     triggerCelebration(currentNumber);
+                    // A little spoken praise makes finishing feel like a win
+                    const praise = PRAISE_LINES[Math.floor(Math.random() * PRAISE_LINES.length)];
+                    setTimeout(() => {
+                      speak(praise, { voice: preferredVoice ?? null });
+                    }, 500);
                     setTimeout(() => {
                       playCardTransitionChime();
                       setIsFlipped(false);
                       // Advance to the next shuffled number instead of showing the same one
-                      if (shuffledIndex >= shuffledIndices.length) {
-                        // Re-shuffle and pick the first, ensuring it's different from current
-                        const indices = numbersData.map((_, i) => i);
-                        for (let i = indices.length - 1; i > 0; i--) {
-                          const j = Math.floor(Math.random() * (i + 1));
-                          [indices[i], indices[j]] = [indices[j], indices[i]];
-                        }
-                        // If the first in the new shuffle is the same as current, swap it
-                        if (indices[0] === currentIndex && indices.length > 1) {
-                          [indices[0], indices[1]] = [indices[1], indices[0]];
-                        }
-                        setShuffledIndices(indices);
-                        setCurrentIndex(indices[0]);
-                        setShuffledIndex(1);
-                      } else {
-                        setCurrentIndex(shuffledIndices[shuffledIndex]);
-                        setShuffledIndex(prev => prev + 1);
-                      }
-                    }, celebrationDuration + 600); // 600ms buffer to let the confetti fall beautifully
+                      advanceShuffled();
+                    }, celebrationDuration + 900); // buffer to let the confetti fall and praise finish
                   }}
                 />
               )}

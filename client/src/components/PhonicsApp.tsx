@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
+import confetti from 'canvas-confetti';
 import { getLetterColors } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
@@ -8,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
+import { playWrongTapThud, randomPraise } from '../lib/uiSounds';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playCardTransitionChime = () => {
@@ -50,6 +52,168 @@ export interface LearningModule {
   letters?: PhonicsLetter[];
 }
 
+// After this many full listens, a letter starts appearing as a
+// "find the sound" quiz round instead of a plain flashcard.
+const QUIZ_THRESHOLD = 2;
+// Even known letters still get an occasional plain listen.
+const QUIZ_CHANCE = 0.75;
+
+/**
+ * "FIND THE SOUND" — sound→symbol recognition, the skill that feeds directly
+ * into decoding words. The voice plays a phonic sound; three big letter cards
+ * appear; the child taps the letter that makes it. Wrong picks thud, dim, and
+ * replay the sound — unlimited tries, no fail state. The right pick
+ * celebrates and moves on.
+ */
+const LetterQuiz = ({
+  target,
+  choices,
+  voice,
+  onSolved,
+}: {
+  target: PhonicsLetter;
+  choices: PhonicsLetter[];
+  voice: SpeechSynthesisVoice | null;
+  onSolved: () => void;
+}) => {
+  const [wrongPicks, setWrongPicks] = useState<Set<string>>(new Set());
+  const [solved, setSolved] = useState(false);
+  const [lastWrong, setLastWrong] = useState<string | null>(null);
+  const [nudge, setNudge] = useState(0);
+  const { speak, stop } = useSpeechSynthesis();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const solvedRef = useRef(false);
+  const cancelledRef = useRef(false);
+
+  const playTargetSound = useCallback(() => {
+    try {
+      audioRef.current?.pause();
+    } catch (e) {}
+    const audio = new Audio(target.sound);
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+  }, [target.sound]);
+
+  useEffect(() => {
+    const timer = setTimeout(playTargetSound, 600);
+    return () => {
+      cancelledRef.current = true;
+      clearTimeout(timer);
+      try {
+        audioRef.current?.pause();
+      } catch (e) {}
+      stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePick = (choice: PhonicsLetter) => {
+    if (solvedRef.current) return;
+
+    if (choice.letter === target.letter) {
+      solvedRef.current = true;
+      setSolved(true);
+      if (navigator.vibrate) navigator.vibrate(15);
+      confetti({
+        particleCount: 50,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa'],
+      });
+      stop();
+      speak(randomPraise(), { voice });
+      setTimeout(() => {
+        if (!cancelledRef.current) onSolved();
+      }, 1600);
+    } else {
+      if (wrongPicks.has(choice.letter)) return;
+      playWrongTapThud();
+      setWrongPicks((prev) => new Set(prev).add(choice.letter));
+      setLastWrong(choice.letter);
+      setNudge((n) => n + 1);
+      // Replay the target sound so the child can try again with fresh ears
+      setTimeout(() => {
+        if (!cancelledRef.current) playTargetSound();
+      }, 450);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-10 sm:gap-14 w-full px-4">
+      {/* Big replay speaker — tap to hear the sound again */}
+      <motion.button
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          playTargetSound();
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="flex flex-col items-center justify-center gap-2 focus:outline-none pointer-events-auto"
+        animate={{ scale: [1, 1.08, 1] }}
+        transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
+        whileTap={{ scale: 0.9 }}
+      >
+        <span className="text-7xl sm:text-8xl select-none drop-shadow-md" aria-hidden>
+          🔊
+        </span>
+        <span className="text-sm sm:text-base font-bold tracking-widest uppercase text-slate-400 dark:text-slate-500 select-none">
+          Find the sound!
+        </span>
+      </motion.button>
+
+      {/* The letter choices */}
+      <div className="flex flex-row flex-wrap items-center justify-center gap-6 sm:gap-10">
+        {choices.map((choice) => {
+          const colors = getLetterColors(choice.letter);
+          const isWrong = wrongPicks.has(choice.letter);
+          const isWinner = solved && choice.letter === target.letter;
+
+          return (
+            <motion.button
+              key={`${choice.letter}-${lastWrong === choice.letter ? nudge : 0}`}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handlePick(choice);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isWrong}
+              className={`flex items-baseline justify-center w-32 h-32 sm:w-44 sm:h-44 rounded-[2rem] bg-white dark:bg-zinc-900 shadow-xl border-4 focus:outline-none pointer-events-auto select-none ${colors.text} ${
+                isWrong ? 'opacity-25 grayscale' : ''
+              }`}
+              style={{
+                borderColor: 'currentColor',
+                transition: 'opacity 250ms ease-out, filter 250ms ease-out',
+              }}
+              initial={lastWrong === choice.letter ? { x: 0 } : { scale: 0.6, opacity: 0 }}
+              animate={
+                isWinner
+                  ? { scale: [1, 1.25, 1.15], opacity: 1 }
+                  : lastWrong === choice.letter
+                  ? { x: [0, -10, 10, -6, 6, 0], scale: 1, opacity: 1 }
+                  : { scale: 1, opacity: 1 }
+              }
+              transition={
+                isWinner
+                  ? { duration: 0.5 }
+                  : lastWrong === choice.letter
+                  ? { duration: 0.4 }
+                  : { type: 'spring', stiffness: 300, damping: 20 }
+              }
+              whileTap={solved || isWrong ? {} : { scale: 0.92 }}
+            >
+              <span className={`font-black leading-none ${colors.text}`} style={{ fontSize: 'clamp(3.5rem, 12vmin, 6rem)', fontFamily: "'Nunito', sans-serif" }}>
+                {choice.letter}
+              </span>
+              <span className={`font-black leading-none ${colors.text}`} style={{ fontSize: 'clamp(2.6rem, 9vmin, 4.5rem)', fontFamily: "'Nunito', sans-serif" }}>
+                {choice.letter.toLowerCase()}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 
 export default function PhonicsApp() {
@@ -59,17 +223,31 @@ export default function PhonicsApp() {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const { speak, stop, voices } = useSpeechSynthesis();
-  const [femaleVoice, setFemaleVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [isAutoplayEnabled, setIsAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
+  const { speak, stop, preferredVoice } = useSpeechSynthesis();
+  const [isAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
   const [isPulsing, setIsPulsing] = useState(false);
   const [soundToggle, setSoundToggle] = useState<'phonic' | 'name'>('phonic');
+
+  // Per-letter progress, persisted on the device: how many times each letter
+  // has been fully heard (sound + name). Drives "find the sound" quiz rounds.
+  const [letterMastery, setLetterMastery] = useLocalStorage<Record<string, number>>(
+    'letterMastery',
+    {},
+  );
+  // Guards double-counting a letter's listen within one card view
+  const listenCountedRef = useRef(false);
 
   // Always reset manual tap toggle back to phonic first when entering a new letter
   useEffect(() => {
     setSoundToggle('phonic');
+    listenCountedRef.current = false;
   }, [currentIndex]);
+
+  const markLetterHeard = useCallback((letter: string) => {
+    if (listenCountedRef.current) return;
+    listenCountedRef.current = true;
+    setLetterMastery((prev) => ({ ...prev, [letter]: (prev[letter] ?? 0) + 1 }));
+  }, [setLetterMastery]);
 
   const audioRef = useRef<HTMLAudioElement>(new Audio());
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,7 +255,42 @@ export default function PhonicsApp() {
 
   const isSoundPlayingRef = useRef(false);
 
+  // Each new letter (or a manual tap) bumps the token, which silently cancels
+  // any in-flight autoplay narration without tearing down fresh audio.
+  const sequenceTokenRef = useRef(0);
+
+  // Latest voice without retriggering the narration effect when voices load
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  voiceRef.current = preferredVoice ?? null;
+
   const selectedModule = learningModules[0];
+
+  // Decide once per card whether this letter appears as a plain flashcard or
+  // a "find the sound" quiz (known letters quiz 75% of the time).
+  const quizData = useMemo(() => {
+    if (currentIndex === null) return null;
+    const letters = selectedModule.letters;
+    if (!letters || letters.length < 3) return null;
+    const target = letters[currentIndex];
+    if (!target) return null;
+    const mastery = letterMastery[target.letter] ?? 0;
+    if (mastery < QUIZ_THRESHOLD || Math.random() >= QUIZ_CHANCE) return null;
+
+    // Two distractor letters, then shuffle the three choices
+    const others = letters.filter((_, i) => i !== currentIndex);
+    for (let i = others.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [others[i], others[j]] = [others[j], others[i]];
+    }
+    const choices = [target, others[0], others[1]];
+    for (let i = choices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [choices[i], choices[j]] = [choices[j], choices[i]];
+    }
+    return { target, choices };
+    // Intentionally keyed to the card only — mode must not flip mid-card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
 
   const stopAllTimers = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -101,7 +314,6 @@ export default function PhonicsApp() {
     if (!letterInfo) return;
 
     setCurrentIndex(index);
-    setIsPlaying(false);
   }, [selectedModule.letters, stopAllSounds]);
 
   const shuffleLetters = useCallback(() => {
@@ -130,13 +342,6 @@ export default function PhonicsApp() {
       stopAllSounds();
     };
   }, []);
-
-  useEffect(() => {
-    if (voices && voices.length > 0) {
-      const foundVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female')) || voices.find(v => v.lang.startsWith('en'));
-      setFemaleVoice(foundVoice || null);
-    }
-  }, [voices]);
 
   const playSoundOnce = useCallback(async (soundFile: string) => {
     if (isSoundPlayingRef.current) return;
@@ -169,6 +374,7 @@ export default function PhonicsApp() {
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
 
+    sequenceTokenRef.current++; // Cancel any pending autoplay narration
     stopAllSounds();
 
     if (soundToggle === 'phonic') {
@@ -182,71 +388,75 @@ export default function PhonicsApp() {
       const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
       setIsPulsing(true);
       await speak(textToSpeak, {
-        voice: femaleVoice,
+        voice: voiceRef.current,
         rate: 1.0,
         onEnd: () => setIsPulsing(false)
       });
       setIsPulsing(false);
       setSoundToggle('phonic'); // Toggle back to phonic sound next
+      // With autoplay off, a manual tap-through of sound + name counts as a listen
+      if (!isAutoplayEnabled) {
+        markLetterHeard(letterInfo.letter);
+      }
     }
-  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, femaleVoice, soundToggle, isPulsing]);
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, isPulsing, isAutoplayEnabled, markLetterHeard]);
 
-  // Main Sequence Effect
+  // Autoplay narration: when a new letter appears, give the child a moment to
+  // recognize it (and say it themselves), then play the phonic sound, pause,
+  // and finally speak the letter name. Quiz rounds narrate nothing — the
+  // sound IS the question.
   useEffect(() => {
-    if (currentIndex === null || !isPlaying) {
+    if (currentIndex === null || !isAutoplayEnabled || quizData) {
       return;
     }
 
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
 
-    let isCancelled = false;
+    const token = ++sequenceTokenRef.current;
+    const isLive = () => sequenceTokenRef.current === token;
 
     const runSequence = async () => {
-      // Wait for the letter fade-in animation to finish (~400ms)
-      await new Promise(r => setTimeout(r, 400));
-      if (isCancelled) return;
+      // Letter fade-in (~400ms) plus a recognition beat before any sound
+      await new Promise(r => setTimeout(r, 1400));
+      if (!isLive()) return;
 
-      // 1. Delay the MP3 by a second so they get the chance to recognize it and say it themselves
-      await new Promise(r => setTimeout(r, 1000));
-      if (isCancelled) return;
+      // 1. Play the phonic MP3 first
+      await playSoundOnce(letterInfo.sound);
+      if (!isLive()) return;
 
-      // 2. Play the MP3 audio first
-      if (isAutoplayEnabled) {
-        await playSoundOnce(letterInfo.sound);
-      }
-      if (isCancelled) return;
-
-      // 3. Wait a brief delay after the audio ends before saying the TTS (delayed by an additional second)
+      // 2. Brief pause so the sound and the name read as two separate ideas
       await new Promise(r => setTimeout(r, 1600));
-      if (isCancelled) return;
+      if (!isLive()) return;
 
-      // 4. Speak the TTS letter name second
-      if (isAutoplayEnabled) {
-        const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-        setIsPulsing(true);
-        speak(textToSpeak, {
-          voice: femaleVoice,
-          rate: 1.0,
-          onEnd: () => setIsPulsing(false)
-        });
-        setTimeout(() => setIsPulsing(false), 1200);
-      }
+      // 3. Speak the TTS letter name second
+      const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
+      setIsPulsing(true);
+      await speak(textToSpeak, {
+        voice: voiceRef.current,
+        rate: 1.0,
+        onEnd: () => setIsPulsing(false)
+      });
+      setIsPulsing(false);
+      if (!isLive()) return;
+
+      // Heard the full sound + name — one step closer to quiz rounds
+      markLetterHeard(letterInfo.letter);
     };
 
     runSequence();
 
     return () => {
-      isCancelled = true;
+      // Invalidate this run and silence anything it left playing
+      if (sequenceTokenRef.current === token) {
+        sequenceTokenRef.current++;
+      }
       stopAllSounds();
     };
-  }, [currentIndex, isPlaying, selectedModule.letters, playSoundOnce, stopAllSounds, isAutoplayEnabled, speak, femaleVoice]);
+  }, [currentIndex, isAutoplayEnabled, quizData, selectedModule.letters, playSoundOnce, speak, stopAllSounds, markLetterHeard]);
 
 
-  const handleShuffle = useCallback(() => {
-    // Haptic feedback
-    if (navigator.vibrate) navigator.vibrate(10);
-
+  const advanceToNextCard = useCallback(() => {
     stopAllSounds();
     playCardTransitionChime();
 
@@ -260,6 +470,25 @@ export default function PhonicsApp() {
       }
     }, 150);
   }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick, stopAllSounds]);
+
+  const handleShuffle = useCallback(() => {
+    // During a quiz, stray background taps must not skip the question —
+    // parents can still swipe or use the arrow keys to move on.
+    if (quizData) return;
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(10);
+    advanceToNextCard();
+  }, [quizData, advanceToNextCard]);
+
+  const handleQuizSolved = useCallback(() => {
+    if (quizData) {
+      setLetterMastery((prev) => ({
+        ...prev,
+        [quizData.target.letter]: (prev[quizData.target.letter] ?? 0) + 1,
+      }));
+    }
+    advanceToNextCard();
+  }, [quizData, setLetterMastery, advanceToNextCard]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -378,30 +607,43 @@ export default function PhonicsApp() {
           <AnimatePresence mode="wait">
             {currentIndex !== null && currentDisplayData && (
               <motion.div
-                key={currentIndex}
+                key={`${currentIndex}-${quizData ? 'quiz' : 'learn'}`}
                 className="w-full flex justify-center items-center"
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 transition={{ duration: 0.7, ease: "easeInOut" }}
               >
-                <div className="flex items-center justify-center" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
-                  <motion.h2
-                    onClick={replaySound}
-                    className={`font-black cursor-pointer pointer-events-auto select-none ${getLetterColors(currentDisplayData.letter).text}`}
-                    animate={isPulsing ? { scale: 1.25 } : { scale: [1, 1.04, 1] }}
-                    transition={isPulsing ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      fontSize: 'clamp(14rem, 60vmin, 24rem)',
-                      fontFamily: "'Nunito', sans-serif",
-                      textShadow: '2px 4px 8px rgba(0,0,0,0.08)',
-                      lineHeight: 1,
-                    }}
-                  >
-                    {currentDisplayData.letter}
-                  </motion.h2>
-                </div>
+                {quizData ? (
+                  <LetterQuiz
+                    target={quizData.target}
+                    choices={quizData.choices}
+                    voice={preferredVoice ?? null}
+                    onSolved={handleQuizSolved}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
+                    <motion.h2
+                      onClick={replaySound}
+                      className={`font-black cursor-pointer pointer-events-auto select-none flex items-baseline ${getLetterColors(currentDisplayData.letter).text}`}
+                      animate={isPulsing ? { scale: 1.25 } : { scale: [1, 1.04, 1] }}
+                      transition={isPulsing ? { type: 'spring', stiffness: 200, damping: 10 } : { repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        fontSize: 'clamp(9rem, 40vmin, 16rem)',
+                        fontFamily: "'Nunito', sans-serif",
+                        textShadow: '2px 4px 8px rgba(0,0,0,0.08)',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {currentDisplayData.letter}
+                      {/* Lowercase companion — the shape the child meets in real words */}
+                      <span style={{ fontSize: '0.72em', marginLeft: '0.08em' }}>
+                        {currentDisplayData.letter.toLowerCase()}
+                      </span>
+                    </motion.h2>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

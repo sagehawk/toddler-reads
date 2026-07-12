@@ -54,6 +54,8 @@
     /* scrollbar-gutter: stable; */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE and Edge */
+    /* Toddler drags must never trigger pull-to-refresh or rubber-band the app away */
+    overscroll-behavior: none;
   }
 
   html::-webkit-scrollbar {
@@ -64,6 +66,10 @@
     @apply font-sans antialiased text-foreground select-none;
     font-family: 'Nunito', 'Segoe UI', sans-serif;
     /* Background handled by BackgroundAnimator.tsx */
+    overscroll-behavior: none;
+    /* Kill the 300ms double-tap-zoom delay and gray tap flashes on Android */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -190,6 +196,12 @@
 @media (orientation: portrait) {
   .story-image-portrait {
     transform: rotate(90deg);
+    max-width: 100vh;
+    max-height: 100vw;
+  }
+
+  /* The rotated wrapper's page art swaps its viewport constraints too */
+  .story-image-portrait img {
     max-width: 100vh;
     max-height: 100vw;
   }

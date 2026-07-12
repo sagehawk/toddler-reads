@@ -51,7 +51,7 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
   const [consonantActive, setConsonantActive] = useState(false);
   const [stemActive, setStemActive] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const { speak, stop } = useSpeechSynthesis();
+  const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
   const currentItem = items[currentIndex];
   const phonics = findPhonicsData(currentItem.name);
@@ -73,7 +73,7 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
         audio.play().catch((e) => console.error("Audio play failed", e));
       }
     } else {
-      speak(textFallback);
+      speak(textFallback, { voice: preferredVoice ?? null });
     }
   };
 
@@ -109,7 +109,7 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
 
     // 2. Speak breakdown
     setTimeout(() => {
-      speak(`${phonics.consonant}... ${phonics.stem}... ${currentItem.name}!`);
+      speak(`${phonics.consonant}... ${phonics.stem}... ${currentItem.name}!`, { voice: preferredVoice ?? null });
       // 3. Play generic animal sound or "Meow" if cat (hardcoded for demo)
       if (currentItem.name === "Cat") {
         // setTimeout(() => playSound(null, "Meow!"), 1500);
@@ -142,9 +142,9 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
       <div className="p-4">
         <button
           onClick={onExit}
-          className="p-2 rounded-full bg-white shadow-sm hover:shadow-md transition-all"
+          className="p-2 rounded-full bg-white dark:bg-zinc-800 shadow-sm hover:shadow-md transition-all"
         >
-          <ArrowLeft className="w-6 h-6 text-[#2D3748]" />
+          <ArrowLeft className="w-6 h-6 text-[#2D3748] dark:text-zinc-100" />
         </button>
       </div>
 
@@ -153,12 +153,12 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
         {/* Word Display */}
         <div className="flex items-center gap-1 mb-8 text-7xl sm:text-8xl font-bold tracking-tight">
           <span
-            className={`transition-all duration-500 ${consonantActive || isCompleted ? "text-[#4FD1C5] scale-110" : "text-gray-300"}`}
+            className={`transition-all duration-500 ${consonantActive || isCompleted ? "text-[#4FD1C5] scale-110" : "text-gray-300 dark:text-zinc-600"}`}
           >
             {phonics.consonant}
           </span>
           <span
-            className={`transition-all duration-500 ${stemActive || isCompleted ? "text-[#F6AD55] scale-110" : "text-gray-300"}`}
+            className={`transition-all duration-500 ${stemActive || isCompleted ? "text-[#F6AD55] scale-110" : "text-gray-300 dark:text-zinc-600"}`}
           >
             {phonics.stem}
           </span>
@@ -179,14 +179,14 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
             <button
               onClick={handleConsonantClick}
               disabled={consonantActive}
-              className={`w-24 h-24 rounded-2xl text-4xl font-bold shadow-button transition-all transform active:scale-95 ${consonantActive ? "bg-[#4FD1C5] text-white" : "bg-white text-[#4FD1C5] border-2 border-[#4FD1C5] hover:-translate-y-1"}`}
+              className={`w-24 h-24 rounded-2xl text-4xl font-bold shadow-button transition-all transform active:scale-95 ${consonantActive ? "bg-[#4FD1C5] text-white" : "bg-white dark:bg-zinc-900 text-[#4FD1C5] border-2 border-[#4FD1C5] hover:-translate-y-1"}`}
             >
               {phonics.consonant}
             </button>
             <button
               onClick={handleStemClick}
               disabled={stemActive}
-              className={`w-24 h-24 rounded-2xl text-4xl font-bold shadow-button transition-all transform active:scale-95 ${stemActive ? "bg-[#F6AD55] text-white" : "bg-white text-[#F6AD55] border-2 border-[#F6AD55] hover:-translate-y-1"}`}
+              className={`w-24 h-24 rounded-2xl text-4xl font-bold shadow-button transition-all transform active:scale-95 ${stemActive ? "bg-[#F6AD55] text-white" : "bg-white dark:bg-zinc-900 text-[#F6AD55] border-2 border-[#F6AD55] hover:-translate-y-1"}`}
             >
               {phonics.stem}
             </button>
@@ -195,13 +195,13 @@ export const AnimalsVocab = ({ items, onExit }: AnimalsVocabProps) => {
       </div>
 
       {/* Bottom Grid Navigation */}
-      <div className="h-32 bg-white border-t border-gray-100 overflow-x-auto">
+      <div className="h-32 bg-white dark:bg-zinc-900 border-t border-gray-100 dark:border-zinc-800 overflow-x-auto">
         <div className="h-full flex items-center px-4 gap-4">
           {items.map((item, index) => (
             <button
               key={index}
               onClick={() => handleSelect(index)}
-              className={`flex-shrink-0 w-20 h-20 p-2 rounded-xl transition-all ${currentIndex === index ? "bg-[#4FD1C5] ring-4 ring-[#4FD1C5]/30 scale-110" : "bg-gray-50 hover:bg-gray-100"}`}
+              className={`flex-shrink-0 w-20 h-20 p-2 rounded-xl transition-all ${currentIndex === index ? "bg-[#4FD1C5] ring-4 ring-[#4FD1C5]/30 scale-110" : "bg-gray-50 hover:bg-gray-100 dark:bg-zinc-800 dark:hover:bg-zinc-700"}`}
             >
               <img
                 src={item.image}

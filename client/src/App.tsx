@@ -30,10 +30,15 @@ function App() {
       requestFullscreen();
     };
 
+    // Block the right-click / long-press context menu app-wide so toddlers
+    // can't pop up "Save image", "Reload", etc. and get stuck.
+    const blockContextMenu = (e: Event) => e.preventDefault();
+
     // Keep listeners active at all times so ANY tap engages fullscreen immediately
     window.addEventListener('click', handleGesture, { passive: true });
     window.addEventListener('touchstart', handleGesture, { passive: true });
     window.addEventListener('pointerdown', handleGesture, { passive: true });
+    window.addEventListener('contextmenu', blockContextMenu);
 
     // Initial attempt on load
     requestFullscreen();
@@ -42,6 +47,7 @@ function App() {
       window.removeEventListener('click', handleGesture);
       window.removeEventListener('touchstart', handleGesture);
       window.removeEventListener('pointerdown', handleGesture);
+      window.removeEventListener('contextmenu', blockContextMenu);
     };
   }, []);
 

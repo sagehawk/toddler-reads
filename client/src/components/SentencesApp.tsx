@@ -2,16 +2,17 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
-  useLayoutEffect,
 } from "react";
-import { Link, useRoute, useLocation } from "wouter";
-import { Volume2, VolumeX } from "lucide-react";
+import { useRoute } from "wouter";
+import confetti from "canvas-confetti";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { getLetterColors } from "../lib/colorUtils";
-import confetti from "canvas-confetti";
 import { useSwipe } from "@/hooks/useSwipe";
+import { TrayMenu } from "@/components/TrayMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { TapReadSentence } from "@/components/TapReadSentence";
 
 // Import images
 import appleImage from "../assets/animals/apple.png";
@@ -265,142 +266,17 @@ const sortedSentences = [...sentences].sort((a, b) => {
   return 0;
 });
 
-// Helper to detect Android
-const isAndroid = /Android/i.test(navigator.userAgent);
-
-// Extracted Component
-const AnimatedSentence = ({
-  text,
-  voice,
-  onComplete,
-}: {
-  text: string;
-  voice: SpeechSynthesisVoice | null;
-  onComplete: () => void;
-}) => {
-  const [visibleCount, setVisibleCount] = useState(0);
-  const { speak, stop } = useSpeechSynthesis();
-  const sentenceRef = useRef<HTMLHeadingElement>(null);
-  const words = text.split(" ");
-  const onCompleteRef = useRef(onComplete);
-
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
-  useEffect(() => {
-    let isCancelled = false;
-    let animationInterval: NodeJS.Timeout;
-
-    const animateWords = async () => {
-      const totalWords = words.length;
-      let current = 1;
-      const wordDelay = 400;
-
-      if (totalWords <= 1) return;
-
-      return new Promise<void>((resolve) => {
-        animationInterval = setInterval(() => {
-          if (isCancelled) {
-            resolve();
-            return;
-          }
-          current++;
-          setVisibleCount(current);
-          if (current >= totalWords) {
-            clearInterval(animationInterval);
-            resolve();
-          }
-        }, wordDelay);
-      });
-    };
-
-    const runSequence = async () => {
-      if (isCancelled) return;
-
-      // Start first word fade immediately
-      setVisibleCount(1);
-
-      // 1. Animation only
-      await animateWords();
-      
-      if (isCancelled) return;
-
-      clearInterval(animationInterval);
-      setVisibleCount(words.length);
-
-      await new Promise((r) => setTimeout(r, 200));
-      if (isCancelled) return;
-
-      // 2. Regular TTS
-      await speak(text, { voice: voice, rate: 1.0 });
-
-      if (!isCancelled) {
-        onCompleteRef.current();
-      }
-    };
-
-    runSequence();
-
-    return () => {
-      isCancelled = true;
-      stop();
-      clearInterval(animationInterval);
-    };
-  }, [text, voice, speak, stop, words.length]);
-
-  useLayoutEffect(() => {
-    if (sentenceRef.current) {
-      const container = sentenceRef.current.parentElement;
-      if (container) {
-        const containerWidth = container.clientWidth;
-        sentenceRef.current.style.fontSize = "100px";
-        const textWidth = sentenceRef.current.scrollWidth;
-        const targetWidth = containerWidth * 0.9;
-        let newFontSize = (targetWidth / textWidth) * 100;
-        const maxFontSize = 6 * 16;
-        const minFontSize = 2 * 16;
-        newFontSize = Math.max(minFontSize, Math.min(newFontSize, maxFontSize));
-        sentenceRef.current.style.fontSize = `${newFontSize}px`;
-      }
-    }
-  }, [text]);
-
-  return (
-    <h2 ref={sentenceRef} className="font-bold break-words">
-      {words.map((word, index) => {
-        const cleanedWord = word.toLowerCase().replace(".", "");
-        const isNoun = Object.keys(wordImageMap).includes(cleanedWord);
-        const isVisible = index < visibleCount;
-
-        return (
-          <span
-            key={index}
-            className={`transition-opacity duration-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
-          >
-            {isNoun ? (
-              <span>
-                <span className={getLetterColors(word.charAt(0)).text}>
-                  {word.charAt(0)}
-                </span>
-                <span>{word.slice(1)}</span>
-              </span>
-            ) : (
-              word
-            )}{" "}
-          </span>
-        );
-      })}
-    </h2>
-  );
-};
-
 import { usePreventBackExit } from "@/hooks/usePreventBackExit";
+
+// After this many finger-point reads, a sentence starts appearing as an
+// automatic "read along with me" fluent pass.
+const SENTENCE_MASTERY_THRESHOLD = 2;
+// Even mastered sentences still get an occasional finger-point round.
+const FLUENT_MODE_CHANCE = 0.75;
 
 const SentencesApp = () => {
   usePreventBackExit();
-  const [match, params] = useRoute("/sentences/:category?");
-  const [, setLocation] = useLocation();
+  const [, params] = useRoute("/sentences/:category?");
   const category = params?.category;
 
   const filteredSentences =
@@ -418,18 +294,29 @@ const SentencesApp = () => {
   const [isImageVisible, setIsImageVisible] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
-  const { speak, stop, voices } = useSpeechSynthesis();
-  const femaleVoice =
-    voices?.find((v) => v.lang.startsWith("en") && v.name.includes("Female")) ||
-    voices?.find((v) => v.lang.startsWith("en"));
+  // Per-sentence progress, persisted on the device: how many times each
+  // sentence has been finger-point read. Drives fluent-mode graduation and
+  // shuffle weighting, mirroring the Words page.
+  const [sentenceMastery, setSentenceMastery] = useLocalStorage<Record<string, number>>(
+    "sentenceMastery",
+    {},
+  );
+
+  const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
   // Ref to track image loading
   const imageLoadedRef = useRef(false);
 
-  const currentItem = filteredSentences[currentIndex];
-  let imageToDisplay = combinedImageMap[currentItem?.text];
+  // Clamp the index: when the category changes, this renders once with the old
+  // index before the reshuffle effect runs, which used to crash on short lists.
+  const currentItem =
+    filteredSentences.length > 0
+      ? filteredSentences[currentIndex % filteredSentences.length]
+      : undefined;
 
-  if (!imageToDisplay) {
+  let imageToDisplay = currentItem ? combinedImageMap[currentItem.text] : undefined;
+
+  if (!imageToDisplay && currentItem) {
     const words = currentItem.text.toLowerCase().replace(".", "").split(" ");
     for (const word of words) {
       if (wordImageMap[word]) {
@@ -439,26 +326,53 @@ const SentencesApp = () => {
     }
   }
 
+  // Decide how this card plays, once per card (stable across re-renders)
+  const cardMode = useMemo<"read" | "fluent">(() => {
+    const text = currentItem?.text;
+    const mastery = text ? sentenceMastery[text] ?? 0 : 0;
+    return mastery >= SENTENCE_MASTERY_THRESHOLD && Math.random() < FLUENT_MODE_CHANCE
+      ? "fluent"
+      : "read";
+    // Intentionally keyed to the card only — mode must not flip mid-card
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
+
   const shuffleItems = useCallback(
     (shouldSetFirst = false) => {
-      const indices = filteredSentences.map((_, i) => i);
-      for (let i = indices.length - 1; i > 0; i--) {
+      // Weighted bag: sentences not yet read fluently appear twice per cycle
+      const bag: number[] = [];
+      filteredSentences.forEach((item, i) => {
+        bag.push(i);
+        if ((sentenceMastery[item.text] ?? 0) < SENTENCE_MASTERY_THRESHOLD) {
+          bag.push(i);
+        }
+      });
+      for (let i = bag.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [indices[i], indices[j]] = [indices[j], indices[i]];
+        [bag[i], bag[j]] = [bag[j], bag[i]];
       }
-      setShuffledIndices(indices);
-      if (shouldSetFirst && indices.length > 0) {
-        setCurrentIndex(indices[0]);
+      // Never show the same sentence twice in a row
+      for (let i = 1; i < bag.length; i++) {
+        if (bag[i] === bag[i - 1]) {
+          const k = bag.findIndex((v, idx) => idx > i && v !== bag[i]);
+          if (k !== -1) [bag[i], bag[k]] = [bag[k], bag[i]];
+        }
+      }
+      setShuffledIndices(bag);
+      if (shouldSetFirst && bag.length > 0) {
+        setCurrentIndex(bag[0]);
         setShuffledIndex(1);
       } else {
         setShuffledIndex(0);
       }
     },
-    [filteredSentences],
+    [filteredSentences, sentenceMastery],
   );
 
   useEffect(() => {
     shuffleItems(true);
+    // Reshuffle only when the category changes — not when mastery updates mid-cycle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
   // Reset listened state and image loaded ref
@@ -468,14 +382,11 @@ const SentencesApp = () => {
     imageLoadedRef.current = false;
   }, [currentIndex]);
 
-  // Handle image fade in/out sequence
+  // Reveal the picture once the sentence has been read, and keep it up so the
+  // child can connect the words to the scene (matches the vocab page).
   useEffect(() => {
     if (hasListened) {
       setIsImageVisible(true);
-      const timer = setTimeout(() => {
-        setIsImageVisible(false);
-      }, 3000); // 1s fade in + 2s hold
-      return () => clearTimeout(timer);
     }
   }, [hasListened]);
 
@@ -504,7 +415,21 @@ const SentencesApp = () => {
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
-  }, []);
+    // Reading a whole sentence is a big win
+    confetti({
+      particleCount: 60,
+      spread: 75,
+      origin: { y: 0.7 },
+      colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
+    });
+    // Only finger-point reads build mastery; fluent passes maintain it
+    if (cardMode === "read" && currentItem) {
+      setSentenceMastery((prev) => ({
+        ...prev,
+        [currentItem.text]: (prev[currentItem.text] ?? 0) + 1,
+      }));
+    }
+  }, [cardMode, currentItem, setSentenceMastery]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -535,10 +460,6 @@ const SentencesApp = () => {
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrevious,
   });
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Handled by swipe
-  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -580,33 +501,11 @@ const SentencesApp = () => {
       onTouchEnd={(e) => swipeHandlers.onTouchEnd()}
       onClick={handleInteraction}
     >
-      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            }
-            setLocation("/app", { replace: true });
-          }}
-          className="flex items-center justify-center w-16 h-16 rounded-full bg-white/50 hover:bg-white/80 text-secondary-foreground transition-colors focus:outline-none focus:ring-0 shadow-sm backdrop-blur-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className="w-8 h-8"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5L8.25 12l7.5-7.5"
-            />
-          </svg>
-        </button>
+      <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
+        <TrayMenu currentPageId="sentences" />
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       <div className="flex-1 flex flex-col justify-center items-center overflow-hidden w-full relative">
@@ -643,13 +542,18 @@ const SentencesApp = () => {
                   </div>
                 )}
 
-                {/* Text Layer */}
-                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                {/* Text Layer — taps on the card never advance it; the words
+                    themselves are the interactive reading targets */}
+                <div
+                  className="relative z-10 w-full h-full flex items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {!isShuffling && (
-                    <AnimatedSentence
+                    <TapReadSentence
                       key={currentIndex}
                       text={currentItem.text}
-                      voice={femaleVoice ?? null}
+                      voice={preferredVoice ?? null}
+                      mode={cardMode}
                       onComplete={handleSequenceComplete}
                     />
                   )}
