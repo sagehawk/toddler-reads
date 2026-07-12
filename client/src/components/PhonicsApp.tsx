@@ -240,10 +240,20 @@ export default function PhonicsApp() {
 
   // The learn card is a two-dot game: hear the SOUND, hear the NAME —
   // both heard (by narration or by taps) → confetti + praise + auto-advance.
+  // Refs are the source of truth (state only drives the dot visuals):
+  // celebrating from an effect that watched the state raced the per-card
+  // reset — the new card's effect pass saw the OLD card's true/true flags
+  // with a cleared guard and celebrated instantly, machine-gunning through
+  // every card ("phonics keeps skipping everything").
   const [heardSound, setHeardSound] = useState(false);
   const [heardName, setHeardName] = useState(false);
+  const heardSoundRef = useRef(false);
+  const heardNameRef = useRef(false);
   const celebratedRef = useRef(false);
   const advanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Assigned below once advanceToNextCard exists; declared early so the
+  // celebration path can be defined before the handlers that use it.
+  const advanceToNextCardRef = useRef<() => void>(() => {});
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current) {
       clearTimeout(advanceTimerRef.current);
@@ -251,10 +261,16 @@ export default function PhonicsApp() {
     }
   }, []);
 
+  // Latest card index, for guarding async continuations that outlive a card
+  const currentIndexRef = useRef<number | null>(currentIndex);
+  currentIndexRef.current = currentIndex;
+
   // Always reset the card's progress when entering a new letter
   useEffect(() => {
     setSoundToggle('phonic');
     listenCountedRef.current = false;
+    heardSoundRef.current = false;
+    heardNameRef.current = false;
     setHeardSound(false);
     setHeardName(false);
     celebratedRef.current = false;
@@ -283,6 +299,37 @@ export default function PhonicsApp() {
   // Latest voice without retriggering the narration effect when voices load
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   voiceRef.current = preferredVoice ?? null;
+
+  // Marking a dot heard and celebrating happen in ONE synchronous call path —
+  // never via an effect watching the heard state (see the race note above).
+  const markPartHeard = useCallback((part: 'sound' | 'name', letterInfo: PhonicsLetter) => {
+    if (part === 'sound') {
+      heardSoundRef.current = true;
+      setHeardSound(true);
+    } else {
+      heardNameRef.current = true;
+      setHeardName(true);
+    }
+    if (!heardSoundRef.current || !heardNameRef.current || celebratedRef.current) return;
+
+    // Both dots filled — the card's job is done: celebrate Numbers-style
+    // and move on by itself (no reason to linger, no dead end).
+    celebratedRef.current = true;
+    isNarratingRef.current = false;
+    markLetterHeard(letterInfo.letter);
+    confetti({
+      particleCount: 45,
+      spread: 65,
+      origin: { y: 0.65 },
+      colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa'],
+    });
+    speak(randomPraise(), { voice: voiceRef.current });
+    clearAdvanceTimer();
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      advanceToNextCardRef.current();
+    }, 1800);
+  }, [markLetterHeard, speak, clearAdvanceTimer]);
 
   const selectedModule = learningModules[0];
 
@@ -395,6 +442,10 @@ export default function PhonicsApp() {
     if (currentIndex === null) return;
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
+    const cardIndex = currentIndex;
+    // Bail if the card changed while our audio was playing — a stale
+    // continuation must never mark dots (or celebrate) on the next card
+    const cardChanged = () => currentIndexRef.current !== cardIndex;
 
     sequenceTokenRef.current++; // Cancel any pending autoplay narration
     // The child took over — the narration gate must never stay stuck closed
@@ -406,8 +457,9 @@ export default function PhonicsApp() {
       setIsPulsing(true);
       await playSoundOnce(letterInfo.sound);
       setIsPulsing(false);
+      if (cardChanged()) return;
       setSoundToggle('name'); // Toggle to TTS letter name next
-      setHeardSound(true);
+      markPartHeard('sound', letterInfo);
     } else {
       // Tap 2: Speak TTS letter name, and animate a pulse
       const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
@@ -418,10 +470,11 @@ export default function PhonicsApp() {
         onEnd: () => setIsPulsing(false)
       });
       setIsPulsing(false);
+      if (cardChanged()) return;
       setSoundToggle('phonic'); // Toggle back to phonic sound next
-      setHeardName(true);
+      markPartHeard('name', letterInfo);
     }
-  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, isPulsing]);
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, isPulsing, markPartHeard]);
 
   // Autoplay narration: when a new letter appears, give the child a moment to
   // recognize it (and say it themselves), then play the phonic sound, pause,
@@ -446,7 +499,7 @@ export default function PhonicsApp() {
       // 1. Play the phonic MP3 first
       await playSoundOnce(letterInfo.sound);
       if (!isLive()) return;
-      setHeardSound(true);
+      markPartHeard('sound', letterInfo);
       setSoundToggle('name'); // A letter tap now continues where narration got to
 
       // 2. Brief pause so the sound and the name read as two separate ideas
@@ -463,7 +516,7 @@ export default function PhonicsApp() {
       });
       setIsPulsing(false);
       if (!isLive()) return;
-      setHeardName(true); // Both parts heard → the celebration effect takes over
+      markPartHeard('name', letterInfo); // Both parts heard → celebration fires inside
     };
 
     isNarratingRef.current = true;
@@ -485,7 +538,7 @@ export default function PhonicsApp() {
       isNarratingRef.current = false;
       stopAllSounds();
     };
-  }, [currentIndex, isAutoplayEnabled, quizData, selectedModule.letters, playSoundOnce, speak, stopAllSounds]);
+  }, [currentIndex, isAutoplayEnabled, quizData, selectedModule.letters, playSoundOnce, speak, stopAllSounds, markPartHeard]);
 
 
   const advanceToNextCard = useCallback(() => {
@@ -505,31 +558,7 @@ export default function PhonicsApp() {
   }, [shuffledIndex, shuffledIndices, shuffleLetters, handleLetterClick, stopAllSounds, clearAdvanceTimer]);
 
   // The auto-advance timer must always fire the freshest advance
-  const advanceToNextCardRef = useRef(advanceToNextCard);
   advanceToNextCardRef.current = advanceToNextCard;
-
-  // Both dots filled — the card's job is done: celebrate Numbers-style and
-  // move on by itself (no reason to linger, no dead end).
-  useEffect(() => {
-    if (!heardSound || !heardName || celebratedRef.current) return;
-    if (currentIndex === null) return;
-    const letterInfo = selectedModule.letters?.[currentIndex];
-    if (!letterInfo) return;
-    celebratedRef.current = true;
-    isNarratingRef.current = false;
-    markLetterHeard(letterInfo.letter);
-    confetti({
-      particleCount: 45,
-      spread: 65,
-      origin: { y: 0.65 },
-      colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa'],
-    });
-    speak(randomPraise(), { voice: voiceRef.current });
-    advanceTimerRef.current = setTimeout(() => {
-      advanceTimerRef.current = null;
-      advanceToNextCardRef.current();
-    }, 1800);
-  }, [heardSound, heardName, currentIndex, selectedModule.letters, markLetterHeard, speak]);
 
   // Never leave a stray auto-advance behind on unmount
   useEffect(() => clearAdvanceTimer, [clearAdvanceTimer]);
