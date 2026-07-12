@@ -218,7 +218,6 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
               key={`${storyId}-${currentPage}`}
               text={pageText}
               voice={preferredVoice ?? null}
-              mode="read"
               onComplete={handlePageRead}
               maxFontPx={88}
               minFontPx={20}

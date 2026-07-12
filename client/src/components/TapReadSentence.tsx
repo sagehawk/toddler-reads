@@ -2,39 +2,38 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { getLetterColors } from "../lib/colorUtils";
-import { playWrongTapThud, sleep } from "../lib/uiSounds";
+import { playWrongTapThud } from "../lib/uiSounds";
 import { useAutoFitFont } from "@/hooks/useAutoFitFont";
 
-// Pace of the karaoke-style highlight while the full sentence is read
-const WORD_BEAT_MS = 340;
-
 /**
- * READ MODE — finger-point reading, one word at a time.
+ * Finger-point reading, one word at a time. Every word starts gray with a
+ * small bar under it; only the next unread word glows. Tapping it speaks that
+ * word and colors it in; skipping ahead nudges the child back — left-to-right
+ * tracking is the game.
  *
- * All words start gray with a small bar underneath (the sentence-sized
- * version of the Words page's sound buttons). Only the leftmost unread word
- * glows; tapping it speaks that word and colors it in. Skipping ahead nudges
- * the child back — sentence-level left-to-right tracking is the game.
- * After the last word, the voice reads the whole sentence fluently while the
- * highlight sweeps across.
+ * The LAST word is the payoff, Numbers-style: onComplete fires the instant
+ * it's tapped (confetti / picture live in the parent), then the whole sentence
+ * is read once as the "you read it!" reward, and onAdvance fires only after
+ * that read finishes so the parent never cuts it off.
  *
- * FLUENT MODE — for sentences already read a couple of times: an automatic
- * "read along with me" pass where words light up in time with the voice.
+ * Audio uses a depth-1 queue (see speakWord): the current word always finishes,
+ * rapid taps collapse to the latest word, so nothing is ever cut mid-syllable
+ * and audio never lags more than one word behind the finger.
  *
  * Used by the Sentences page and the Stories reader.
  */
 export const TapReadSentence = ({
   text,
   voice,
-  mode,
   onComplete,
+  onAdvance,
   maxFontPx = 6 * 16,
   minFontPx = 2 * 16,
 }: {
   text: string;
   voice: SpeechSynthesisVoice | null;
-  mode: "read" | "fluent";
   onComplete: () => void;
+  onAdvance?: () => void;
   maxFontPx?: number;
   minFontPx?: number;
 }) => {
@@ -45,22 +44,26 @@ export const TapReadSentence = ({
   const { speak, stop } = useSpeechSynthesis();
   const sentenceRef = useRef<HTMLHeadingElement>(null);
   const readRef = useRef(0);
-  const sweepingRef = useRef(false);
   const doneRef = useRef(false);
   const cancelledRef = useRef(false);
-  const sweepIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const onCompleteRef = useRef(onComplete);
+  const onAdvanceRef = useRef(onAdvance);
+
+  // Depth-1 speech queue state
+  const speakingRef = useRef(false);
+  const pendingRef = useRef<string | null>(null);
+  const onDrainRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
-  }, [onComplete]);
+    onAdvanceRef.current = onAdvance;
+  }, [onComplete, onAdvance]);
 
   useAutoFitFont(sentenceRef, text, maxFontPx, minFontPx);
 
   useEffect(() => {
     return () => {
       cancelledRef.current = true;
-      if (sweepIntervalRef.current) clearInterval(sweepIntervalRef.current);
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -71,59 +74,78 @@ export const TapReadSentence = ({
     setReadCount(readRef.current);
   };
 
-  // Read the full sentence fluently while the highlight sweeps left→right
-  const fluentSweep = async () => {
-    sweepingRef.current = true;
-    await sleep(mode === "fluent" ? 0 : 450);
-    if (cancelledRef.current) return;
-    if (readRef.current < words.length) {
-      // Fluent mode starts uncolored: light words up on the beat
-      sweepIntervalRef.current = setInterval(() => {
-        advanceHighlight();
-        if (readRef.current >= words.length && sweepIntervalRef.current) {
-          clearInterval(sweepIntervalRef.current);
+  // Play `word` now; when it ends, play the most-recent word tapped while it
+  // was speaking (rapid taps collapse to the latest — audio never lags more
+  // than one word and no word is cut mid-syllable). When the queue fully
+  // drains, run any onDrain callback (the closing sentence read).
+  const playNow = (word: string, rate: number) => {
+    speakingRef.current = true;
+    speak(word, {
+      voice,
+      rate,
+      interrupt: false,
+      onEnd: () => {
+        if (cancelledRef.current) {
+          speakingRef.current = false;
+          return;
         }
-      }, WORD_BEAT_MS);
-      advanceHighlight();
-    }
-    await speak(text, { voice, rate: 0.95 });
-    if (cancelledRef.current) return;
-    if (sweepIntervalRef.current) clearInterval(sweepIntervalRef.current);
-    readRef.current = words.length;
-    setReadCount(words.length);
-    sweepingRef.current = false;
+        const next = pendingRef.current;
+        pendingRef.current = null;
+        if (next != null) {
+          playNow(next, 1.0);
+        } else {
+          speakingRef.current = false;
+          const drain = onDrainRef.current;
+          onDrainRef.current = null;
+          drain?.();
+        }
+      },
+    });
+  };
+
+  const speakWord = (word: string) => {
+    const w = word.replace(/[.,!?]/g, "");
+    if (speakingRef.current) pendingRef.current = w; // will play after the current one
+    else playNow(w, 1.0);
+  };
+
+  const finishReading = () => {
+    // Reward lands the instant the last word is tapped — parent fires
+    // confetti + reveals the picture. The full-sentence "you did it!" read
+    // waits for the word queue to drain (so the last word is never cut), and
+    // only when THAT read ends do we tell the parent it may advance.
     doneRef.current = true;
     setIsDone(true);
     onCompleteRef.current();
-  };
 
-  // Fluent mode: auto "read along" after a short settling beat
-  useEffect(() => {
-    if (mode !== "fluent") return;
-    const timer = setTimeout(() => {
-      if (!cancelledRef.current) fluentSweep();
-    }, 800);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+    const readWholeSentence = () => {
+      if (cancelledRef.current) return;
+      speakingRef.current = true;
+      speak(text, {
+        voice,
+        rate: 0.95,
+        interrupt: false,
+        onEnd: () => {
+          speakingRef.current = false;
+          if (!cancelledRef.current) onAdvanceRef.current?.();
+        },
+      });
+    };
 
-  const speakSingleWord = (word: string) => {
-    stop();
-    speak(word.replace(/[.,!?]/g, ""), { voice, rate: 1.0 });
+    if (speakingRef.current) onDrainRef.current = readWholeSentence;
+    else readWholeSentence();
   };
 
   const handleWordTap = (index: number) => {
     if (doneRef.current) {
-      // Finished — tapping any word replays the whole sentence fluently
-      stop();
+      // Finished — tap anything to hear the whole sentence again
       speak(text, { voice, rate: 1.0 });
       return;
     }
-    if (sweepingRef.current || mode === "fluent") return;
 
     if (index < readRef.current) {
       // Revisiting an already-read word is always allowed
-      speakSingleWord(words[index]);
+      speakWord(words[index]);
       return;
     }
     if (index > readRef.current) {
@@ -134,10 +156,10 @@ export const TapReadSentence = ({
     }
     // The correct next word, left to right
     if (navigator.vibrate) navigator.vibrate(8);
-    speakSingleWord(words[index]);
+    speakWord(words[index]);
     advanceHighlight();
     if (readRef.current === words.length) {
-      fluentSweep();
+      finishReading();
     }
   };
 
@@ -149,7 +171,7 @@ export const TapReadSentence = ({
       {words.map((word, index) => {
         const colors = getLetterColors(word.charAt(0));
         const isRead = index < readCount;
-        const isActive = mode === "read" && !isDone && index === readCount;
+        const isActive = !isDone && index === readCount;
 
         return (
           <span

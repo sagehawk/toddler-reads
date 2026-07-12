@@ -61,10 +61,16 @@ export const useSpeechSynthesis = () => {
     };
   }, [isNative]);
 
-  const speak = useCallback(async (text: string, options?: { voice: SpeechSynthesisVoice | null; rate?: number; onEnd?: () => void }) => {
+  // `interrupt` (default true) cancels whatever is currently speaking before
+  // starting. Pass `interrupt: false` to let the current utterance finish and
+  // QUEUE this one after it — used for word-by-word reading and reward reads
+  // so a quick next tap (or the closing sentence read) never clips the
+  // previous word mid-syllable.
+  const speak = useCallback(async (text: string, options?: { voice: SpeechSynthesisVoice | null; rate?: number; onEnd?: () => void; interrupt?: boolean }) => {
+    const interrupt = options?.interrupt !== false;
     if (isNative) {
       try {
-        await TextToSpeech.stop();
+        if (interrupt) await TextToSpeech.stop();
         await TextToSpeech.speak({
           text,
           lang: 'en-US',
@@ -88,7 +94,7 @@ export const useSpeechSynthesis = () => {
         return;
       }
 
-      window.speechSynthesis.cancel();
+      if (interrupt) window.speechSynthesis.cancel();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = options?.rate ?? 1.0;

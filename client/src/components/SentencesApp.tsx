@@ -2,7 +2,6 @@ import {
   useState,
   useEffect,
   useCallback,
-  useMemo,
   useRef,
 } from "react";
 import { useRoute } from "wouter";
@@ -269,11 +268,9 @@ const sortedSentences = [...sentences].sort((a, b) => {
 
 import { usePreventBackExit } from "@/hooks/usePreventBackExit";
 
-// After this many finger-point reads, a sentence starts appearing as an
-// automatic "read along with me" fluent pass.
+// Sentences below this many reads appear twice per shuffle cycle, so
+// less-practiced ones come around more often.
 const SENTENCE_MASTERY_THRESHOLD = 2;
-// Even mastered sentences still get an occasional finger-point round.
-const FLUENT_MODE_CHANCE = 0.75;
 
 const SentencesApp = () => {
   usePreventBackExit();
@@ -296,14 +293,23 @@ const SentencesApp = () => {
   const [isShuffling, setIsShuffling] = useState(false);
 
   // Per-sentence progress, persisted on the device: how many times each
-  // sentence has been finger-point read. Drives fluent-mode graduation and
-  // shuffle weighting, mirroring the Words page.
+  // sentence has been finger-point read. Drives shuffle weighting so
+  // less-practiced sentences come around more often.
   const [sentenceMastery, setSentenceMastery] = useLocalStorage<Record<string, number>>(
     "sentenceMastery",
     {},
   );
 
   const { speak, stop, preferredVoice } = useSpeechSynthesis();
+
+  // Pending auto-advance to the next sentence after a completed read
+  const advanceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const clearAdvanceTimer = useCallback(() => {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
 
   // Clamp the index: when the category changes, this renders once with the old
   // index before the reshuffle effect runs, which used to crash on short lists.
@@ -324,20 +330,9 @@ const SentencesApp = () => {
     }
   }
 
-  // Decide how this card plays, once per card (stable across re-renders)
-  const cardMode = useMemo<"read" | "fluent">(() => {
-    const text = currentItem?.text;
-    const mastery = text ? sentenceMastery[text] ?? 0 : 0;
-    return mastery >= SENTENCE_MASTERY_THRESHOLD && Math.random() < FLUENT_MODE_CHANCE
-      ? "fluent"
-      : "read";
-    // Intentionally keyed to the card only — mode must not flip mid-card
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex]);
-
   const shuffleItems = useCallback(
     (shouldSetFirst = false) => {
-      // Weighted bag: sentences not yet read fluently appear twice per cycle
+      // Weighted bag: less-practiced sentences appear twice per cycle
       const bag: number[] = [];
       filteredSentences.forEach((item, i) => {
         bag.push(i);
@@ -389,6 +384,7 @@ const SentencesApp = () => {
 
   const handleShuffle = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     setIsShuffling(true);
 
@@ -404,7 +400,11 @@ const SentencesApp = () => {
       }
       setIsShuffling(false);
     }, 150);
-  }, [shuffledIndex, shuffledIndices, shuffleItems, stop]);
+  }, [shuffledIndex, shuffledIndices, shuffleItems, stop, clearAdvanceTimer]);
+
+  // The auto-advance timer must always fire the freshest handleShuffle
+  const handleShuffleRef = useRef(handleShuffle);
+  handleShuffleRef.current = handleShuffle;
 
   const handleInteraction = useCallback(() => {
     // Little palms brush the background while finger-point reading —
@@ -416,24 +416,39 @@ const SentencesApp = () => {
 
   const handleSequenceComplete = useCallback(() => {
     setHasListened(true);
-    // Reading a whole sentence is a big win
+    // Instant reward the moment the last word is tapped: confetti + the
+    // picture pops. The celebratory full-sentence read happens inside
+    // TapReadSentence; it calls onAdvance below only once that read ends.
     confetti({
       particleCount: 60,
       spread: 75,
       origin: { y: 0.7 },
       colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
     });
-    // Only finger-point reads build mastery; fluent passes maintain it
-    if (cardMode === "read" && currentItem) {
+    if (currentItem) {
       setSentenceMastery((prev) => ({
         ...prev,
         [currentItem.text]: (prev[currentItem.text] ?? 0) + 1,
       }));
     }
-  }, [cardMode, currentItem, setSentenceMastery]);
+  }, [currentItem, setSentenceMastery]);
+
+  // Fired after the whole-sentence reward read finishes — flow to the next
+  // sentence on its own like Numbers, without ever cutting the read short.
+  const handleReadAdvance = useCallback(() => {
+    clearAdvanceTimer();
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      handleShuffleRef.current();
+    }, 700);
+  }, [clearAdvanceTimer]);
+
+  // Never leave a stray auto-advance behind on unmount
+  useEffect(() => clearAdvanceTimer, [clearAdvanceTimer]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
@@ -442,10 +457,11 @@ const SentencesApp = () => {
         (prevIndex) => (prevIndex + 1) % filteredSentences.length,
       );
     }, 150);
-  }, [filteredSentences.length, stop]);
+  }, [filteredSentences.length, stop, clearAdvanceTimer]);
 
   const handlePrevious = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
+    clearAdvanceTimer();
     stop();
     setTimeout(() => {
       setHasListened(false); // Reset immediately
@@ -455,7 +471,7 @@ const SentencesApp = () => {
           (prevIndex - 1 + filteredSentences.length) % filteredSentences.length,
       );
     }, 150);
-  }, [filteredSentences.length, stop]);
+  }, [filteredSentences.length, stop, clearAdvanceTimer]);
 
   const swipeHandlers = useSwipe({
     onSwipeLeft: handleNext,
@@ -524,8 +540,8 @@ const SentencesApp = () => {
                   key={currentIndex}
                   text={currentItem.text}
                   voice={preferredVoice ?? null}
-                  mode={cardMode}
                   onComplete={handleSequenceComplete}
+                  onAdvance={handleReadAdvance}
                 />
               )}
             </div>

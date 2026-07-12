@@ -282,7 +282,7 @@ const DieFace = ({
 // Component to handle interactive counting popping game
 const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, color: string, onComplete: () => void, voice: SpeechSynthesisVoice | null }) => {
   const [poppedSet, setPoppedSet] = useState<Set<number>>(new Set());
-  const { speak, stop } = useSpeechSynthesis();
+  const { speak } = useSpeechSynthesis();
 
   const handlePopCircle = useCallback((index: number) => {
     if (poppedSet.has(index)) return; // Already popped
@@ -295,10 +295,11 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
     newSet.add(index);
     setPoppedSet(newSet);
 
-    // Speak the next incremental number
+    // Speak the next incremental number. interrupt:false so a quick second
+    // pop lets "one" finish and QUEUES "two" behind it, instead of clipping
+    // the count mid-word.
     const currentPopCount = newSet.size;
-    stop();
-    speak(currentPopCount.toString(), { voice, rate: 1.0 });
+    speak(currentPopCount.toString(), { voice, rate: 1.0, interrupt: false });
 
     if (currentPopCount === count) {
       // All popped! Small delay, then trigger success
@@ -306,7 +307,7 @@ const AnimatedDots = ({ count, color, onComplete, voice }: { count: number, colo
         onComplete();
       }, 600);
     }
-  }, [poppedSet, count, voice, speak, stop, onComplete]);
+  }, [poppedSet, count, voice, speak, onComplete]);
 
   return <DieFace count={count} color={color} poppedSet={poppedSet} onPopCircle={handlePopCircle} />;
 };
