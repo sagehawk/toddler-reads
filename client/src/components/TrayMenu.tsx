@@ -308,53 +308,34 @@ export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
               exit={{ scale: 0.85, y: 30, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 250, damping: 20 }}
             >
-              {TRAY_ITEMS.filter(item => item.id !== currentPageId).map((item, i) => {
+              {/* Every game always shows in the same spot — the one you're on
+                  is just greyed out. Toddlers navigate by position memory. */}
+              {TRAY_ITEMS.map((item, i) => {
                 const isActive = item.id === currentPageId;
-                
+
                 return (
                   <motion.button
                     key={item.id}
                     onClick={(e) => handleSelect(item, e)}
-                    className={`relative flex flex-col items-center justify-center w-36 h-36 sm:w-48 sm:h-48 rounded-[2.5rem] text-white cursor-pointer focus:outline-none transition-all duration-300 bg-gradient-to-br ${item.gradient} ${
-                      isActive 
-                        ? `ring-8 ring-amber-400 ring-offset-4 ring-offset-black/50 shadow-2xl ${item.activeColor} cursor-default` 
-                        : "shadow-xl hover:shadow-[0_15px_40px_rgba(255,255,255,0.15)]"
+                    disabled={isActive}
+                    className={`relative flex flex-col items-center justify-center w-36 h-36 sm:w-48 sm:h-48 rounded-[2.5rem] text-white focus:outline-none transition-all duration-300 bg-gradient-to-br ${item.gradient} ${
+                      isActive
+                        ? "opacity-35 grayscale cursor-default shadow-md"
+                        : "cursor-pointer shadow-xl hover:shadow-[0_15px_40px_rgba(255,255,255,0.15)]"
                     }`}
                     initial={{ opacity: 0, scale: 0.6 }}
-                    animate={
-                      isActive 
-                        ? { 
-                            opacity: 1, 
-                            scale: [1, 1.03, 1], // Breathing pulse
-                            y: [0, -4, 0] // floating balloon sequence
-                          }
-                        : { opacity: 1, scale: 1 }
-                    }
+                    animate={{ opacity: isActive ? 0.35 : 1, scale: 1 }}
                     transition={{
                       opacity: { delay: i * 0.08 + 0.1 },
-                      scale: isActive 
-                        ? { repeat: Infinity, duration: 2.5, ease: "easeInOut" }
-                        : { type: 'spring', stiffness: 400, damping: 20, delay: i * 0.08 + 0.1 },
-                      y: isActive
-                        ? { repeat: Infinity, duration: 3, ease: 'easeInOut', delay: i * 0.2 }
-                        : {}
+                      scale: { type: 'spring', stiffness: 400, damping: 20, delay: i * 0.08 + 0.1 },
                     }}
                     whileHover={isActive ? {} : { scale: 1.08, y: -6 }}
                     whileTap={isActive ? {} : { scale: 0.92 }}
                     style={{
                       // 3D Inner Clay shadow depth
-                      boxShadow: isActive
-                        ? `inset 0 6px 12px rgba(255,255,255,0.5), inset 0 -6px 12px rgba(0,0,0,0.2), 0 20px 40px rgba(0,0,0,0.4)`
-                        : `inset 0 4px 8px rgba(255,255,255,0.4), inset 0 -4px 8px rgba(0,0,0,0.15), 0 12px 24px rgba(0,0,0,0.25)`
+                      boxShadow: `inset 0 4px 8px rgba(255,255,255,0.4), inset 0 -4px 8px rgba(0,0,0,0.15), 0 12px 24px rgba(0,0,0,0.25)`
                     }}
                   >
-                    {/* Pulsing Active Badge */}
-                    {isActive && (
-                      <span className="absolute -top-3 px-3 py-1 bg-amber-400 text-zinc-950 font-black text-xs sm:text-sm rounded-full shadow-lg animate-bounce tracking-wide select-none z-20">
-                        ⭐ Playing
-                      </span>
-                    )}
-
                     {/* Icon Container */}
                     <div className="transform-gpu transition-transform hover:scale-105 duration-200">
                       <item.Icon size={105} />

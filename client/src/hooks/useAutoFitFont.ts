@@ -38,4 +38,19 @@ export const useAutoFitFont = (
     window.addEventListener("resize", adjust);
     return () => window.removeEventListener("resize", adjust);
   }, [adjust]);
+
+  // The container's width can settle AFTER mount (e.g. the story banner sits
+  // over a page image that is still loading, so the first measurement sees a
+  // near-zero container and clamps the text to minimum). Re-fit whenever the
+  // container's size actually changes.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const container = el.parentElement;
+    if (!container) return;
+    const ro = new ResizeObserver(() => adjust());
+    ro.observe(container);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjust]);
 };

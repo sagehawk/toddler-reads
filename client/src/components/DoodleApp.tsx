@@ -370,6 +370,9 @@ const DoodleApp = () => {
   }, [setVanish]);
 
   const pickTraceChar = useCallback(() => {
+    // Fresh page for a fresh letter — wipe the old doodle so the new
+    // glyph isn't buried under previous scribbles
+    clearAll();
     let next = TRACE_CHARS[Math.floor(Math.random() * TRACE_CHARS.length)];
     while (next === lastPickRef.current) {
       next = TRACE_CHARS[Math.floor(Math.random() * TRACE_CHARS.length)];
@@ -378,7 +381,7 @@ const DoodleApp = () => {
     setTraceChar(next);
     stop();
     speak(next === 'Z' ? 'Zee' : next, { voice: voiceRef.current });
-  }, [speak, stop]);
+  }, [clearAll, speak, stop]);
 
   const hideTrace = useCallback(() => {
     stop();

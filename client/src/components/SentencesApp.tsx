@@ -6,6 +6,7 @@ import {
   useRef,
 } from "react";
 import { useRoute } from "wouter";
+import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import useLocalStorage from "@/hooks/useLocalStorage";
@@ -304,9 +305,6 @@ const SentencesApp = () => {
 
   const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
-  // Ref to track image loading
-  const imageLoadedRef = useRef(false);
-
   // Clamp the index: when the category changes, this renders once with the old
   // index before the reshuffle effect runs, which used to crash on short lists.
   const currentItem =
@@ -379,7 +377,6 @@ const SentencesApp = () => {
   useEffect(() => {
     setHasListened(false);
     setIsImageVisible(false);
-    imageLoadedRef.current = false;
   }, [currentIndex]);
 
   // Reveal the picture once the sentence has been read, and keep it up so the
@@ -514,55 +511,46 @@ const SentencesApp = () => {
 
       <div className="flex-1 flex flex-col justify-center items-center overflow-hidden w-full relative">
         <main className="flex flex-col items-center justify-center text-center px-4 w-full h-full">
-          <div
-            className="w-full flex justify-center items-center"
-            style={{ perspective: "1000px" }}
-          >
+          <div className="w-full max-w-[800px] flex flex-col items-center justify-center gap-4 sm:gap-6">
+            {/* Sentence — taps on the card never advance it; the words
+                themselves are the interactive reading targets */}
             <div
-              className="card"
-              style={{
-                width: "100%",
-                maxWidth: "800px",
-                height: "clamp(200px, 55vh, 500px)",
-              }}
+              className="w-full flex items-center justify-center px-2"
+              style={{ minHeight: "clamp(120px, 26vh, 260px)" }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="card-face card-face-front px-8 relative overflow-hidden">
-                 {/* Background Image Layer */}
-                 {imageToDisplay && (
-                  <div 
-                    key={currentIndex}
-                    className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out flex items-center justify-center ${isImageVisible ? 'opacity-100' : 'opacity-0'}`}
-                  >
-                    <img
-                      src={imageToDisplay}
-                      alt={currentItem.text}
-                      className="w-full h-full object-contain scale-115 opacity-25"
-                      draggable="false"
-                      onLoad={() => {
-                        imageLoadedRef.current = true;
-                      }}
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                    />
-                  </div>
-                )}
+              {!isShuffling && (
+                <TapReadSentence
+                  key={currentIndex}
+                  text={currentItem.text}
+                  voice={preferredVoice ?? null}
+                  mode={cardMode}
+                  onComplete={handleSequenceComplete}
+                />
+              )}
+            </div>
 
-                {/* Text Layer — taps on the card never advance it; the words
-                    themselves are the interactive reading targets */}
+            {/* Picture reward — appears big and clear once the sentence is
+                read, so finishing feels like unlocking the scene. CSS-driven
+                fade (not framer): the end state applies even if animation
+                frames stall, and keeping it mounted preloads the image. */}
+            <div className="w-full flex items-center justify-center h-52 sm:h-72 relative">
+              {imageToDisplay && (
                 <div
-                  className="relative z-10 w-full h-full flex items-center justify-center"
-                  onClick={(e) => e.stopPropagation()}
+                  key={currentIndex}
+                  className={`w-full h-full flex items-center justify-center transition-opacity duration-700 ease-out ${
+                    isImageVisible ? "opacity-100" : "opacity-0"
+                  }`}
                 >
-                  {!isShuffling && (
-                    <TapReadSentence
-                      key={currentIndex}
-                      text={currentItem.text}
-                      voice={preferredVoice ?? null}
-                      mode={cardMode}
-                      onComplete={handleSequenceComplete}
-                    />
-                  )}
+                  <img
+                    src={imageToDisplay}
+                    alt={currentItem.text}
+                    className="max-w-full max-h-full object-contain drop-shadow-xl"
+                    draggable="false"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                  />
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </main>

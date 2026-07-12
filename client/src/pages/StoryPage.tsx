@@ -220,7 +220,7 @@ const StoryPage = ({ params }: { params: { id: string } }) => {
               voice={preferredVoice ?? null}
               mode="read"
               onComplete={handlePageRead}
-              maxFontPx={52}
+              maxFontPx={88}
               minFontPx={20}
             />
           </div>
