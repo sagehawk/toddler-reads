@@ -103,6 +103,20 @@ const StoriesIcon = ({ size = 96 }: { size?: number }) => (
   </div>
 );
 
+const DoodleIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      🎨
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none"
+    >
+      ✏️
+    </span>
+  </div>
+);
+
 interface LobbyCardItem {
   id: string;
   title: string;
@@ -158,6 +172,15 @@ const LOBBY_CARDS: LobbyCardItem[] = [
     href: "/story/all",
     gradient: "from-sky-400 to-blue-500",
     shadowColor: "shadow-blue-400/30 dark:shadow-blue-950/40",
+  },
+  {
+    id: "doodle",
+    title: "Doodle",
+    subtitle: "Draw & Trace",
+    Icon: DoodleIcon,
+    href: "/doodle",
+    gradient: "from-rose-400 to-pink-500",
+    shadowColor: "shadow-pink-400/30 dark:shadow-pink-950/40",
   },
 ];
 

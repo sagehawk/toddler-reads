@@ -5,6 +5,7 @@ import SentencesApp from "./components/SentencesApp";
 import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
+import DoodleApp from "./components/DoodleApp";
 import StoryPage from "./pages/StoryPage";
 import Dashboard from "./pages/Dashboard";
 
@@ -59,6 +60,7 @@ function App() {
       <Route path="/vocab/:category?" component={VocabApp} />
       <Route path="/sentences/:category?" component={SentencesApp} />
       <Route path="/numbers" component={NumbersApp} />
+      <Route path="/doodle" component={DoodleApp} />
 
       <Route path="/my-story" component={MyStory} />
       <Route path="/story/:id" component={StoryPage} />
