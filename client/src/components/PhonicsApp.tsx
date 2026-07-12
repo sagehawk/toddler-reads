@@ -225,7 +225,6 @@ export default function PhonicsApp() {
   const [shuffledIndices, setShuffledIndices] = useState<number[]>([]);
   const [shuffledIndex, setShuffledIndex] = useState(0);
   const { speak, stop, preferredVoice } = useSpeechSynthesis();
-  const [isAutoplayEnabled] = useLocalStorage('phonicsAutoplay', true);
   const [isPulsing, setIsPulsing] = useState(false);
   const [soundToggle, setSoundToggle] = useState<'phonic' | 'name'>('phonic');
 
@@ -476,69 +475,18 @@ export default function PhonicsApp() {
     }
   }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, isPulsing, markPartHeard]);
 
-  // Autoplay narration: when a new letter appears, give the child a moment to
-  // recognize it (and say it themselves), then play the phonic sound, pause,
-  // and finally speak the letter name. Quiz rounds narrate nothing — the
-  // sound IS the question.
+  // No autoplay: the letter sits silent until the child taps it, exactly like
+  // the Numbers page waits on the number. The child drives every step — tap
+  // for the sound, tap for the name — and only then does the card celebrate
+  // and move on. (Autoplay used to narrate + auto-advance each letter by
+  // itself, which walked the whole page forward on its own — "autoplaying,
+  // skipping everything.") Just silence any leftover audio when the card
+  // changes or the page unmounts.
   useEffect(() => {
-    if (currentIndex === null || !isAutoplayEnabled || quizData) {
-      return;
-    }
-
-    const letterInfo = selectedModule.letters?.[currentIndex];
-    if (!letterInfo) return;
-
-    const token = ++sequenceTokenRef.current;
-    const isLive = () => sequenceTokenRef.current === token;
-
-    const runSequence = async () => {
-      // Letter fade-in (~400ms) plus a recognition beat before any sound
-      await new Promise(r => setTimeout(r, 1400));
-      if (!isLive()) return;
-
-      // 1. Play the phonic MP3 first
-      await playSoundOnce(letterInfo.sound);
-      if (!isLive()) return;
-      markPartHeard('sound', letterInfo);
-      setSoundToggle('name'); // A letter tap now continues where narration got to
-
-      // 2. Brief pause so the sound and the name read as two separate ideas
-      await new Promise(r => setTimeout(r, 1600));
-      if (!isLive()) return;
-
-      // 3. Speak the TTS letter name second
-      const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-      setIsPulsing(true);
-      await speak(textToSpeak, {
-        voice: voiceRef.current,
-        rate: 1.0,
-        onEnd: () => setIsPulsing(false)
-      });
-      setIsPulsing(false);
-      if (!isLive()) return;
-      markPartHeard('name', letterInfo); // Both parts heard → celebration fires inside
-    };
-
-    isNarratingRef.current = true;
-    runSequence().finally(() => {
-      // Token check: don't let a stale, cancelled run unlock the next card's narration
-      if (isLive()) {
-        isNarratingRef.current = false;
-      }
-    });
-
     return () => {
-      // Invalidate this run and silence anything it left playing. The gate
-      // must reset here too — a cancelled run's token check above would
-      // otherwise leave it stuck closed forever (the "page never advances"
-      // bug when a child tapped the letter mid-narration).
-      if (sequenceTokenRef.current === token) {
-        sequenceTokenRef.current++;
-      }
-      isNarratingRef.current = false;
       stopAllSounds();
     };
-  }, [currentIndex, isAutoplayEnabled, quizData, selectedModule.letters, playSoundOnce, speak, stopAllSounds, markPartHeard]);
+  }, [currentIndex, stopAllSounds]);
 
 
   const advanceToNextCard = useCallback(() => {
@@ -602,9 +550,11 @@ export default function PhonicsApp() {
   });
 
   const handleInteraction = () => {
-    // Card's job isn't done until the narration has played out — stray palm
-    // taps on the background must not skip the letter mid-listen.
-    if (isNarratingRef.current) return;
+    // The card's job is done only once the child has heard both dots and the
+    // celebration fired. Until then, stray palm taps on the background must
+    // not skip the letter — the child taps the letter/dots to progress, and
+    // grown-ups can still swipe or use the arrow keys to move on.
+    if (!celebratedRef.current) return;
     handleShuffle();
   };
 
