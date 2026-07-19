@@ -540,6 +540,7 @@ const SentencesApp = () => {
                   key={currentIndex}
                   text={currentItem.text}
                   voice={preferredVoice ?? null}
+                  bigDots
                   onComplete={handleSequenceComplete}
                   onAdvance={handleReadAdvance}
                 />

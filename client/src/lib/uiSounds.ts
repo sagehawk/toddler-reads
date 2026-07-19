@@ -19,6 +19,25 @@ export const playWrongTapThud = () => {
   } catch (e) {}
 };
 
+// Satisfying "pop" for pressing a dot — same recipe as the Numbers dots.
+export const playDotPop = () => {
+  const ctx = getSharedAudioContext();
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+  } catch (e) {}
+};
+
 export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Short, rotating spoken praise for completed rounds. */

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
 import confetti from 'canvas-confetti';
-import { getLetterColors } from '../lib/colorUtils';
+import { getLetterColors, getLetterHex } from '../lib/colorUtils';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSwipe } from '@/hooks/useSwipe';
@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
-import { playWrongTapThud, randomPraise } from '../lib/uiSounds';
+import { playWrongTapThud, randomPraise, playDotPop } from '../lib/uiSounds';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playCardTransitionChime = () => {
@@ -312,7 +312,9 @@ export default function PhonicsApp() {
     if (!heardSoundRef.current || !heardNameRef.current || celebratedRef.current) return;
 
     // Both dots filled — the card's job is done: celebrate Numbers-style
-    // and move on by itself (no reason to linger, no dead end).
+    // and move on by itself (no reason to linger, no dead end). No spoken
+    // praise here — the letter-name sound the child just triggered IS the
+    // closing note, and a praise utterance would cut it off.
     celebratedRef.current = true;
     isNarratingRef.current = false;
     markLetterHeard(letterInfo.letter);
@@ -322,13 +324,12 @@ export default function PhonicsApp() {
       origin: { y: 0.65 },
       colors: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF9F1C', '#a78bfa'],
     });
-    speak(randomPraise(), { voice: voiceRef.current });
     clearAdvanceTimer();
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
       advanceToNextCardRef.current();
-    }, 1800);
-  }, [markLetterHeard, speak, clearAdvanceTimer]);
+    }, 1900);
+  }, [markLetterHeard, clearAdvanceTimer]);
 
   const selectedModule = learningModules[0];
 
@@ -435,45 +436,33 @@ export default function PhonicsApp() {
     });
   }, []);
 
-  const replaySound = useCallback(async (e: React.MouseEvent | React.PointerEvent) => {
+  const replaySound = useCallback((e: React.MouseEvent | React.PointerEvent) => {
     e.stopPropagation();
-    if (isPulsing) return; // Block taps while the letter is still enlarged from the previous sound
     if (currentIndex === null) return;
     const letterInfo = selectedModule.letters?.[currentIndex];
     if (!letterInfo) return;
-    const cardIndex = currentIndex;
-    // Bail if the card changed while our audio was playing — a stale
-    // continuation must never mark dots (or celebrate) on the next card
-    const cardChanged = () => currentIndexRef.current !== cardIndex;
 
-    sequenceTokenRef.current++; // Cancel any pending autoplay narration
-    // The child took over — the narration gate must never stay stuck closed
+    // Instant, satisfying feedback the moment they press — like the Numbers
+    // dots: haptic buzz + pop, and the dot fills RIGHT NOW (markPartHeard),
+    // while the sound plays alongside. No awaiting, no laggy "fill after the
+    // sound finishes".
+    if (navigator.vibrate) navigator.vibrate(8);
+    playDotPop();
+    sequenceTokenRef.current++;
     isNarratingRef.current = false;
     stopAllSounds();
 
     if (soundToggle === 'phonic') {
-      // Tap 1: Play phonic MP3 sound, and animate a pulse
-      setIsPulsing(true);
-      await playSoundOnce(letterInfo.sound);
-      setIsPulsing(false);
-      if (cardChanged()) return;
-      setSoundToggle('name'); // Toggle to TTS letter name next
+      setSoundToggle('name');
       markPartHeard('sound', letterInfo);
+      playSoundOnce(letterInfo.sound); // fire-and-forget; the MP3 plays as it fills
     } else {
-      // Tap 2: Speak TTS letter name, and animate a pulse
-      const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-      setIsPulsing(true);
-      await speak(textToSpeak, {
-        voice: voiceRef.current,
-        rate: 1.0,
-        onEnd: () => setIsPulsing(false)
-      });
-      setIsPulsing(false);
-      if (cardChanged()) return;
-      setSoundToggle('phonic'); // Toggle back to phonic sound next
+      setSoundToggle('phonic');
       markPartHeard('name', letterInfo);
+      const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
+      speak(textToSpeak, { voice: voiceRef.current, rate: 1.0 });
     }
-  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, isPulsing, markPartHeard]);
+  }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, markPartHeard]);
 
   // No autoplay: the letter sits silent until the child taps it, exactly like
   // the Numbers page waits on the number. The child drives every step — tap
@@ -669,18 +658,14 @@ export default function PhonicsApp() {
                     onSolved={handleQuizSolved}
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center gap-6 sm:gap-8" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
-                    <motion.h2
-                      onPointerDown={replaySound}
-                      onClick={(e) => e.stopPropagation()}
-                      className={`font-black cursor-pointer pointer-events-auto select-none flex items-baseline ${
-                        isPulsing ? '' : 'animate-breathe'
-                      } ${getLetterColors(currentDisplayData.letter).text}`}
-                      animate={isPulsing ? { scale: 1.25 } : { scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 10 }}
-                      whileTap={{ scale: 0.95 }}
+                  <div className="flex flex-col items-center justify-center gap-8 sm:gap-12" style={{ width: 'clamp(300px, 85vmin, 550px)', height: 'clamp(300px, 85vmin, 550px)' }}>
+                    {/* The letter just sits there — no tap animation, no resize
+                        (the constant resizing was distracting). The big dots
+                        below are the thing to press. */}
+                    <h2
+                      className={`font-black select-none flex items-baseline ${getLetterColors(currentDisplayData.letter).text}`}
                       style={{
-                        fontSize: 'clamp(9rem, 40vmin, 16rem)',
+                        fontSize: 'clamp(8rem, 36vmin, 15rem)',
                         fontFamily: "'Nunito', sans-serif",
                         textShadow: '2px 4px 8px rgba(0,0,0,0.08)',
                         lineHeight: 1,
@@ -691,34 +676,35 @@ export default function PhonicsApp() {
                       <span style={{ fontSize: '0.72em', marginLeft: '0.08em' }}>
                         {currentDisplayData.letter.toLowerCase()}
                       </span>
-                    </motion.h2>
+                    </h2>
 
-                    {/* Two sound buttons, same language as the Numbers dots:
-                        fill the SOUND dot, then the NAME dot, and the card
-                        celebrates + moves on by itself */}
-                    <div className="flex items-center justify-center gap-8 sm:gap-10 pointer-events-auto">
+                    {/* Big Numbers-style dots — the primary thing to press.
+                        Press the SOUND dot, then the NAME dot; each gives the
+                        sound + a haptic buzz, and filling both celebrates and
+                        moves on by itself. */}
+                    <div className="flex items-center justify-center gap-10 sm:gap-14 pointer-events-auto">
                       {([['sound', heardSound], ['name', heardName]] as const).map(([part, filled]) => {
                         const isNext = !filled && (part === 'sound' || heardSound);
-                        const colors = getLetterColors(currentDisplayData.letter);
+                        const hex = getLetterHex(currentDisplayData.letter);
                         return (
                           <motion.button
                             key={part}
                             aria-label={part === 'sound' ? "Hear the letter's sound" : "Hear the letter's name"}
                             onPointerDown={(e) => replaySound(e)}
                             onClick={(e) => e.stopPropagation()}
-                            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full focus:outline-none ${
-                              filled ? colors.background : isNext ? colors.text : ''
-                            }`}
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full focus:outline-none"
                             style={{
+                              // Inline hex so the fill paints instantly (bypasses the global 1s color transition)
+                              backgroundColor: filled ? hex : 'rgba(156, 163, 175, 0.12)',
                               border: isNext
-                                ? '3px dashed currentColor'
+                                ? `5px dashed ${hex}`
                                 : filled
-                                ? '3px solid transparent'
-                                : '3px solid rgba(156, 163, 175, 0.35)',
-                              backgroundColor: filled ? undefined : 'rgba(156, 163, 175, 0.12)',
+                                ? '5px solid transparent'
+                                : '5px solid rgba(156, 163, 175, 0.35)',
+                              boxShadow: filled ? `0 4px 12px ${hex}55` : 'none',
                               transition: 'background-color 150ms ease-out, border-color 150ms ease-out',
                             }}
-                            animate={isNext ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+                            animate={isNext ? { scale: [1, 1.2, 1] } : { scale: 1 }}
                             transition={
                               isNext
                                 ? { repeat: Infinity, duration: 1.1, ease: 'easeInOut' }

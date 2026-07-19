@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { getLetterColors } from "../lib/colorUtils";
-import { playWrongTapThud } from "../lib/uiSounds";
+import { getLetterColors, getLetterHex } from "../lib/colorUtils";
+import { playWrongTapThud, playDotPop } from "../lib/uiSounds";
 import { useAutoFitFont } from "@/hooks/useAutoFitFont";
 
 /**
@@ -27,6 +27,7 @@ export const TapReadSentence = ({
   voice,
   onComplete,
   onAdvance,
+  bigDots = false,
   maxFontPx = 6 * 16,
   minFontPx = 2 * 16,
 }: {
@@ -34,6 +35,9 @@ export const TapReadSentence = ({
   voice: SpeechSynthesisVoice | null;
   onComplete: () => void;
   onAdvance?: () => void;
+  // Big Numbers-style dots as the press target, no wrong-order nudge (used by
+  // the Sentences page). Default off = the Stories reader's word-tap style.
+  bigDots?: boolean;
   maxFontPx?: number;
   minFontPx?: number;
 }) => {
@@ -145,17 +149,23 @@ export const TapReadSentence = ({
 
     if (index < readRef.current) {
       // Revisiting an already-read word is always allowed
+      if (bigDots) playDotPop();
       speakWord(words[index]);
       return;
     }
     if (index > readRef.current) {
-      // Skipped ahead — nudge back to the glowing word
-      playWrongTapThud();
-      setNudge((n) => n + 1);
+      // Tapped ahead. In big-dots mode only the next dot is meant to be
+      // pressed, so just ignore stray presses (no nudge/thud). In word mode
+      // nudge the child back to the glowing word.
+      if (!bigDots) {
+        playWrongTapThud();
+        setNudge((n) => n + 1);
+      }
       return;
     }
-    // The correct next word, left to right
+    // The correct next word/dot, left to right — pop + haptic like Numbers
     if (navigator.vibrate) navigator.vibrate(8);
+    if (bigDots) playDotPop();
     speakWord(words[index]);
     advanceHighlight();
     if (readRef.current === words.length) {
@@ -170,6 +180,7 @@ export const TapReadSentence = ({
     >
       {words.map((word, index) => {
         const colors = getLetterColors(word.charAt(0));
+        const wordHex = getLetterHex(word.charAt(0));
         const isRead = index < readCount;
         const isActive = !isDone && index === readCount;
 
@@ -198,41 +209,69 @@ export const TapReadSentence = ({
               {word}
             </motion.span>
 
-            {/* Word bar — the sentence-sized version of the sound buttons.
-                Outer span replays a one-shot wiggle on wrong-order taps. */}
-            <motion.span
-              key={`wiggle-${nudge}`}
-              className="block w-full"
-              initial={false}
-              animate={
-                isActive && nudge > 0
-                  ? { x: [0, "-0.07em", "0.07em", "-0.045em", "0.045em", 0] }
-                  : { x: 0 }
-              }
-              transition={{ duration: 0.4 }}
-            >
+            {bigDots ? (
+              /* Big Numbers-style dot under each word — the thing to press.
+                 Inline hex fill paints instantly (the global 1s color
+                 transition in index.css would otherwise read as unfilled). */
               <motion.span
-                className={`block rounded-full ${
-                  isRead ? colors.background : isActive ? colors.background : ""
-                }`}
+                className="block rounded-full"
                 style={{
-                  height: "0.09em",
-                  marginTop: "0.1em",
-                  backgroundColor: isRead || isActive ? undefined : "rgba(156, 163, 175, 0.25)",
-                  transition: "background-color 120ms ease-out",
+                  width: "0.72em",
+                  height: "0.72em",
+                  marginTop: "0.18em",
+                  backgroundColor: isRead ? wordHex : "rgba(156, 163, 175, 0.12)",
+                  border: isActive
+                    ? `0.05em dashed ${wordHex}`
+                    : isRead
+                    ? "0.05em solid transparent"
+                    : "0.05em solid rgba(156, 163, 175, 0.35)",
+                  boxShadow: isRead ? `0 0.03em 0.12em ${wordHex}77` : "none",
+                  transition: "background-color 150ms ease-out, border-color 150ms ease-out",
                 }}
-                animate={
-                  isActive
-                    ? { opacity: [0.35, 1, 0.35], scaleY: [1, 1.4, 1] }
-                    : { opacity: 1, scaleY: 1 }
-                }
+                animate={isActive ? { scale: [1, 1.18, 1] } : { scale: 1 }}
                 transition={
                   isActive
                     ? { repeat: Infinity, duration: 1.1, ease: "easeInOut" }
                     : { duration: 0.2 }
                 }
               />
-            </motion.span>
+            ) : (
+              /* Thin word bar (Stories reader). Outer span replays a one-shot
+                 wiggle on wrong-order taps. */
+              <motion.span
+                key={`wiggle-${nudge}`}
+                className="block w-full"
+                initial={false}
+                animate={
+                  isActive && nudge > 0
+                    ? { x: [0, "-0.07em", "0.07em", "-0.045em", "0.045em", 0] }
+                    : { x: 0 }
+                }
+                transition={{ duration: 0.4 }}
+              >
+                <motion.span
+                  className={`block rounded-full ${
+                    isRead ? colors.background : isActive ? colors.background : ""
+                  }`}
+                  style={{
+                    height: "0.09em",
+                    marginTop: "0.1em",
+                    backgroundColor: isRead || isActive ? undefined : "rgba(156, 163, 175, 0.25)",
+                    transition: "background-color 120ms ease-out",
+                  }}
+                  animate={
+                    isActive
+                      ? { opacity: [0.35, 1, 0.35], scaleY: [1, 1.4, 1] }
+                      : { opacity: 1, scaleY: 1 }
+                  }
+                  transition={
+                    isActive
+                      ? { repeat: Infinity, duration: 1.1, ease: "easeInOut" }
+                      : { duration: 0.2 }
+                  }
+                />
+              </motion.span>
+            )}
 
             {/* Bouncing finger on the very first word */}
             {isActive && readCount === 0 && (

@@ -60,3 +60,21 @@ export const getLetterColors = (letter: string): LetterColors => {
     darkText: colors.text.replace('-400', '-800').replace('-500', '-900'), // for lighter backgrounds
   };
 };
+
+// Explicit hex per letter/number, matching the Tailwind -500 palette above.
+// Used for the interactive dots (Numbers-style fills) so the color paints
+// INSTANTLY via inline style — Tailwind color classes here ride the global
+// 1s color transition in index.css and can read as unfilled mid-fade.
+const hexPalette: { [key: string]: string } = {
+  A: '#ef4444', B: '#6366f1', C: '#eab308', D: '#06b6d4', E: '#a855f7',
+  F: '#84cc16', G: '#0ea5e9', H: '#ec4899', I: '#22c55e', J: '#8b5cf6',
+  K: '#f59e0b', L: '#d946ef', M: '#3b82f6', N: '#14b8a6', O: '#f97316',
+  P: '#f43f5e', Q: '#10b981', R: '#f43f5e', S: '#eab308', T: '#06b6d4',
+  U: '#a855f7', V: '#84cc16', W: '#0ea5e9', X: '#ec4899', Y: '#22c55e',
+  Z: '#8b5cf6',
+  '1': '#ef4444', '2': '#3b82f6', '3': '#eab308', '4': '#06b6d4', '5': '#a855f7',
+  '6': '#84cc16', '7': '#0ea5e9', '8': '#ec4899', '9': '#22c55e', '0': '#8b5cf6',
+};
+
+export const getLetterHex = (letter: string): string =>
+  hexPalette[(letter || '').toUpperCase()] || '#64748b';
