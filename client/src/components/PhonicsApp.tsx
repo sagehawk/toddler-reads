@@ -7,7 +7,6 @@ import useLocalStorage from '@/hooks/useLocalStorage';
 import { useSwipe } from '@/hooks/useSwipe';
 import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
 import { playWrongTapThud, randomPraise, playDotPop } from '../lib/uiSounds';
 
@@ -631,9 +630,6 @@ export default function PhonicsApp() {
           </div>
         </div>
 
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
       </header>
 
       <div className="flex-1 flex flex-col justify-center relative overflow-hidden w-full">

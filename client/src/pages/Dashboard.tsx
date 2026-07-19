@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion } from "framer-motion";
 import { BackgroundAnimator } from "@/components/BackgroundAnimator";
 import { getSharedAudioContext } from "../lib/sharedAudioContext";
@@ -236,10 +235,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Header with Theme Toggle */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
-        <ThemeToggle />
-      </div>
 
       {/* Central Immersive Playshelf Grid */}
       <div className="w-full max-w-4xl flex flex-col items-center justify-center z-10">

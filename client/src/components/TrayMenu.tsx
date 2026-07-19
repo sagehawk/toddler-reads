@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 // ----- Web Audio API Playful Menu Chimes -----
 const playOpenChime = () => {
@@ -283,6 +284,12 @@ export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
             onClick={handleToggle}
             transition={{ duration: 0.25 }}
           >
+            {/* Grown-up corner: day/night switching lives ONLY here in the
+                menu, so little fingers can't flip the theme mid-play */}
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+              <ThemeToggle />
+            </div>
+
             {/* Playful Floating Title */}
             <motion.h1
               className="font-black text-center text-3xl sm:text-5xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-indigo-300 pb-12 sm:pb-16 font-nunito"

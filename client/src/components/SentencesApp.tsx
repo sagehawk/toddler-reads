@@ -11,7 +11,6 @@ import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { useSwipe } from "@/hooks/useSwipe";
 import { TrayMenu } from "@/components/TrayMenu";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { TapReadSentence } from "@/components/TapReadSentence";
 
 // Import images
@@ -520,9 +519,6 @@ const SentencesApp = () => {
     >
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
         <TrayMenu currentPageId="sentences" />
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
       </header>
 
       <div className="flex-1 flex flex-col justify-center items-center overflow-hidden w-full relative">

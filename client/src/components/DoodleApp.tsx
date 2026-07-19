@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
@@ -547,9 +546,6 @@ const DoodleApp = () => {
 
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
         <TrayMenu currentPageId="doodle" />
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
       </header>
 
       {/* Floating controls pill */}

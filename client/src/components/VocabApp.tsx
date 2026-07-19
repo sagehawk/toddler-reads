@@ -15,7 +15,6 @@ import { AnimalsVocab } from "./AnimalsVocab";
 import { useSwipe } from "@/hooks/useSwipe";
 import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
 import { playWrongTapThud, randomPraise, sleep } from '../lib/uiSounds';
 import { useAutoFitFont } from '@/hooks/useAutoFitFont';
@@ -829,9 +828,6 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
 
 
 
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
       </header>
 
       <div className="flex-1 flex flex-col justify-center w-full overflow-hidden relative">
