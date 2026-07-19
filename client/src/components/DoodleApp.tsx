@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
@@ -51,7 +52,6 @@ const CONTROL_TRANSITION =
 interface DoodlePoint {
   x: number;
   y: number;
-  t: number;
 }
 
 interface DoodleStroke {
@@ -59,19 +59,24 @@ interface DoodleStroke {
   color: string; // 'rainbow' or a css color
   size: number;
   seed: number;
-  /** Points already culled off the front — keeps rainbow hues stable as the tail evaporates. */
-  drop: number;
+  /** When the finger lifted — the fade countdown starts from HERE, so a stroke
+   *  stays fully drawn until it's finished. null while the finger is still down. */
+  endedAt: number | null;
 }
 
-const pointAlpha = (t: number, now: number): number => {
-  const age = now - t;
+// A whole stroke fades as one unit, and only after the finger has lifted: it
+// stays fully opaque while being drawn (endedAt null) and for FADE_START_MS
+// after release, then fades out by FADE_END_MS.
+const strokeAlpha = (s: DoodleStroke, now: number): number => {
+  if (s.endedAt == null) return 1;
+  const age = now - s.endedAt;
   if (age < FADE_START_MS) return 1;
   if (age >= FADE_END_MS) return 0;
   return 1 - (age - FADE_START_MS) / (FADE_END_MS - FADE_START_MS);
 };
 
 const segmentColor = (s: DoodleStroke, i: number): string =>
-  s.color === 'rainbow' ? `hsl(${(s.seed + (s.drop + i) * 5) % 360}, 90%, 55%)` : s.color;
+  s.color === 'rainbow' ? `hsl(${(s.seed + i * 5) % 360}, 90%, 55%)` : s.color;
 
 // Smooth stroke rendering: quadratic curves through the midpoints of the
 // sampled polyline, drawn per-segment so each segment can carry its own
@@ -85,14 +90,13 @@ const drawStroke = (
   const pts = s.points;
   const n = pts.length;
   if (n === 0) return;
-  const alphaAt = (i: number) => (vanishing ? pointAlpha(pts[i].t, now) : 1);
-
+  // One fade value for the whole stroke (see strokeAlpha).
+  const a = vanishing ? strokeAlpha(s, now) : 1;
+  if (a <= 0.004) return;
+  ctx.globalAlpha = a;
   ctx.lineWidth = s.size;
 
   if (n === 1) {
-    const a = alphaAt(0);
-    if (a <= 0) return;
-    ctx.globalAlpha = a;
     ctx.fillStyle = segmentColor(s, 0);
     ctx.beginPath();
     ctx.arc(pts[0].x, pts[0].y, s.size / 2, 0, Math.PI * 2);
@@ -101,19 +105,47 @@ const drawStroke = (
   }
 
   for (let i = 1; i < n; i++) {
-    const a = Math.min(alphaAt(i - 1), alphaAt(i));
-    if (a <= 0.004) continue;
     const sx = i === 1 ? pts[0].x : (pts[i - 1].x + pts[i].x) / 2;
     const sy = i === 1 ? pts[0].y : (pts[i - 1].y + pts[i].y) / 2;
     const ex = i === n - 1 ? pts[i].x : (pts[i].x + pts[i + 1].x) / 2;
     const ey = i === n - 1 ? pts[i].y : (pts[i].y + pts[i + 1].y) / 2;
-    ctx.globalAlpha = a;
     ctx.strokeStyle = segmentColor(s, i);
     ctx.beginPath();
     ctx.moveTo(sx, sy);
     ctx.quadraticCurveTo(pts[i].x, pts[i].y, ex, ey);
     ctx.stroke();
   }
+};
+
+// Paint a single dot the instant a finger touches down.
+const paintDot = (ctx: CanvasRenderingContext2D, s: DoodleStroke, p: DoodlePoint) => {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = segmentColor(s, 0);
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, s.size / 2, 0, Math.PI * 2);
+  ctx.fill();
+};
+
+// Paint one fresh segment synchronously as the finger moves — this is what
+// keeps the ink glued to the fingertip. Straight line (not the smoothed
+// quadratic) so it lands with zero latency; the vanish loop's full redraw
+// (when active) repaints it smoothly a frame later.
+const paintLiveSegment = (
+  ctx: CanvasRenderingContext2D,
+  s: DoodleStroke,
+  from: DoodlePoint,
+  to: DoodlePoint,
+  segIndex: number,
+) => {
+  ctx.globalAlpha = 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = s.size;
+  ctx.strokeStyle = segmentColor(s, segIndex);
+  ctx.beginPath();
+  ctx.moveTo(from.x, from.y);
+  ctx.lineTo(to.x, to.y);
+  ctx.stroke();
 };
 
 const DoodleApp = () => {
@@ -140,6 +172,8 @@ const DoodleApp = () => {
   const lastPickRef = useRef<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null); // cached 2D context
+  const rectRef = useRef({ left: 0, top: 0 }); // cached canvas offset (avoids getBoundingClientRect per move)
   const viewRef = useRef({ w: 0, h: 0 }); // CSS-pixel viewport size
   const strokesRef = useRef<DoodleStroke[]>([]);
   const activeRef = useRef(new Map<number, DoodleStroke>()); // pointerId -> in-flight stroke (multi-touch)
@@ -214,18 +248,13 @@ const DoodleApp = () => {
       const strokes = strokesRef.current;
 
       if (isVanishing && strokes.length > 0) {
-        // Cull fully-faded points off the front of each stroke; a stroke a
-        // finger is still holding stays alive even if momentarily empty.
-        const activeStrokes = new Set(activeRef.current.values());
+        // Remove strokes that have fully faded out. A stroke still being drawn
+        // (endedAt null) has no fade clock yet, so it's never culled.
         for (let i = strokes.length - 1; i >= 0; i--) {
           const s = strokes[i];
-          let cut = 0;
-          while (cut < s.points.length && now - s.points[cut].t >= FADE_END_MS) cut++;
-          if (cut > 0) {
-            s.points.splice(0, cut);
-            s.drop += cut;
+          if (s.endedAt != null && now - s.endedAt >= FADE_END_MS) {
+            strokes.splice(i, 1);
           }
-          if (s.points.length === 0 && !activeStrokes.has(s)) strokes.splice(i, 1);
         }
       }
 
@@ -237,16 +266,16 @@ const DoodleApp = () => {
     [drawGlyph],
   );
 
-  // rAF loop runs ONLY while needed: a finger is down, or vanish mode has
-  // strokes left to evaporate. Otherwise the last frame simply stays put.
+  // rAF full-redraw loop runs ONLY to age vanishing ink. Live drawing does NOT
+  // depend on it: each new segment is painted synchronously in the pointer
+  // handler (see handlePointerMove), so the line stays glued to the finger
+  // even if a full redraw would drop frames. With vanish OFF there is no loop
+  // at all — pure incremental painting, zero per-frame cost.
   const loop = useCallback(
     function loopFn() {
       rafRef.current = null;
       render(performance.now());
-      if (
-        activeRef.current.size > 0 ||
-        (vanishRef.current && strokesRef.current.length > 0)
-      ) {
+      if (vanishRef.current && strokesRef.current.length > 0) {
         rafRef.current = requestAnimationFrame(loopFn);
       }
     },
@@ -267,9 +296,12 @@ const DoodleApp = () => {
     const h = canvas.clientHeight;
     if (w === 0 || h === 0) return;
     viewRef.current = { w, h };
+    const box = canvas.getBoundingClientRect();
+    rectRef.current = { left: box.left, top: box.top };
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     const ctx = canvas.getContext('2d');
+    ctxRef.current = ctx;
     if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     render(performance.now());
   }, [render]);
@@ -284,13 +316,16 @@ const DoodleApp = () => {
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch (err) {}
-      const rect = canvas.getBoundingClientRect();
+      // Refresh the cached offset once per touch-down (cheap here, never per-move)
+      const box = canvas.getBoundingClientRect();
+      rectRef.current = { left: box.left, top: box.top };
+      const p = { x: e.clientX - box.left, y: e.clientY - box.top };
       const stroke: DoodleStroke = {
-        points: [{ x: e.clientX - rect.left, y: e.clientY - rect.top, t: performance.now() }],
+        points: [p],
         color: colorRef.current,
         size: sizeRef.current,
         seed: Math.floor(Math.random() * 360),
-        drop: 0,
+        endedAt: null, // still drawing — fade clock starts on pointer-up
       };
       strokesRef.current.push(stroke);
       if (strokesRef.current.length > MAX_STROKES) {
@@ -301,7 +336,11 @@ const DoodleApp = () => {
         if (idx !== -1) strokesRef.current.splice(idx, 1);
       }
       activeRef.current.set(e.pointerId, stroke);
-      scheduleFrame();
+      // Paint the starting dot immediately (no waiting for a frame)
+      const ctx = ctxRef.current;
+      if (ctx) paintDot(ctx, stroke, p);
+      // Only the vanish loop needs a rAF; plain drawing is fully incremental
+      if (vanishRef.current) scheduleFrame();
     },
     [scheduleFrame],
   );
@@ -310,33 +349,38 @@ const DoodleApp = () => {
     const stroke = activeRef.current.get(e.pointerId);
     if (!stroke) return;
     e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
+    const ctx = ctxRef.current;
+    const { left, top } = rectRef.current;
     // Coalesced events keep fast toddler scribbles smooth where supported
     const native = e.nativeEvent;
     const events =
       typeof native.getCoalescedEvents === 'function' && native.getCoalescedEvents().length > 0
         ? native.getCoalescedEvents()
         : [native];
-    const now = performance.now();
     for (const ev of events) {
-      const x = ev.clientX - rect.left;
-      const y = ev.clientY - rect.top;
+      const x = ev.clientX - left;
+      const y = ev.clientY - top;
       const last = stroke.points[stroke.points.length - 1];
       if (last && Math.hypot(x - last.x, y - last.y) < MIN_POINT_DISTANCE) continue;
-      stroke.points.push({ x, y, t: now });
+      const point = { x, y };
+      stroke.points.push(point);
+      // Draw the new segment RIGHT NOW so the line tracks the fingertip
+      if (ctx && last) paintLiveSegment(ctx, stroke, last, point, stroke.points.length - 1);
     }
   }, []);
 
   const handlePointerEnd = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
-      if (!activeRef.current.has(e.pointerId)) return;
+      const stroke = activeRef.current.get(e.pointerId);
+      if (!stroke) return;
       activeRef.current.delete(e.pointerId);
+      // Finger lifted → NOW the fade countdown for this stroke begins.
+      stroke.endedAt = performance.now();
       try {
         canvasRef.current?.releasePointerCapture(e.pointerId);
       } catch (err) {}
-      scheduleFrame();
+      // Vanish mode ages it via the loop; plain mode leaves the ink as-is
+      if (vanishRef.current) scheduleFrame();
     },
     [scheduleFrame],
   );
@@ -351,19 +395,22 @@ const DoodleApp = () => {
     activeRef.current.forEach((old, pointerId) => {
       const last = old.points[old.points.length - 1];
       const restart: DoodleStroke = {
-        points: last ? [{ x: last.x, y: last.y, t: now }] : [],
+        points: last ? [{ x: last.x, y: last.y }] : [],
         color: old.color,
         size: old.size,
         seed: old.seed,
-        drop: 0,
+        endedAt: null, // still being drawn
       };
       replacements.set(pointerId, restart);
       fresh.push(restart);
     });
     strokesRef.current = fresh;
     activeRef.current = replacements;
-    scheduleFrame();
-  }, [scheduleFrame]);
+    // Wipe the canvas RIGHT NOW (synchronous) rather than waiting for a rAF —
+    // clearing should feel instant, and a backgrounded tab's rAF may not fire.
+    render(now);
+    if (vanishRef.current) scheduleFrame();
+  }, [render, scheduleFrame]);
 
   const toggleVanish = useCallback(() => {
     setVanish((prev) => !prev);
@@ -393,15 +440,16 @@ const DoodleApp = () => {
     scheduleFrame();
   }, [traceChar, scheduleFrame]);
 
-  // Vanish toggled: when turned back ON, rebase every surviving point as
-  // freshly born so nothing pops out of existence the instant aging resumes.
+  // Vanish toggled: when turned back ON, restart the fade clock on every
+  // already-finished stroke so nothing pops out the instant aging resumes.
+  // Strokes still being drawn (endedAt null) keep waiting for their release.
   useEffect(() => {
     const was = vanishRef.current;
     vanishRef.current = vanish;
     if (vanish && !was) {
       const now = performance.now();
       for (const s of strokesRef.current) {
-        for (const p of s.points) p.t = now;
+        if (s.endedAt != null) s.endedAt = now;
       }
     }
     scheduleFrame();
@@ -499,6 +547,9 @@ const DoodleApp = () => {
 
       <header className="absolute top-0 left-0 w-full p-4 z-50 flex items-center justify-between pointer-events-none">
         <TrayMenu currentPageId="doodle" />
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Floating controls pill */}
