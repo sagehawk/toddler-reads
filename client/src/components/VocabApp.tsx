@@ -8,7 +8,7 @@ import {
 import confetti from "canvas-confetti";
 import { useRoute, useLocation } from "wouter";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
-import { getLetterColors } from "../lib/colorUtils";
+import { getLetterColors, getLetterHex } from "../lib/colorUtils";
 import { vocabData, VocabItem } from "../data/vocabData";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { AnimalsVocab } from "./AnimalsVocab";
@@ -237,23 +237,10 @@ const TapDecodeWord = ({
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <motion.span
-                className={`transition-colors duration-200 ${
-                  isLit ? colors.text : "text-slate-700 dark:text-slate-200"
-                }`}
-                animate={
-                  isLit && index === tappedCount - 1
-                    ? { scale: [1, 1.15, 1] }
-                    : { scale: 1 }
-                }
-                transition={{ duration: 0.35 }}
-              >
-                {char}
-              </motion.span>
-
-              {/* Sound button under the letter — same language as the Numbers dots.
-                  Outer span replays a one-shot wiggle whenever a wrong-order tap
-                  bumps `nudge`; inner span holds the steady active pulse. */}
+              {/* The letter ITSELF is the press target — no dots underneath.
+                  Outer span replays a one-shot wiggle whenever a wrong-order
+                  tap bumps `nudge`; the next letter pulses with a soft glow
+                  in its own color as the invitation. */}
               <motion.span
                 key={`wiggle-${nudge}`}
                 className="block"
@@ -266,29 +253,32 @@ const TapDecodeWord = ({
                 transition={{ duration: 0.4 }}
               >
                 <motion.span
-                  className={`block rounded-full ${isLit ? colors.background : isActive ? colors.text : ""}`}
-                  style={{
-                    width: "0.26em",
-                    height: "0.26em",
-                    marginTop: "0.14em",
-                    border: isActive
-                      ? "0.035em dashed currentColor"
-                      : isLit
-                      ? "0.035em solid transparent"
-                      : "0.035em solid rgba(156, 163, 175, 0.35)",
-                    backgroundColor: isLit ? undefined : "rgba(156, 163, 175, 0.12)",
-                    transition: "background-color 120ms ease-out, border-color 120ms ease-out",
-                  }}
-                  animate={isActive ? { scale: [1, 1.3, 1] } : { scale: 1 }}
+                  className={`block transition-colors duration-200 ${
+                    isLit ? colors.text : "text-slate-700 dark:text-slate-200"
+                  }`}
+                  style={
+                    isActive
+                      ? { textShadow: `0 0 0.3em ${getLetterHex(char)}66` }
+                      : undefined
+                  }
+                  animate={
+                    isLit && index === tappedCount - 1
+                      ? { scale: [1, 1.15, 1] }
+                      : isActive
+                      ? { scale: [1, 1.08, 1] }
+                      : { scale: 1 }
+                  }
                   transition={
                     isActive
                       ? { repeat: Infinity, duration: 1.1, ease: "easeInOut" }
-                      : { duration: 0.2 }
+                      : { duration: 0.35 }
                   }
-                />
+                >
+                  {char}
+                </motion.span>
               </motion.span>
 
-              {/* Bouncing finger on the very first sound button */}
+              {/* Bouncing finger on the very first letter */}
               {isActive && tappedCount === 0 && (
                 <motion.span
                   className="absolute top-full pointer-events-none select-none"
@@ -428,23 +418,36 @@ const VocabApp = () => {
 const SIGHT_THRESHOLD = 3;
 // Even mastered words still get an occasional full decode round to stay sharp.
 const SIGHT_MODE_CHANCE = 0.75;
+// A word counts as KNOWN BY SIGHT after this many silent-quiz wins — rounds
+// where the print alone was the question and the child answered unaided.
+const SIGHT_KNOWN = 3;
 
 /**
- * FIND-THE-PICTURE MODE — receptive vocabulary as a game, mirroring the
- * phonics "find the sound" quiz. The word appears fully colored and is
- * spoken; three pictures show up; the child taps the one it names. Wrong
- * picks thud, dim, and replay the word — unlimited tries, no fail state.
+ * FIND-THE-PICTURE MODE — the word appears fully colored; three pictures show
+ * up; the child taps the one it names. Wrong picks thud and dim — unlimited
+ * tries, no fail state.
+ *
+ * Two flavors:
+ *  - spoken (silent=false): the word is also said aloud — a gentle on-ramp
+ *    that teaches the game shape and builds listening vocabulary.
+ *  - SILENT (silent=true): nothing is spoken until the child answers. The
+ *    PRINT is the question — this is the actual sight-reading rep, the one
+ *    that earns "known by sight" credit. The voice confirms only on success.
  */
 const PictureQuiz = ({
   item,
   choices,
   voice,
+  silent = false,
   onSolved,
+  onMiss,
 }: {
   item: VocabItem;
   choices: VocabItem[];
   voice: SpeechSynthesisVoice | null;
+  silent?: boolean;
   onSolved: () => void;
+  onMiss?: () => void;
 }) => {
   const [wrongPicks, setWrongPicks] = useState<Set<string>>(new Set());
   const [solved, setSolved] = useState(false);
@@ -462,12 +465,15 @@ const PictureQuiz = ({
   }, [item, voice]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!cancelledRef.current) sayWord();
-    }, 600);
+    // Silent rounds never give the answer away up front
+    const timer = silent
+      ? null
+      : setTimeout(() => {
+          if (!cancelledRef.current) sayWord();
+        }, 600);
     return () => {
       cancelledRef.current = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -480,16 +486,21 @@ const PictureQuiz = ({
       setSolved(true);
       if (navigator.vibrate) navigator.vibrate(15);
       stop();
-      speak(randomPraise(), { voice });
+      // Silent rounds confirm the word itself — that's the feedback moment
+      speak(silent ? `${item.tts || item.name}! ${randomPraise()}` : randomPraise(), { voice });
       onSolved(); // parent: confetti + auto-advance
     } else {
       if (wrongPicks.has(choice.name)) return;
       playWrongTapThud();
       setWrongPicks((prev) => new Set(prev).add(choice.name));
-      // Fresh ears for the next try
-      setTimeout(() => {
-        if (!cancelledRef.current) sayWord();
-      }, 450);
+      onMiss?.();
+      // Spoken rounds re-say the word for fresh ears; silent rounds stay
+      // quiet — the child re-reads and tries again
+      if (!silent) {
+        setTimeout(() => {
+          if (!cancelledRef.current) sayWord();
+        }, 450);
+      }
     }
   };
 
@@ -560,6 +571,124 @@ const PictureQuiz = ({
   );
 };
 
+/**
+ * FIND-THE-WORD MODE — the strongest sight-reading builder: a picture asks
+ * the question, three WRITTEN words are the answers, and the distractors are
+ * lookalikes (cat / bat / rat) so only actually processing the letters works.
+ *
+ * The word cards render in a NEUTRAL color on purpose: everywhere else the
+ * app colors letters by identity, and colored choices here would let the
+ * child match by color instead of reading. The letter colors come back on
+ * the winning card as the reward.
+ */
+const WordQuiz = ({
+  item,
+  choices,
+  voice,
+  onSolved,
+  onMiss,
+}: {
+  item: VocabItem;
+  choices: VocabItem[];
+  voice: SpeechSynthesisVoice | null;
+  onSolved: () => void;
+  onMiss?: () => void;
+}) => {
+  const [wrongPicks, setWrongPicks] = useState<Set<string>>(new Set());
+  const [solved, setSolved] = useState(false);
+  const { speak, stop } = useSpeechSynthesis();
+  const solvedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePick = (choice: VocabItem) => {
+    if (solvedRef.current) return;
+    if (choice.name === item.name) {
+      solvedRef.current = true;
+      setSolved(true);
+      if (navigator.vibrate) navigator.vibrate(15);
+      stop();
+      speak(`${item.tts || item.name}! ${randomPraise()}`, { voice });
+      onSolved(); // parent: confetti + auto-advance
+    } else {
+      if (wrongPicks.has(choice.name)) return;
+      playWrongTapThud();
+      setWrongPicks((prev) => new Set(prev).add(choice.name));
+      onMiss?.();
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-6 sm:gap-10 w-full">
+      {/* The picture is the question */}
+      <div className="h-40 sm:h-56 flex items-center justify-center">
+        <img
+          src={item.image}
+          alt=""
+          className="max-h-full max-w-[70vw] object-contain drop-shadow-xl"
+          draggable="false"
+          onError={(e) => (e.currentTarget.style.display = "none")}
+        />
+      </div>
+
+      {/* The written answers */}
+      <div className="flex flex-row flex-wrap items-center justify-center gap-4 sm:gap-6">
+        {choices.map((choice) => {
+          const isWrong = wrongPicks.has(choice.name);
+          const isWinner = solved && choice.name === item.name;
+
+          return (
+            <motion.button
+              key={choice.name}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                handlePick(choice);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isWrong}
+              className={`px-5 py-4 sm:px-8 sm:py-6 rounded-[1.5rem] bg-white dark:bg-zinc-900 shadow-xl border-4 border-slate-200 dark:border-zinc-700 focus:outline-none pointer-events-auto select-none ${
+                isWrong ? "opacity-25 grayscale" : ""
+              }`}
+              style={{ transition: "opacity 250ms ease-out, filter 250ms ease-out" }}
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={isWinner ? { scale: [1, 1.2, 1.1], opacity: 1 } : { scale: 1, opacity: 1 }}
+              transition={
+                isWinner
+                  ? { duration: 0.5 }
+                  : { type: "spring", stiffness: 300, damping: 20 }
+              }
+              whileTap={solved || isWrong ? {} : { scale: 0.92 }}
+            >
+              <span
+                className="font-black tracking-wide text-4xl sm:text-6xl leading-none"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              >
+                {choice.name.split("").map((char, i) => (
+                  <span
+                    key={i}
+                    className={
+                      isWinner
+                        ? getLetterColors(char).text
+                        : "text-slate-700 dark:text-slate-200"
+                    }
+                  >
+                    {char}
+                  </span>
+                ))}
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // Each card plays like the Numbers page the little ones love:
 // picture first → tap it → build the word → confetti + praise → next card.
 type CardStage = "image" | "word" | "done";
@@ -572,12 +701,22 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
   const [stage, setStage] = useState<CardStage>("image");
   const [isShuffling, setIsShuffling] = useState(false);
 
-  // Per-word progress, persisted on the device: how many times each word has
-  // been fully sounded out. Drives sight-mode graduation and shuffle weighting.
+  // Per-word progress, persisted on the device. Two separate ladders:
+  //  - wordMastery: completed decodes (the word was TAUGHT)
+  //  - wordSight: silent-quiz wins — print alone was the question and the
+  //    child answered unaided (the word is KNOWN). This is the number that
+  //    actually measures sight recognition, so it drives shuffle weighting.
   const [wordMastery, setWordMastery] = useLocalStorage<Record<string, number>>(
     "wordMastery",
     {},
   );
+  const [wordSight, setWordSight] = useLocalStorage<Record<string, number>>(
+    "wordSightMastery",
+    {},
+  );
+
+  // A wrong pick on this card means "practiced, not proven" — no sight credit
+  const missedRef = useRef(false);
 
   const { speak, stop, preferredVoice } = useSpeechSynthesis();
 
@@ -593,56 +732,82 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
   const currentItem = filteredVocab[currentIndex];
 
   // Decide how this card plays, once per card (stable across re-renders).
-  // Three round types keep the game from feeling repetitive:
-  //  - decode: build the word from its sound buttons (teaches; earns mastery)
-  //  - pickImage: hear/see the word, tap the right picture (recognition game)
-  //  - sight: word alone, beat to say it, voice confirms (fast retrieval)
+  // The ladder climbs from being TOLD the word to READING it unaided:
+  //  - decode: build the word from its sound buttons (teaches)
+  //  - pickImage: word shown AND spoken → tap its picture (game on-ramp)
+  //  - pickImageSilent: word shown, NOTHING spoken → tap its picture
+  //    (print→meaning retrieval — earns sight credit)
+  //  - pickWord: picture shown → tap the right WRITTEN word among
+  //    lookalikes (letter-level reading — earns sight credit)
+  //  - sight: word alone, beat to say it, voice confirms (quick flash)
   const cardPlan = useMemo<{
-    mode: "decode" | "sight" | "pickImage";
+    mode: "decode" | "sight" | "pickImage" | "pickImageSilent" | "pickWord";
     quizChoices: VocabItem[];
   }>(() => {
     const item = filteredVocab[currentIndex];
     if (!item) return { mode: "decode", quizChoices: [] };
-    const mastery = wordMastery[item.name] ?? 0;
+    const decodes = wordMastery[item.name] ?? 0;
+    const sightWins = wordSight[item.name] ?? 0;
     const r = Math.random();
 
-    let mode: "decode" | "sight" | "pickImage" = "decode";
+    let mode: "decode" | "sight" | "pickImage" | "pickImageSilent" | "pickWord" =
+      "decode";
     if (filteredVocab.length >= 3) {
-      if (mastery >= SIGHT_THRESHOLD) {
-        mode = r < 0.45 ? "sight" : r < 0.8 ? "pickImage" : "decode";
-      } else if (mastery >= 1) {
+      if (sightWins >= SIGHT_KNOWN) {
+        // Proven by sight: quick flashes + maintenance quizzes
+        mode = r < 0.35 ? "sight" : r < 0.6 ? "pickWord" : r < 0.85 ? "pickImageSilent" : "decode";
+      } else if (decodes >= 2) {
+        // The learning zone: silent retrieval carries the load
+        mode = r < 0.4 ? "pickImageSilent" : r < 0.7 ? "pickWord" : "decode";
+      } else if (decodes >= 1) {
+        // Gentle on-ramp: the same game WITH the voice helping
         mode = r < 0.35 ? "pickImage" : "decode";
       }
-    } else if (mastery >= SIGHT_THRESHOLD && r < SIGHT_MODE_CHANCE) {
+    } else if (sightWins >= SIGHT_KNOWN && r < SIGHT_MODE_CHANCE) {
       mode = "sight";
     }
-    if (mode !== "pickImage") return { mode, quizChoices: [] };
+    if (mode === "decode" || mode === "sight") return { mode, quizChoices: [] };
 
-    // Two distractor pictures, then shuffle the three choices
+    // Distractors. Picture rounds take random others; the find-the-word
+    // round picks LOOKALIKES (shared first letter / length / rime — cat,
+    // bat, rat) so color, shape or first-letter guessing can't solve it.
     const others = filteredVocab.filter((v) => v.name !== item.name);
     for (let i = others.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [others[i], others[j]] = [others[j], others[i]];
+    }
+    if (mode === "pickWord") {
+      const a = item.name.toLowerCase();
+      const sim = (b: string) => {
+        let s = 0;
+        if (a[0] === b[0]) s += 2;
+        if (a.length === b.length) s += 1;
+        if (a.slice(-2) === b.slice(-2)) s += 2;
+        return s;
+      };
+      others.sort((x, y) => sim(y.name.toLowerCase()) - sim(x.name.toLowerCase()));
     }
     const quizChoices = [item, others[0], others[1]];
     for (let i = quizChoices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [quizChoices[i], quizChoices[j]] = [quizChoices[j], quizChoices[i]];
     }
-    return { mode: "pickImage", quizChoices };
+    return { mode, quizChoices };
     // Intentionally keyed to the card only — mode must not flip mid-card
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
   const cardMode = cardPlan.mode;
+  const isQuizRound =
+    cardMode === "pickImage" || cardMode === "pickImageSilent" || cardMode === "pickWord";
 
   const shuffleItems = useCallback(
     (shouldSetFirst = false) => {
-      // Weighted bag: words not yet mastered appear twice per cycle so the
-      // child gets more practice exactly where recognition is weakest.
+      // Weighted bag: words not yet KNOWN BY SIGHT appear twice per cycle so
+      // practice concentrates exactly where recognition is weakest.
       const bag: number[] = [];
       filteredVocab.forEach((item, i) => {
         bag.push(i);
-        if ((wordMastery[item.name] ?? 0) < SIGHT_THRESHOLD) {
+        if ((wordSight[item.name] ?? 0) < SIGHT_KNOWN) {
           bag.push(i);
         }
       });
@@ -665,7 +830,7 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
         setShuffledIndex(0);
       }
     },
-    [filteredVocab, wordMastery],
+    [filteredVocab, wordSight],
   );
 
   useEffect(() => {
@@ -674,10 +839,11 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fresh card: back to the inviting picture — except picture-quiz rounds,
-  // which must not show the answer first
+  // Fresh card: back to the inviting picture — except quiz rounds, which
+  // must not show the answer first
   useEffect(() => {
-    setStage(cardMode === "pickImage" ? "word" : "image");
+    setStage(isQuizRound ? "word" : "image");
+    missedRef.current = false;
     clearAdvanceTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, clearAdvanceTimer]);
@@ -729,6 +895,19 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
     setStage("word");
   }, [cardMode, currentItem, speak, stop, preferredVoice]);
 
+  // First wrong pick on a quiz card: no sight credit this round, and the
+  // word comes back around in a couple of cards for another try.
+  const handleQuizMiss = useCallback(() => {
+    if (missedRef.current) return;
+    missedRef.current = true;
+    setShuffledIndices((prev) => {
+      const at = Math.min(shuffledIndex + 2, prev.length);
+      const next = [...prev];
+      next.splice(at, 0, currentIndex);
+      return next;
+    });
+  }, [shuffledIndex, currentIndex]);
+
   const handleSequenceComplete = useCallback(() => {
     setStage("done");
     // The Numbers-page payoff, the instant the child earns it: confetti NOW
@@ -739,22 +918,37 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
       origin: { y: 0.7 },
       colors: ["#FF6B6B", "#4ECDC4", "#FFE66D", "#FF9F1C", "#a78bfa"],
     });
-    // Only full decodes build mastery; sight/quiz rounds maintain it
-    if (cardMode === "decode" && currentItem) {
-      setWordMastery((prev) => ({
-        ...prev,
-        [currentItem.name]: (prev[currentItem.name] ?? 0) + 1,
-      }));
+    if (currentItem) {
+      if (cardMode === "decode") {
+        // Decodes build the taught ladder
+        setWordMastery((prev) => ({
+          ...prev,
+          [currentItem.name]: (prev[currentItem.name] ?? 0) + 1,
+        }));
+      } else if (
+        (cardMode === "pickImageSilent" || cardMode === "pickWord") &&
+        !missedRef.current
+      ) {
+        // Clean silent-quiz win: the print alone was read correctly —
+        // THIS is what "knows the word by sight" means
+        setWordSight((prev) => ({
+          ...prev,
+          [currentItem.name]: (prev[currentItem.name] ?? 0) + 1,
+        }));
+      }
     }
     clearAdvanceTimer();
     // Decode fires completion at the last tap, so its word+praise audio is
-    // still ahead of it; the other rounds complete as their audio starts.
-    const advanceDelay = cardMode === "decode" ? 2600 : 1800;
+    // still ahead of it; silent wins say word+praise; spoken rounds are shorter.
+    const advanceDelay =
+      cardMode === "decode" ? 2600
+      : cardMode === "pickImageSilent" || cardMode === "pickWord" ? 2200
+      : 1800;
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
       handleShuffleRef.current();
     }, advanceDelay);
-  }, [cardMode, currentItem, setWordMastery, clearAdvanceTimer]);
+  }, [cardMode, currentItem, setWordMastery, setWordSight, clearAdvanceTimer]);
 
   const handleNext = useCallback(() => {
     if (navigator.vibrate) navigator.vibrate(5);
@@ -837,22 +1031,35 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
               className="relative flex flex-col items-center justify-center gap-6 sm:gap-10 w-[95%] max-w-[800px] pointer-events-auto"
               style={{ minHeight: "clamp(300px, 75vh, 600px)" }}
             >
-              {/* Picture-quiz rounds skip the stages entirely — showing the
-                  picture first would hand over the answer */}
-              {!isShuffling && cardMode === "pickImage" && (
+              {/* Quiz rounds skip the stages entirely — showing the answer
+                  first would defeat the retrieval practice */}
+              {!isShuffling && (cardMode === "pickImage" || cardMode === "pickImageSilent") && (
                 <PictureQuiz
                   key={currentIndex}
                   item={currentItem}
                   choices={cardPlan.quizChoices}
                   voice={preferredVoice ?? null}
+                  silent={cardMode === "pickImageSilent"}
                   onSolved={handleSequenceComplete}
+                  onMiss={handleQuizMiss}
+                />
+              )}
+
+              {!isShuffling && cardMode === "pickWord" && (
+                <WordQuiz
+                  key={currentIndex}
+                  item={currentItem}
+                  choices={cardPlan.quizChoices}
+                  voice={preferredVoice ?? null}
+                  onSolved={handleSequenceComplete}
+                  onMiss={handleQuizMiss}
                 />
               )}
 
               {/* Stage 1 — the picture is the star: big, breathing, tap me!
                   (No opacity in this entrance: if animation frames ever
                   stall, a frozen first frame must still be visible.) */}
-              {!isShuffling && cardMode !== "pickImage" && stage === "image" && (
+              {!isShuffling && !isQuizRound && stage === "image" && (
                 <motion.div
                   key={`peek-${currentIndex}`}
                   className="relative flex flex-col items-center justify-center gap-6"
@@ -888,7 +1095,7 @@ const VocabFlashcards = ({ items }: { items: VocabItem[] }) => {
               )}
 
               {/* Stage 2 — picture docks up top, the word gets built below */}
-              {!isShuffling && cardMode !== "pickImage" && stage !== "image" && (
+              {!isShuffling && !isQuizRound && stage !== "image" && (
                 <div className="flex flex-col items-center justify-center gap-4 sm:gap-8 w-full">
                   <motion.div
                     key={`dock-${currentIndex}`}
