@@ -1,10 +1,12 @@
 /**
  * Audio Preloader
- * 
- * Fetches all phonics MP3 files into the browser's HTTP cache on app startup.
- * This eliminates the delay when the user first taps a letter or vocab word,
- * since the browser already has the file cached locally.
+ *
+ * Fetches all phonics MP3 files, then every recorded voice line, into the
+ * browser's HTTP cache on app startup. This eliminates the delay when the user
+ * first taps a letter or vocab word, since the browser already has the file
+ * cached locally — and the service worker keeps them for offline play.
  */
+import { allClipUrls } from './voicePlayer';
 
 const PHONICS_SOUNDS: string[] = [];
 
@@ -31,8 +33,9 @@ export function preloadAllAudio(): void {
   if (preloaded) return;
   preloaded = true;
 
-  // Stagger fetches slightly to avoid saturating bandwidth on slow connections
-  PHONICS_SOUNDS.forEach((src, index) => {
+  // Stagger fetches slightly to avoid saturating bandwidth on slow connections.
+  // Phonics first; the voice lines (a few KB each) queue up behind them.
+  [...PHONICS_SOUNDS, ...allClipUrls()].forEach((src, index) => {
     setTimeout(() => {
       fetch(src, { priority: 'low' } as RequestInit)
         .catch(() => {

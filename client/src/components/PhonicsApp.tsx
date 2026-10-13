@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { TrayMenu } from '@/components/TrayMenu';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
 import { playWrongTapThud, randomPraise, playDotPop } from '../lib/uiSounds';
+import { letterClip } from '../lib/voicePlayer';
 
 // ----- Real-time Bubbly Sound Synthesis for Tactile Toddler Interactions -----
 const playCardTransitionChime = () => {
@@ -459,7 +460,7 @@ export default function PhonicsApp() {
       setSoundToggle('phonic');
       markPartHeard('name', letterInfo);
       const textToSpeak = letterInfo.letter.toUpperCase() === 'Z' ? 'Zee' : letterInfo.letter;
-      speak(textToSpeak, { voice: voiceRef.current, rate: 1.0 });
+      speak(textToSpeak, { voice: voiceRef.current, rate: 1.0, clip: letterClip(letterInfo.letter) });
     }
   }, [currentIndex, selectedModule.letters, playSoundOnce, stopAllSounds, speak, soundToggle, markPartHeard]);
 

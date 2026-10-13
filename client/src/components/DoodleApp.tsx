@@ -5,6 +5,7 @@ import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 import { getSharedAudioContext } from '../lib/sharedAudioContext';
+import { letterClip } from '../lib/voicePlayer';
 
 // ----- Soft synth pop for control taps (shared AudioContext, same recipe as playVocabTapPop) -----
 const playControlPop = () => {
@@ -426,7 +427,10 @@ const DoodleApp = () => {
     lastPickRef.current = next;
     setTraceChar(next);
     stop();
-    speak(next === 'Z' ? 'Zee' : next, { voice: voiceRef.current });
+    speak(next === 'Z' ? 'Zee' : next, {
+      voice: voiceRef.current,
+      clip: /[A-Z]/.test(next) ? letterClip(next) : undefined,
+    });
   }, [clearAll, speak, stop]);
 
   const hideTrace = useCallback(() => {

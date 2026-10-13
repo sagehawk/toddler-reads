@@ -7,28 +7,14 @@ import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 import { useSwipe } from '@/hooks/useSwipe';
 import { usePreventBackExit } from '@/hooks/usePreventBackExit';
 import { playDotPop } from '@/lib/uiSounds';
+import { STORY_1_TEXT } from '../data/storyData';
 
 const STORY_LENGTH = 11; // Both stories have 11 pages
 const TOTAL_STORY_LENGTH = STORY_LENGTH * 2;
 
-// Story 1 — the cat family's fishing day. One short decodable line per page.
-// Each page plays the loop the little ones love: picture first → tap it →
-// the line appears → finger-point read it → the page turns by itself.
-// Repeating frames ("We go...", "We can...") are deliberate — pattern books
-// build confidence.
-const STORY_1_TEXT: Record<number, string> = {
-  1: 'We want fish!',
-  2: 'We go to the lake.',
-  3: 'We fish on a boat.',
-  4: 'We got a fish!',
-  5: 'The cat falls in!',
-  6: 'Mom pulls the cat up.',
-  7: 'We go on a bike.',
-  8: 'We go to swim class.',
-  9: 'We sit and listen.',
-  10: 'We learn to swim.',
-  11: 'We can swim!',
-};
+// Story 1's lines live in data/storyData.ts. Each page plays the loop the
+// little ones love: picture first → tap it → the line appears → finger-point
+// read it → the page turns by itself.
 
 const StoryPage = ({ params }: { params: { id: string } }) => {
   usePreventBackExit();
