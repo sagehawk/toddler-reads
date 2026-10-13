@@ -6,6 +6,7 @@ import MyStory from "./pages/my-story";
 import NotFound from "./pages/not-found";
 import NumbersApp from "./components/NumbersApp";
 import DoodleApp from "./components/DoodleApp";
+import SignsApp from "./components/SignsApp";
 import StoryPage from "./pages/StoryPage";
 import Dashboard from "./pages/Dashboard";
 
@@ -61,6 +62,7 @@ function App() {
       <Route path="/sentences/:category?" component={SentencesApp} />
       <Route path="/numbers" component={NumbersApp} />
       <Route path="/doodle" component={DoodleApp} />
+      <Route path="/signs" component={SignsApp} />
 
       <Route path="/my-story" component={MyStory} />
       <Route path="/story/:id" component={StoryPage} />

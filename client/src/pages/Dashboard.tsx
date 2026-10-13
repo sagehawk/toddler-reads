@@ -116,6 +116,20 @@ const DoodleIcon = ({ size = 96 }: { size?: number }) => (
   </div>
 );
 
+const SignsIcon = ({ size = 96 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      🛑
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
+    >
+      🐱
+    </span>
+  </div>
+);
+
 interface LobbyCardItem {
   id: string;
   title: string;
@@ -180,6 +194,15 @@ const LOBBY_CARDS: LobbyCardItem[] = [
     href: "/doodle",
     gradient: "from-rose-400 to-pink-500",
     shadowColor: "shadow-pink-400/30 dark:shadow-pink-950/40",
+  },
+  {
+    id: "signs",
+    title: "Signs",
+    subtitle: "Sign Words",
+    Icon: SignsIcon,
+    href: "/signs",
+    gradient: "from-lime-400 to-green-500",
+    shadowColor: "shadow-green-400/30 dark:shadow-green-950/40",
   },
 ];
 

@@ -144,6 +144,20 @@ const DoodleIcon = ({ size = 64 }: { size?: number }) => (
   </div>
 );
 
+const SignsIcon = ({ size = 64 }: { size?: number }) => (
+  <div className="relative flex items-center justify-center select-none transform-gpu">
+    <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className="filter saturate-150 drop-shadow-md">
+      🛑
+    </span>
+    <span
+      style={{ fontSize: `${size * 0.45}px` }}
+      className="absolute -top-[15%] -right-[15%] filter drop-shadow-md select-none animate-bounce"
+    >
+      🐱
+    </span>
+  </div>
+);
+
 // ----- Real-time Bubbly Sound Synthesis for Card Taps -----
 const playBubblePop = () => {
   try {
@@ -188,9 +202,10 @@ const TRAY_ITEMS: TrayMenuItem[] = [
   { id: 'sentences', label: 'Simple Sentences', shortLabel: 'Sentences', Icon: SentencesIcon, href: '/sentences', gradient: 'from-rose-400 to-pink-500', activeColor: 'shadow-pink-400/50' },
   { id: 'stories', label: 'Picture Stories', shortLabel: 'Stories', Icon: StoriesIcon, href: '/story/all', gradient: 'from-sky-400 to-blue-500', activeColor: 'shadow-blue-400/50' },
   { id: 'doodle', label: 'Doodle Drawing', shortLabel: 'Doodle', Icon: DoodleIcon, href: '/doodle', gradient: 'from-rose-400 to-pink-500', activeColor: 'shadow-pink-400/50' },
+  { id: 'signs', label: 'Sign Words', shortLabel: 'Signs', Icon: SignsIcon, href: '/signs', gradient: 'from-lime-400 to-green-500', activeColor: 'shadow-green-400/50' },
 ];
 
-export type TrayPageId = 'phonics' | 'numbers' | 'vocab' | 'sentences' | 'stories' | 'doodle';
+export type TrayPageId = 'phonics' | 'numbers' | 'vocab' | 'sentences' | 'stories' | 'doodle' | 'signs';
 
 export function TrayMenu({ currentPageId }: { currentPageId: TrayPageId }) {
   const [isOpen, setIsOpen] = useState(false);
